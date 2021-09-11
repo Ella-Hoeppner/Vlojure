@@ -1,0 +1,14 @@
+{:deps true
+ :nrepl {:port 8703}
+ :builds {:bootstrap {:target :bootstrap
+                      :output-dir "resources/public/bootstrap"
+                      :entries [cljs.js]
+                      :compiler-options {:warnings {:infer false}}
+                      :exclude #{cljs.js}}
+          :browser {:target :browser
+                    :output-dir "resources/public/js"
+                    :asset-path "/public"
+                    :compiler-options {:optimizations :simple
+                                       :output-wrapper false
+                                       :warnings {:infer false}}
+                    :modules {:base {:init-fn vlojure.core/init}}}}}
