@@ -2,7 +2,7 @@
   (:require [vlojure.util :as u]
             [clojure.set :as sets]))
 
-(def whitespace-characters #{" " "\t" "\n"})
+(def whitespace-characters #{" " "\t" "\n" \,})
 
 (def encapsulators ["'"
                     "@"
