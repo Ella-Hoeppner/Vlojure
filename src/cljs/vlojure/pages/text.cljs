@@ -8,6 +8,8 @@
 (defonce input-element (atom nil))
 (defonce current-text-validity (atom false))
 
+
+
 (defn text-valid? []
   @current-text-validity)
 
@@ -17,6 +19,8 @@
          (reset! current-text-validity true))
        (catch :default _
          (reset! current-text-validity false))))
+
+
 
 (def page
   {:init
@@ -54,7 +58,7 @@
        (set! (.-display (.-style input)) "none"))
      (storage/fill-empty-project))
 
-   :resize
+   :resize-html
    (fn []
      (let [input @input-element
            left-x (graphics/screen-x (+ (:x (first (graphics/app-rect)))
@@ -95,7 +99,7 @@
        :else :empty))
 
    :render
-   (fn []
+   (fn [& _]
      (graphics/rect (let [[app-pos app-size] (graphics/app-rect)]
                       [(reduce #(update %1 %2 (partial + constants/text-page-border))
                                app-pos

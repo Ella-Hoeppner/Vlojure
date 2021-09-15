@@ -2,15 +2,19 @@
   (:require [clojure.string :as string]
             [vlojure.graphics :as graphics]
             [vlojure.storage :as storage]
+            [vlojure.formbar :as formbar]
+            [vlojure.layout :as layout]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as constants]
             [vlojure.vedn :as vedn]
             [vlojure.evaluation :as evaluation]
-            [vlojure.pages.text :as text-page]))
+            [vlojure.pages.text :as text-page]
+            [vlojure.pages.settings :as settings-page]))
 
 (def pages
-  {:text text-page/page})
+  {:text text-page/page
+   :settings settings-page/page})
 
 (defn page-action [page action & args]
   (let [action (get-in pages [page action])]
@@ -34,45 +38,6 @@
 (defn update-attr! [key value]
   (swap! app-state
          #(update % key value)))
-
-(defn formbar-offset [index]
-  (+ (* (storage/formbar-radius)
-        (inc constants/formbar-pos))
-     (* index (* 2 (storage/formbar-radius) constants/formbar-spacing))))
-
-(defn formbar-zone-size [side]
-  (let [side-stage-count (count (get (storage/project-attr :formbars) side))]
-    (if (zero? side-stage-count)
-      0
-      (- (formbar-offset side-stage-count)
-         (storage/formbar-radius)))))
-
-(defn refresh-project-dropdown-input-names []
-  (let [project-dropdown-input (attr :project-dropdown-input)
-        option-names (mapv :name (storage/attr :projects))]
-    (while (.-firstChild project-dropdown-input)
-      (.removeChild project-dropdown-input
-                    (.-lastChild project-dropdown-input)))
-    (doseq [index (range (count option-names))]
-      (let [name (nth option-names index)
-            option (.createElement js/document "option")
-            option-style (.-style option)]
-        (set! (.-innerHTML option) name)
-        (set! (.-backgroundColor option-style)
-              (graphics/html-color (:highlight (storage/color-scheme))))
-        (set! (.-border option-style) "none")
-        (set! (.-outline option-style) "none")
-        (set! (.-box-shadow option-style) "none")
-        (.appendChild project-dropdown-input option)))))
-
-(defn activate-project-rename-input []
-  (let [project-rename-input (attr :project-rename-input)]
-    (set! (.-value project-rename-input) (storage/project-attr :name))
-    (set! (.-display (.-style project-rename-input)) "block")))
-
-(defn hide-project-rename-input []
-  (let [project-rename-input (attr :project-rename-input)]
-    (set! (.-display (.-style project-rename-input)) "none")))
 
 (defn activate-literal-text-input [path]
   (let [text-input (attr :literal-text-input)]
@@ -107,8 +72,6 @@
   (let [last-page (attr :page)]
     (page-action last-page :exit))
   (page-action page :enter)
-  (when (= page :settings)
-    (refresh-project-dropdown-input-names))
   (set-attr! :page page))
 
 (defn adjusted-form-circle []
@@ -172,86 +135,10 @@
                          (geom/subtract-points from (geom/scale-point geom/unit (:radius from))))
    (/ (:radius to) (:radius from))))
 
-(defn form-layout [form starting-layout]
-  (let [current-layout starting-layout
-        {:keys [type value children]} form]
-    (if (= type :literal)
-      (assoc current-layout
-             :type type
-             :value value)
-      (assoc current-layout
-             :type type
-             :sublayouts
-             (let [subform-count (count children)]
-               (if (= subform-count 1)
-                 [(form-layout (first children)
-                               (assoc current-layout
-                                      :radius (* constants/sole-subform-shrink-factor (:radius current-layout))))]
-                 (let [raw-radius (Math/sin (/ Math/PI subform-count))
-                       unscaled-radius (/ raw-radius (inc raw-radius))
-                       radius (* unscaled-radius (- 1 constants/bubble-thickness) (:radius current-layout))]
-                   (mapv (fn [subform i]
-                           (let [angle (- (* Math/PI -0.5)
-                                          (/ (* Math/PI 2 i) subform-count))]
-                             (form-layout subform
-                                          (assoc (geom/add-points current-layout
-                                                                  (geom/scale-point (geom/angle-point angle)
-                                                                                    (- (* (:radius current-layout)
-                                                                                          (- 1 constants/bubble-thickness))
-                                                                                       radius)))
-                                                 :radius (* constants/subform-shrink-factor radius)))))
-                         children
-                         (range)))))))))
-
-(defn settings-circle [index]
-  (let [center-circle (zoomed-form-circle)
-        center-radius (:radius center-circle)]
-    (geom/add-points center-circle
-                     (geom/scale-point (storage/attr :scroll-direction)
-                                       (* (- index
-                                             (attr :settings-scroll-pos))
-                                          2
-                                          center-radius
-                                          constants/outer-form-spacing)))))
-
-(defn settings-button-circles []
-  (vec
-   (let [center-circle (settings-circle 0)
-         center-radius (:radius center-circle)
-         bar-width (* 2 center-radius constants/settings-project-dropdown-width)
-         button-radius (* bar-width constants/settings-project-button-radius)
-         base-button-circle (-> center-circle
-                                (update :y (partial +
-                                                    (* center-radius
-                                                       (+ constants/settings-project-dropdown-y
-                                                          constants/settings-project-dropdown-height))
-                                                    (* button-radius
-                                                       (inc constants/settings-project-buttons-y-spacing))))
-                                (assoc :radius button-radius))]
-     (for [index (range (count constants/settings-project-buttons))]
-       (update base-button-circle
-               :x
-               #(+ %
-                   (* (- index
-                         (* 0.5
-                            (dec
-                             (count constants/settings-project-buttons))))
-                      2 button-radius
-                      (inc constants/settings-project-buttons-x-spacing))))))))
-
-(defn settings-bar-scroll-circle []
-  (let [center-circle (settings-circle 1)]
-    (update (geom/add-points center-circle
-                             (geom/scale-point (storage/attr :scroll-direction)
-                                               (* (:radius center-circle)
-                                                  constants/settings-bar-scroll-circle-pos)))
-            :radius
-            (partial * constants/settings-bar-scroll-circle-radius))))
-
 (defn current-form-layouts []
   (assoc geom/origin
          :sublayouts (mapv (fn [child index]
-                             (form-layout child
+                             (layout/form-layout child
                                           (assoc (geom/scale-point (storage/attr :scroll-direction)
                                                                    (* constants/outer-form-spacing
                                                                       index
@@ -284,16 +171,10 @@
                         (first path))
                    (rest path))))
 
-(defn on-settings-page? [index]
-  (and (= (attr :page) :settings)
-       (< (Math/abs (- (attr :ideal-settings-scroll-pos) index)) 0.01)))
-
 (defn resize-html-elements []
   (let [current-size (graphics/app-size)
         {:keys [page
-                literal-text-input
-                project-dropdown-input
-                project-rename-input]} @app-state]
+                literal-text-input]} @app-state]
     (when literal-text-input
       (let [{:keys [literal-text-input-path]} @app-state
             {:keys [x y radius]} (when literal-text-input-path
@@ -324,78 +205,7 @@
         (set! (.-fontSize (.-style literal-text-input))
               (str new-text-size
                    "px"))))
-    (when project-dropdown-input
-      (let [{:keys [x y radius]} (settings-circle 0)
-            dropdown-width (* current-size
-                              radius
-                              constants/settings-project-dropdown-width)
-            new-text-size (* current-size
-                             constants/text-scale-factor
-                             constants/html-text-size-factor
-                             constants/settings-project-name-size
-                             radius)
-            style (.-style project-dropdown-input)]
-        (set! (.-display style)
-              (if (and (= (.-display (.-style project-rename-input))
-                          "none")
-                       (on-settings-page? 0))
-                "block"
-                "none"))
-        (set! (.-left style)
-              (str (- (graphics/screen-x x)
-                      dropdown-width)
-                   "px"))
-        (set! (.-top style)
-              (str (graphics/screen-y
-                    (+ y (* constants/settings-project-dropdown-y radius)))
-                   "px"))
-        (set! (.-width style)
-              (str (* 2 dropdown-width)
-                   "px"))
-        (set! (.-height style)
-              (str (* current-size
-                      radius
-                      constants/settings-project-dropdown-height)
-                   "px"))
-        (set! (.-fontSize style)
-              (str new-text-size
-                   "px"))))
-    (when project-rename-input
-      (let [{:keys [x y radius]} (settings-circle 0)
-            dropdown-width (* current-size
-                              radius
-                              constants/settings-project-dropdown-width)
-            new-text-size (* current-size
-                             constants/text-scale-factor
-                             constants/html-text-size-factor
-                             constants/settings-project-name-size
-                             radius)
-            style (.-style project-rename-input)]
-        (when (and (not (on-settings-page? 0))
-                   (= (.-display (.-style project-rename-input))
-                      "block"))
-          (refresh-project-dropdown-input-names)
-          (hide-project-rename-input))
-        (set! (.-left style)
-              (str (- (graphics/screen-x x)
-                      dropdown-width)
-                   "px"))
-        (set! (.-top style)
-              (str (graphics/screen-y
-                    (+ y (* constants/settings-project-dropdown-y radius)))
-                   "px"))
-        (set! (.-width style)
-              (str (* 2 dropdown-width)
-                   "px"))
-        (set! (.-height style)
-              (str (* current-size
-                      radius
-                      constants/settings-project-dropdown-height)
-                   "px"))
-        (set! (.-fontSize style)
-              (str new-text-size
-                   "px"))))
-    (page-action :text :resize)))
+    (all-pages-action :resize-html)))
 
 (defn layout-path-encapsulated? [layout path]
   (boolean
@@ -439,39 +249,6 @@
                                       geom/TAU))
                               geom/TAU))))))))))
 
-(defn color-scheme-index-at [pos]
-  (if (on-settings-page? 2)
-    (let [center-circle (settings-circle 2)
-          center-radius (:radius center-circle)]
-      (some (fn [index]
-              (let [y (* center-radius
-                         (+ constants/settings-color-text-y
-                            (* index constants/settings-color-spacing)))
-                    height (* center-radius
-                              constants/settings-color-height)
-                    width (* center-radius
-                             2
-                             constants/settings-color-width)]
-                (when (or (geom/in-rect? [(-> center-circle
-                                              (update :y (partial + y (* -0.5 height)))
-                                              (update :x (partial + (* -0.5 width))))
-                                          {:x width
-                                           :y height}]
-                                         pos)
-                          (geom/in-circle? (-> center-circle
-                                               (update :y (partial + y))
-                                               (update :x (partial + (* -0.5 width)))
-                                               (assoc :radius (* 0.5 height)))
-                                         pos)
-                          (geom/in-circle? (-> center-circle
-                                               (update :y (partial + y))
-                                               (update :x (partial + (* 0.5 width)))
-                                               (assoc :radius (* 0.5 height)))
-                                           pos))
-                  index)))
-            (range (count constants/color-schemes))))
-    nil))
-
 (defn ideal-camera-pos []
   (geom/scale-point
    (let [scroll-dir (storage/attr :scroll-direction)
@@ -501,448 +278,6 @@
           (get-sublayout (current-form-layouts)
                          selected-layout-path)))
       (storage/base-zoom))))
-
-(defn flatten-layout [layout]
-  (if (:sublayouts layout)
-    (conj (mapcat flatten-layout
-                  (:sublayouts layout))
-          (dissoc layout :sublayouts))
-    (list layout)))
-
-(defn render-layout [layout & [layer]]
-  (let [center layout
-        radius (:radius layout)]
-    (when (#{:list :map :set :lit-fn :literal} (:type layout))
-      (graphics/circle layout
-                       (:foreground (storage/color-scheme))
-                       layer))
-    (when (#{:map :lit-fn} (:type layout))
-      (let [r (:radius layout)]
-        (doseq [base-angle [(* geom/PI 0.25)
-                            (* geom/PI 0.75)
-                            (* geom/PI 1.25)
-                            (* geom/PI 1.75)]]
-          (graphics/polygon [(geom/add-points layout
-                                              (geom/scale-point (geom/angle-point (- base-angle constants/map-point-width))
-                                                                r))
-                             (geom/add-points layout
-                                              (geom/scale-point (geom/angle-point base-angle)
-                                                                (* (inc constants/map-point-height) r)))
-                             (geom/add-points layout
-                                              (geom/scale-point (geom/angle-point (+ base-angle constants/map-point-width))
-                                                                r))]
-                            (:foreground (storage/color-scheme))
-                            layer))))
-    (when (#{:set :lit-fn} (:type layout))
-      (let [r (:radius layout)]
-        (doseq [angle [0
-                       (* geom/PI 0.5)
-                       geom/PI
-                       (* geom/PI 1.5)]]
-          (let [base-offset (geom/scale-point (geom/angle-point (+ angle (* geom/PI 0.5)))
-                                              (* r constants/set-line-offset))]
-            (doseq [offset [base-offset (geom/scale-point base-offset -1)]]
-              (graphics/line (geom/add-points offset layout)
-                             (geom/add-points layout
-                                              offset
-                                              (geom/scale-point (geom/angle-point angle)
-                                                                (* (inc constants/set-line-length) r)))
-                             (* r constants/set-line-width)
-                             (:foreground (storage/color-scheme))
-                             layer))))))
-    (when (#{:list :map :set :lit-fn} (:type layout))
-      (graphics/circle (update layout
-                               :radius (partial *
-                                                (- 1 constants/bubble-thickness)))
-                       (:background (storage/color-scheme))
-                       layer))
-    (when (= (:type layout) :vector)
-      (graphics/polygon (mapv #(geom/add-points center
-                                                (geom/scale-point %
-                                                                  (* radius
-                                                                     constants/vector-size-factor)))
-                              (geom/polygon 8
-                                            (* geom/PI 0.125)))
-                        (:foreground (storage/color-scheme))
-                        layer)
-      (graphics/polygon (mapv #(geom/add-points center
-                                                (geom/scale-point %
-                                                                  (* radius
-                                                                     constants/vector-size-factor
-                                                                     (- 1 constants/bubble-thickness))))
-                              (geom/polygon 8
-                                            (* geom/PI 0.125)))
-                        (:background (storage/color-scheme))
-                        layer))
-    (when (= (:type layout) :quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/quote-divs true))]
-          (let [[start end]
-                (map #(geom/add-points layout
-                                       (geom/scale-point (geom/angle-point
-                                                          (+ angle
-                                                             (* % (/ geom/TAU constants/quote-divs 4))))
-                                                         radius))
-                     [-1 1])]
-            (graphics/line start end
-                           (* radius
-                              constants/bubble-thickness)
-                           (:foreground (storage/color-scheme))
-                           layer)))))
-    (when (= (:type layout) :deref)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/deref-circles true))]
-          (graphics/circle (update (geom/add-points layout
-                                                    (geom/scale-point (geom/angle-point angle)
-                                                                      radius))
-                                   :radius
-                                   (partial * constants/deref-circle-size-factor))
-                           (:foreground (storage/color-scheme))
-                           layer))))
-    (when (= (:type layout) :syntax-quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/syntax-quote-divs true))]
-          (let [[start end]
-                (map #(geom/add-points layout
-                                       (geom/scale-point (geom/angle-point
-                                                          (+ angle
-                                                             (* % (/ geom/TAU constants/syntax-quote-divs 4))))
-                                                         (* radius
-                                                            (+ 1
-                                                               (* % constants/syntax-quote-offset-factor)))))
-                     [-1 1])]
-            (graphics/line start end
-                           (* radius
-                              constants/bubble-thickness)
-                           (:foreground (storage/color-scheme))
-                           layer)))))
-    (when (= (:type layout) :comment)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/comment-divs true))]
-          (graphics/line (geom/add-points layout
-                                          (geom/scale-point (geom/angle-point angle)
-                                                            radius))
-                         (geom/add-points layout
-                                          (geom/scale-point (geom/angle-point angle)
-                                                            (* radius (- 1 constants/comment-length-factor))))
-                         (* radius
-                            constants/bubble-thickness)
-                         (:foreground (storage/color-scheme))
-                         layer))))
-    (when (= (:type layout) :unquote)
-      (let [segment-angle (/ geom/TAU 8)
-            angles (mapv #(+ (* segment-angle %)
-                             (/ geom/TAU 16))
-                         (range 8))
-            points (mapv #(geom/scale-point (geom/angle-point %)
-                                            (* radius
-                                               constants/vector-size-factor))
-                         angles)]
-        (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-size (/ 0.5 constants/unquote-divs)
-                tween-starts (mapv #(* div-size (+ 0.5 (* 2 %)))
-                                   (range constants/unquote-divs))]
-            (doseq [tween-start tween-starts]
-              (graphics/line (geom/add-points layout
-                                              (geom/tween-points start-point end-point tween-start))
-                             (geom/add-points layout
-                                              (geom/tween-points start-point end-point (+ tween-start div-size)))
-                             (* radius
-                                constants/bubble-thickness)
-                             (:foreground (storage/color-scheme))
-                             layer))))))
-    (when (= (:type layout) :unquote-splice)
-      (let [segment-angle (/ geom/TAU 8)
-            angles (mapv #(+ (* segment-angle %)
-                             (/ geom/TAU 16))
-                         (range 8))
-            points (mapv #(geom/scale-point (geom/angle-point %)
-                                            (* radius
-                                               constants/vector-size-factor))
-                         angles)]
-        (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-spacing (/ 0.5 constants/unquote-splice-circles)]
-            (doseq [t (u/prop-range constants/unquote-splice-circles true)]
-              (graphics/circle (update (geom/add-points layout
-                                                        (geom/tween-points start-point end-point t))
-                                       :radius
-                                       (partial * constants/deref-circle-size-factor))
-                               (:foreground (storage/color-scheme))
-                               layer))))))
-    (when (= (:type layout) :meta)
-      (let [radius (:radius layout)
-            angle-offset (/ geom/PI 2 constants/meta-divs)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/meta-divs true))]
-          (let [tip (geom/add-points layout
-                                     (geom/scale-point (geom/angle-point angle)
-                                                       radius))
-                [start end]
-                (mapv #(geom/add-points layout
-                                        (geom/scale-point (geom/angle-point (+ angle (* % angle-offset)))
-                                                          (* radius (- 1 constants/meta-length-factor))))
-                      [1 -1])]
-            (graphics/polyline [start tip end]
-                               (* radius
-                                  constants/bubble-thickness)
-                               (:foreground (storage/color-scheme))
-                               layer)))))
-    (when (= (:type layout) :var-quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/var-quote-divs true))]
-          (let [[start end]
-                (map #(geom/add-points layout
-                                       (geom/scale-point (geom/angle-point
-                                                          (+ angle
-                                                             (* % (/ geom/TAU constants/var-quote-divs 4))))
-                                                         radius))
-                     [-1 1])]
-            (graphics/line start
-                           end
-                           (* radius
-                              constants/bubble-thickness)
-                           (:foreground (storage/color-scheme))
-                           layer))
-          (let [[start end]
-                (map #(geom/add-points layout
-                                       (geom/scale-point (geom/angle-point angle)
-                                                         (* radius %)))
-                     [1 (inc constants/var-quote-length)])]
-            (graphics/line start
-                           end
-                           (* radius
-                              constants/bubble-thickness)
-                           (:foreground (storage/color-scheme))
-                           layer)))))
-    (when (= (:type layout) :literal)
-      (graphics/text (:value layout)
-                     layout
-                     (:radius layout)
-                     (:text (storage/color-scheme))
-                     layer))))
-
-(defn formbar-arrangement []
-  (zipmap
-   constants/screen-sides
-   (map (fn [side]
-          (let [[app-pos app-size] (graphics/app-rect)
-                formbars (storage/project-attr :formbars)
-                horizontal? (#{:top :bottom} side)
-                bar-stages (get formbars side)]
-            (mapv (fn [stage stage-index]
-                    (let [sizes (mapv (fn [bar]
-                                        (max 0
-                                             (let [size (count (:forms bar))]
-                                               (* (dec size)
-                                                  2
-                                                  (storage/formbar-radius)
-                                                  (- 1 constants/formbar-outline-thickness)))))
-                                      stage)
-                          total-size (+ (apply + sizes)
-                                        (* (inc constants/formbar-spacing)
-                                           (storage/formbar-radius)
-                                           (dec (count stage))))
-                          edge-offset (formbar-offset stage-index)
-                          offsets (reduce (fn [offsets size]
-                                            (conj offsets
-                                                  (+ (last offsets)
-                                                     size
-                                                     (* (inc constants/formbar-spacing)
-                                                        (storage/formbar-radius)))))
-                                          [(* -0.5 total-size)]
-                                          sizes)]
-                      (mapv (fn [bar size bar-offset]
-                              (let [bar-pos (case side
-                                              :bottom {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
-                                                       :y (- (+ (:y app-pos) (:y app-size)) edge-offset)}
-                                              :top {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
-                                                    :y (+ (:y app-pos) edge-offset)}
-                                              :left {:x (+ (:x app-pos) edge-offset)
-                                                     :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)}
-                                              :right {:x (- (+ (:x app-pos) (:x app-size)) edge-offset)
-                                                      :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)})]
-                                (merge bar-pos
-                                       {:width (if horizontal? size 0)
-                                        :height (if horizontal? 0 size)
-                                        :circles
-                                        (mapv (fn [form form-index]
-                                                (assoc (geom/add-points bar-pos
-                                                                        (geom/scale-point
-                                                                         {(if horizontal? :x :y)
-                                                                          (* 2
-                                                                             (- 1 constants/formbar-outline-thickness)
-                                                                             (storage/formbar-radius))}
-                                                                         form-index))
-                                                       :radius (* (storage/formbar-radius)
-                                                                  (- 1 constants/formbar-outline-thickness)
-                                                                  constants/formbar-form-size)
-                                                       :form form))
-                                              (:forms bar)
-                                              (range))})))
-                            stage
-                            sizes
-                            offsets)))
-                  bar-stages
-                  (range))))
-        constants/screen-sides)))
-
-(defn formbar-path-at [pos]
-  (let [full-arrangement (formbar-arrangement)]
-    (some (fn [side]
-            (let [arrangement (get full-arrangement side)
-                  horizontal? (#{:top :bottom} side)]
-              (some (fn [stage-index]
-                      (let [stage (nth arrangement stage-index)]
-                        (some (fn [bar-index]
-                                (let [bar (nth stage bar-index)]
-                                  (when (or (<= (geom/point-magnitude
-                                                 (geom/subtract-points pos
-                                                                       bar))
-                                                (storage/formbar-radius))
-                                            (<= (geom/point-magnitude
-                                                 (geom/subtract-points pos
-                                                                       (geom/add-points bar
-                                                                                        (if horizontal?
-                                                                                          {:x (:width bar)}
-                                                                                          {:y (:height bar)}))))
-                                                (storage/formbar-radius))
-                                            (geom/in-rect? (if horizontal?
-                                                             [(geom/subtract-points bar
-                                                                                    {:y (storage/formbar-radius)})
-                                                              {:x (:width bar)
-                                                               :y (* 2 (storage/formbar-radius))}]
-                                                             [(geom/subtract-points bar
-                                                                                    {:x (storage/formbar-radius)})
-                                                              {:x (* 2 (storage/formbar-radius))
-                                                               :y (:height bar)}])
-                                                           pos))
-                                    [side stage-index bar-index])))
-                              (range (count stage)))))
-                    (range (count arrangement)))))
-          constants/screen-sides)))
-
-(defn formbar-form-path-at [pos]
-  (let [full-arrangement (formbar-arrangement)]
-    (some (fn [side]
-            (let [arrangement (get full-arrangement side)]
-              (some (fn [stage-index]
-                      (let [stage (nth arrangement stage-index)]
-                        (some (fn [bar-index]
-                                (let [bar (nth stage bar-index)
-                                      {:keys [circles]} bar]
-                                  (some (fn [circle-index]
-                                          (let [bar-circle (nth circles circle-index)]
-                                            (when (geom/in-circle? bar-circle pos)
-                                              [side stage-index bar-index :circles circle-index :form])))
-                                        (range (count circles)))))
-                              (range (count stage)))))
-                    (range (count arrangement)))))
-          constants/screen-sides)))
-
-(defn new-formbar-circles []
-  (let [[app-pos app-size] (graphics/app-rect)
-        arrangement (formbar-arrangement)]
-    (apply hash-map
-           (mapcat (fn [side]
-                     (concat
-                      (let [side-formbars (get arrangement side)]
-                        (mapcat (fn [stage-index]
-                                  (let [stage (nth side-formbars stage-index)
-                                        dim (if (#{:left :right} side)
-                                              :y
-                                              :x)
-                                        size-attribute (if (#{:left :right} side)
-                                                         :height
-                                                         :width)]
-                                    (list
-                                     (assoc (update (first stage)
-                                                    dim
-                                                    #(- %
-                                                        (* (storage/formbar-radius)
-                                                           (inc constants/new-formbar-circle-radius)
-                                                           constants/formbar-spacing)))
-                                            :radius (* constants/new-formbar-circle-radius
-                                                       (storage/formbar-radius)))
-                                     [side stage-index 0]
-                                     (assoc (update (last stage)
-                                                    dim
-                                                    #(+ %
-                                                        (size-attribute (last stage))
-                                                        (* (storage/formbar-radius)
-                                                           (inc constants/new-formbar-circle-radius)
-                                                           constants/formbar-spacing)))
-                                            :radius (* constants/new-formbar-circle-radius
-                                                       (storage/formbar-radius)))
-                                     [side stage-index (count stage)])))
-                                (range (count side-formbars))))
-                      (let [side-center (geom/add-points app-pos
-                                                         (case side
-                                                           :top {:x (* 0.5 (:x app-size))}
-                                                           :bottom (update app-size :x (partial * 0.5))
-                                                           :left {:y (* 0.5 (:y app-size))}
-                                                           :right (update app-size :y (partial * 0.5))))
-                            perpendicular-direction (case side
-                                                      :top {:y 1}
-                                                      :bottom {:y -1}
-                                                      :left {:x 1}
-                                                      :right {:x -1})
-                            arrangement-side (get arrangement side)]
-                        [(assoc (geom/add-points side-center
-                                                 (geom/scale-point perpendicular-direction
-                                                                   (- (+ (* constants/new-formbar-circle-radius
-                                                                            (storage/formbar-radius))
-                                                                         (formbar-offset (count arrangement-side)))
-                                                                      (storage/formbar-radius))))
-                                :radius (* constants/new-formbar-circle-radius
-                                           (storage/formbar-radius)))
-                         [side (count arrangement-side) 0]])))
-                   constants/screen-sides))))
-
-(defn new-formbar-circle-path-at [pos]
-  (let [circles (new-formbar-circles)]
-    (some (fn [[new-formbar-circle path]]
-            (when (geom/in-circle? new-formbar-circle pos)
-              path))
-          circles)))
-
-(defn settings-slider-at [pos]
-  (some (fn [index]
-          (let [settings-circle (settings-circle 1)
-                left (-> settings-circle
-                         (update :radius (partial * constants/settings-slider-radius))
-                         (update :x #(- % (* (:radius settings-circle)
-                                             constants/settings-slider-width)))
-                         (update :y (partial +
-                                             (* (:radius settings-circle)
-                                                (+ constants/settings-top-slider-y
-                                                   (* constants/settings-slider-spacing index))))))
-                right (-> settings-circle
-                          (update :radius (partial * constants/settings-slider-radius))
-                          (update :x (partial +
-                                              (* (:radius settings-circle)
-                                                 constants/settings-slider-width)))
-                          (update :y (partial +
-                                              (* (:radius settings-circle)
-                                                 (+ constants/settings-top-slider-y
-                                                    (* constants/settings-slider-spacing index))))))
-                slider-rect [(update left :y #(- % (* (:radius settings-circle)
-                                                      constants/settings-slider-radius)))
-                             {:x (apply - (map :x [right left]))
-                              :y (* 2 (:radius settings-circle)
-                                    constants/settings-slider-radius)}]]
-            (when (or (geom/in-circle? right
-                                       pos)
-                      (geom/in-circle? left
-                                       pos)
-                      (geom/in-rect? slider-rect
-                                     pos))
-              index)))
-        (range (count constants/settings-sliders))))
-
-(defn settings-circle-at [pos]
-  (some #(when (geom/in-circle? (settings-circle %)
-                                pos)
-           %)
-        (range constants/settings-pages)))
 
 (defn get-mouse-zone []
   (let [[app-pos app-size] (graphics/app-rect)
@@ -978,7 +313,7 @@
                 eval-zone-radius)
             :eval
 
-            (formbar-path-at mouse)
+            (formbar/formbar-path-at mouse)
             :formbar
 
             (reduce #(or %1
@@ -990,48 +325,7 @@
 
             :else :empty)
 
-          :settings
-          (let [button-circles (settings-button-circles)]
-            (or (when (on-settings-page? 0)
-                  (some (fn [index]
-                          (when (geom/in-circle? (nth button-circles index)
-                                                 mouse)
-                            (nth constants/settings-project-buttons index)))
-                        (range (count button-circles))))
-                (cond
-                  (<= (geom/point-magnitude
-                       (geom/subtract-points app-pos
-                                             mouse))
-                      constants/upper-corner-zone-radius)
-                  :settings-icon
-
-                  (formbar-path-at mouse)
-                  :formbar
-
-                  (new-formbar-circle-path-at mouse)
-                  :new-formbar
-
-                  (and (on-settings-page? 1)
-                       (geom/in-circle? (settings-bar-scroll-circle) mouse))
-                  :scroll-circle
-
-                  (and (on-settings-page? 1)
-                       (settings-slider-at mouse))
-                  :settings-slider
-
-                  (color-scheme-index-at mouse)
-                  :color-scheme
-
-                  (settings-circle-at mouse)
-                  :settings-circle
-
-                  :else :empty)))
-
           :empty))))
-
-(defn render-sublayouts [layout & [layer]]
-  (doseq [sublayout (flatten-layout layout)]
-    (render-layout sublayout layer)))
 
 (defn mouse-dragging? []
   (> (:drag-dist (attr :mouse)) constants/min-drag-dist))
@@ -1053,13 +347,13 @@
             (first (storage/project-attr :discard-history))
 
             down-formbar-form-path
-            (get-in (formbar-arrangement) down-formbar-form-path)))))
+            (get-in (formbar/formbar-arrangement) down-formbar-form-path)))))
 
 (defn get-formbar-insertion-index []
   (let [{:keys [mouse]} @app-state
-        formbar-path (formbar-path-at mouse)]
-    (when formbar-path-at
-      (let [arrangement (formbar-arrangement)
+        formbar-path (formbar/formbar-path-at mouse)]
+    (when formbar-path
+      (let [arrangement (formbar/formbar-arrangement)
             screen-side (first formbar-path)
             bar-arrangement (get-in arrangement formbar-path)
             form-spacing (* (storage/formbar-radius)
@@ -1074,56 +368,6 @@
                 (if (neg? offset)
                   0
                   (inc (int offset)))))))))
-
-(defn render-formbars []
-  (let [{:keys [mouse]} @app-state
-        arrangement (formbar-arrangement)
-        formbar-form-path (formbar-form-path-at mouse)]
-    (doseq [side constants/screen-sides]
-      (let [horizontal? (#{:top :bottom} side)
-            side-arrangement (get arrangement side)]
-        (doseq [stage side-arrangement]
-          (doseq [bar stage]
-            (doseq [[color radius-factor]
-                    [[(:foreground (storage/color-scheme)) 1]
-                     [(:background (storage/color-scheme)) (- 1 constants/formbar-outline-thickness)]]]
-              (graphics/circle (assoc bar :radius (* (storage/formbar-radius) radius-factor))
-                               color
-                               :formbar)
-              (if horizontal?
-                (do (graphics/circle (assoc (geom/add-points bar
-                                                             {:x (:width bar)})
-                                            :radius (* (storage/formbar-radius) radius-factor))
-                                     color
-                                     :formbar)
-                    (graphics/rect [(geom/subtract-points bar {:y (* (storage/formbar-radius) radius-factor)})
-                                    {:x (:width bar)
-                                     :y (* 2 (storage/formbar-radius) radius-factor)}]
-                                   color
-                                   :formbar))
-                (do (graphics/circle (assoc (geom/add-points bar
-                                                             {:y (:height bar)})
-                                            :radius (* (storage/formbar-radius) radius-factor))
-                                     color
-                                     :formbar)
-                    (graphics/rect [(geom/subtract-points bar {:x (* (storage/formbar-radius) radius-factor)})
-                                    {:x (* 2 (storage/formbar-radius) radius-factor)
-                                     :y (:height bar)}]
-                                   color
-                                   :formbar))))))
-        (when (and formbar-form-path
-                   (= (first formbar-form-path) side))
-          (graphics/circle (update (get-in arrangement
-                                           (butlast (formbar-form-path-at mouse)))
-                                   :radius (partial * (/ constants/formbar-form-size)))
-                           (:highlight (storage/color-scheme))
-                           :formbar))
-        (doseq [stage side-arrangement]
-          (doseq [bar stage]
-            (doseq [bar-circle (:circles bar)]
-              (render-sublayouts (form-layout (:form bar-circle)
-                                              bar-circle)
-                                 :formbar))))))))
 
 (defn outer-form-insertion-index []
   (let [{:keys [mouse page]} @app-state
@@ -1170,7 +414,7 @@
         (let [{:keys [mouse]} @app-state
               dragging? (mouse-dragging?)
               current-outer-form-insertion-index (outer-form-insertion-index)]
-          (render-sublayouts (adjusted-form-layouts)
+          (layout/render-sublayouts (adjusted-form-layouts)
                              :program)
           (when (and dragging? (placement-form))
             (graphics/circle (assoc mouse
@@ -1200,7 +444,7 @@
               (graphics/circle (update base-circle :radius (partial * constants/drop-form-outline-radius-factor))
                                (:background (storage/color-scheme))
                                :drag)
-              (render-sublayouts (form-layout current-placement-form
+              (layout/render-sublayouts (layout/form-layout current-placement-form
                                               base-circle)
                                  :drag)))
           (let [layout-path (layout-path-at (adjusted-form-layouts)
@@ -1247,24 +491,24 @@
                                      constants/drag-cursor-line-width
                                      (:highlight (storage/color-scheme))
                                      :drag-forms)
-                      (let [base-sublayout (form-layout (placement-form)
+                      (let [base-sublayout (layout/form-layout (placement-form)
                                                         (assoc geom/origin :radius 1))]
                         (if literal?
-                          (render-sublayouts (adjust-layout base-sublayout
+                          (layout/render-sublayouts (adjust-layout base-sublayout
                                                             (geom/scale-point sublayout
                                                                               (/ (:radius sublayout)))
                                                             (:radius sublayout))
                                              :drag-forms)
                           (if layout-encapsulated?
                             (let [encapsulated-sublayout (get-sublayout (adjusted-form-layouts) layout-path)]
-                              (render-sublayouts (adjust-layout base-sublayout
+                              (layout/render-sublayouts (adjust-layout base-sublayout
                                                                 (geom/scale-point encapsulated-sublayout
                                                                                   (/ (:radius encapsulated-sublayout)))
                                                                 (:radius encapsulated-sublayout))
                                                  :drag-forms))
                             (if (= 0 (count (:children (vedn/get-child (storage/project-attr :form)
                                                                        layout-path))))
-                              (render-sublayouts (adjust-layout base-sublayout
+                              (layout/render-sublayouts (adjust-layout base-sublayout
                                                                 (geom/scale-point sublayout
                                                                                   (/ (* constants/drop-form-radius-factor
                                                                                         (:radius sublayout))))
@@ -1280,9 +524,9 @@
                                                          (partial * constants/drop-form-outline-radius-factor))
                                                  (:background (storage/color-scheme))
                                                  :drag-forms)
-                                (render-sublayouts adjusted-layout
+                                (layout/render-sublayouts adjusted-layout
                                                    :drag-forms))))))))))))
-          (render-formbars)
+          (formbar/render-formbars mouse)
 
           ;; Draw discard circle, icon, and last discarded form
           (graphics/circle (assoc (geom/add-points app-pos
@@ -1306,7 +550,7 @@
                                     (update :y (partial + (- (:y app-size) radius)))
                                     (update :x (partial + radius)))]
             (if last-discard
-              (render-sublayouts (form-layout last-discard
+              (layout/render-sublayouts (layout/form-layout last-discard
                                               (assoc base-circle-pos
                                                      :radius (* radius
                                                                 constants/discard-zone-form-radius-factor)))
@@ -1368,7 +612,7 @@
                                      (* radius constants/new-icon-width)
                                      (:highlight (storage/color-scheme))
                                      :menu)))
-                  (render-sublayouts (form-layout last-eval-form
+                  (layout/render-sublayouts (layout/form-layout last-eval-form
                                                   (assoc base-circle-pos
                                                          :radius (* radius
                                                                     constants/eval-zone-form-radius-factor)))
@@ -1428,9 +672,9 @@
                            :menu))
 
           (when (and (= mouse-zone :formbar) current-placement-form)
-            (let [formbar-path (formbar-path-at mouse)]
+            (let [formbar-path (formbar/formbar-path-at mouse)]
               (when formbar-path
-                (let [arrangement (formbar-arrangement)
+                (let [arrangement (formbar/formbar-arrangement)
                       screen-side (first formbar-path)
                       bar-arrangement (get-in arrangement formbar-path)
                       form-spacing (* (storage/formbar-radius)
@@ -1454,445 +698,13 @@
                                         %
                                         (* form-spacing
                                            constants/formbar-placement-offset))))))]
-                  (render-sublayouts (form-layout (placement-form) placement-circle)
+                  (layout/render-sublayouts (layout/form-layout (placement-form) placement-circle)
                                      :formbar)))))))
 
-      :settings
-      (let [{:keys [mouse]} @app-state]
-        (render-formbars)
-        (doseq [i (range constants/settings-pages)]
-          (graphics/circle (settings-circle i)
-                           (:foreground (storage/color-scheme))
-                           :background))
-
-        ;; Sliders
-        (let [center-circle (settings-circle 1)
-              center-radius (:radius center-circle)]
-          (doseq [slider-index (range (count constants/settings-sliders))]
-            (let [[slider-name slider-key] (nth constants/settings-sliders slider-index)
-                  y (* center-radius
-                       (+ constants/settings-top-slider-y
-                          (* slider-index constants/settings-slider-spacing)))
-                  left (geom/add-points center-circle
-                                        {:x (* -1
-                                               center-radius
-                                               constants/settings-slider-width)
-                                         :y y})
-                  right (geom/add-points center-circle
-                                         {:x (* center-radius
-                                                constants/settings-slider-width)
-                                          :y y})]
-              (graphics/line left right
-                             (* center-radius
-                                constants/settings-slider-radius
-                                2)
-                             (:background (storage/color-scheme))
-                             :background)
-              (doseq [p [right left]]
-                (graphics/circle (assoc p
-                                        :radius (* center-radius
-                                                   constants/settings-slider-radius))
-                                 (:background (storage/color-scheme))
-                                 :background))
-              (graphics/circle (assoc (geom/tween-points left right (storage/attr slider-key))
-                                      :radius (* center-radius
-                                                 constants/settings-slider-radius
-                                                 constants/settings-slider-inner-radius-factor))
-                               (:foreground (storage/color-scheme))
-                               :background)
-              (graphics/text slider-name
-                             (geom/add-points center-circle
-                                              {:y (+ y (* center-radius constants/settings-slider-text-y))})
-                             (* center-radius
-                                constants/settings-slider-text-size
-                                (count slider-name))
-                             (:text (storage/color-scheme))
-                             :background))))
-
-        ;; Render project dropdown
-        (let [center-circle (settings-circle 0)
-              center-radius (:radius center-circle)
-              bar-width (* 2 center-radius constants/settings-project-dropdown-width)
-              bar-height (* center-radius constants/settings-project-dropdown-height)]
-          (graphics/rect [(-> center-circle
-                              (update :x #(+ (- % (* center-radius constants/settings-project-dropdown-width))
-                                             (* bar-height
-                                                constants/settings-project-dropdown-x-shrink-factor)))
-                              (update :y (partial +
-                                                  (* center-radius constants/settings-project-dropdown-y))))
-                          {:x (- bar-width
-                                 (* bar-height
-                                    2
-                                    constants/settings-project-dropdown-x-shrink-factor))
-                           :y bar-height}]
-                         (:highlight (storage/color-scheme))
-                         :background)
-          (graphics/circle (-> center-circle
-                               (update :x #(+ (- % (* center-radius constants/settings-project-dropdown-width))
-                                              (* bar-height
-                                                 constants/settings-project-dropdown-x-shrink-factor)))
-                               (update :y (partial +
-                                                   (* center-radius constants/settings-project-dropdown-y)
-                                                   (* 0.5 bar-height)))
-                               (assoc :radius (* 0.5 bar-height)))
-                           (:highlight (storage/color-scheme))
-                           :background)
-          (graphics/circle (-> center-circle
-                               (update :x #(+ (- %
-                                                 (* center-radius constants/settings-project-dropdown-width)
-                                                 (* bar-height
-                                                    constants/settings-project-dropdown-x-shrink-factor))
-                                              bar-width))
-                               (update :y (partial +
-                                                   (* center-radius constants/settings-project-dropdown-y)
-                                                   (* 0.5 bar-height)))
-                               (assoc :radius (* 0.5 bar-height)))
-                           (:highlight (storage/color-scheme))
-                           :background)
-          (graphics/text "Active Project"
-                         (-> center-circle
-                             (update :y (partial + (* center-radius (+ constants/settings-project-dropdown-y
-                                                                       constants/settings-project-text-y)))))
-                         (* center-radius constants/settings-project-text-size)
-                         (:text (storage/color-scheme))
-                         :background)
-          (when (not (on-settings-page? 0))
-            (graphics/text (storage/project-attr :name)
-                           (-> center-circle
-                               (update :y (partial + (* center-radius
-                                                        (+ constants/settings-project-dropdown-y
-                                                           (* 0.5
-                                                              constants/settings-project-dropdown-height))))))
-                           (* center-radius
-                              constants/settings-project-name-size
-                              (count (storage/project-attr :name)))
-                           (:text (storage/color-scheme))
-                           :background))
-
-          (let [button-circles (settings-button-circles)]
-            (doseq [index (range (count constants/settings-project-buttons))]
-              (let [type (nth constants/settings-project-buttons index)
-                    button-circle (nth button-circles index)
-                    button-radius (:radius button-circle)]
-                (graphics/circle button-circle
-                                 (:background (storage/color-scheme))
-                                 :background)
-                (graphics/circle (update button-circle
-                                         :radius
-                                         (partial * constants/settings-project-button-inner-radius-factor))
-                                 (if (= mouse-zone type)
-                                   (:highlight (storage/color-scheme))
-                                   (:foreground (storage/color-scheme)))
-                                 :background)
-                (case type
-                  :rename-project
-                  (let [eraser-offset (update (geom/scale-point geom/unit
-                                                                (* button-radius
-                                                                   (Math/sqrt 0.5)
-                                                                   constants/settings-project-button-inner-radius-factor
-                                                                   constants/rename-icon-size))
-                                              :y -)
-                        width (* button-radius
-                                 constants/settings-project-button-inner-radius-factor
-                                 constants/rename-icon-width)
-                        line-width (* button-radius
-                                      constants/settings-button-line-width)
-                        eraser (geom/add-points button-circle
-                                                eraser-offset)
-                        eraser-top (geom/add-points eraser
-                                                    (geom/scale-point geom/unit
-                                                                      (* (Math/sqrt 0.5)
-                                                                         -0.5
-                                                                         width)))
-                        eraser-bottom (geom/add-points eraser
-                                                       (geom/scale-point geom/unit
-                                                                         (* (Math/sqrt 0.5)
-                                                                            0.5
-                                                                            width)))
-                        eraser-edge-top (geom/add-points eraser-top
-                                                         (geom/scale-point eraser-offset
-                                                                           (- constants/rename-icon-eraser-size)))
-                        eraser-edge-bottom (geom/add-points eraser-bottom
-                                                            (geom/scale-point eraser-offset
-                                                                              (- constants/rename-icon-eraser-size)))
-                        tip-top (geom/add-points eraser-top
-                                                 (geom/scale-point eraser-offset
-                                                                   (- constants/rename-icon-tip-size
-                                                                      (inc constants/rename-icon-tip-factor))))
-                        tip-bottom (geom/add-points eraser-bottom
-                                                    (geom/scale-point eraser-offset
-                                                                      (- constants/rename-icon-tip-size
-                                                                         (inc constants/rename-icon-tip-factor))))
-                        tip (geom/add-points button-circle
-                                             (geom/scale-point eraser-offset
-                                                               (- constants/rename-icon-tip-factor)))]
-                    (graphics/polyline [tip
-                                        tip-bottom
-                                        eraser-bottom
-                                        eraser-top
-                                        tip-top
-                                        tip]
-                                       line-width
-                                       (:background (storage/color-scheme))
-                                       :background)
-                    (graphics/line eraser-edge-top
-                                   eraser-edge-bottom
-                                   line-width
-                                   (:background (storage/color-scheme))
-                                   :background)
-                    (graphics/line tip-top
-                                   tip-bottom
-                                   line-width
-                                   (:background (storage/color-scheme))
-                                   :background))
-
-                  :new-project
-                  (let [size (* button-radius
-                                constants/settings-project-button-inner-radius-factor
-                                constants/new-icon-size)
-                        width (* button-radius
-                                 constants/settings-project-button-inner-radius-factor
-                                 constants/new-icon-width)]
-                    (doseq [dim [:x :y]]
-                      (graphics/line (update button-circle
-                                             dim
-                                             (partial + (- size)))
-                                     (update button-circle
-                                             dim
-                                             (partial + size))
-                                     width
-                                     (:background (storage/color-scheme))
-                                     :background)))
-
-                  :duplicate-project
-                  (let [width (* button-radius
-                                 constants/duplicate-icon-width)
-                        height (* button-radius
-                                  constants/duplicate-icon-height)
-                        line-width (* button-radius
-                                      constants/settings-button-line-width)
-                        corner {:x width
-                                :y height}
-                        base-offset (geom/scale-point geom/unit
-                                                      (* button-radius
-                                                         constants/duplicate-icon-offset))]
-                    (doseq [offset [(geom/scale-point base-offset -1)
-                                    base-offset]]
-                      (let [base (geom/add-points button-circle offset)]
-                        (graphics/rect [(geom/add-points base
-                                                         (geom/scale-point corner -1))
-                                        (geom/scale-point corner 2)]
-                                       (if (= mouse-zone :duplicate-project)
-                                         (:highlight (storage/color-scheme))
-                                         (:foreground (storage/color-scheme)))
-                                       :background)
-                        (graphics/polyline (mapv (fn [dims]
-                                                   (geom/add-points base
-                                                                    (reduce #(update %1 %2 -)
-                                                                            corner
-                                                                            dims)))
-                                                 [[]
-                                                  [:x]
-                                                  [:x :y]
-                                                  [:y]
-                                                  []])
-                                           line-width
-                                           (:background (storage/color-scheme))
-                                           :background))))
-
-                  :delete-project
-                  (let [offset (geom/scale-point geom/unit
-                                                 (* button-radius
-                                                    (Math/sqrt 0.5)
-                                                    constants/settings-project-button-inner-radius-factor
-                                                    constants/new-icon-size))
-                        width (* button-radius
-                                 constants/settings-project-button-inner-radius-factor
-                                 constants/new-icon-width)]
-                    (doseq [offset-modifier [identity #(update % :y -)]]
-                      (let [modified-offset (offset-modifier offset)]
-                        (graphics/line (geom/add-points button-circle
-                                                        (geom/scale-point modified-offset
-                                                                          -1))
-                                       (geom/add-points button-circle
-                                                        modified-offset)
-                                       width
-                                       (:background (storage/color-scheme))
-                                       :background)))))))))
-
-        ;; Render scroll circle
-        (let [scroll-circle (settings-bar-scroll-circle)
-              scroll-direction (storage/attr :scroll-direction)
-              triangle-base (geom/add-points scroll-circle
-                                             (geom/scale-point scroll-direction
-                                                               (* (:radius scroll-circle)
-                                                                  constants/settings-bar-scroll-triangle-pos)))
-              color (if (= mouse-zone :scroll-circle)
-                      (:highlight (storage/color-scheme))
-                      (:foreground (storage/color-scheme)))]
-          (graphics/circle scroll-circle
-                           color
-                           :background)
-          (graphics/circle (update scroll-circle
-                                   :radius
-                                   (partial * constants/settings-bar-scroll-circle-inner-radius))
-                           (:background (storage/color-scheme))
-                           :background)
-          (graphics/polygon (mapv #(geom/add-points triangle-base
-                                                    (geom/scale-point %
-                                                                      (:radius scroll-circle)))
-                                  [(geom/scale-point scroll-direction
-                                                     constants/settings-bar-scroll-triangle-height)
-                                   (geom/scale-point (assoc scroll-direction
-                                                            :x (:y scroll-direction)
-                                                            :y (- (:x scroll-direction)))
-                                                     constants/settings-bar-scroll-triangle-width)
-                                   (geom/scale-point (assoc scroll-direction
-                                                            :x (- (:y scroll-direction))
-                                                            :y (:x scroll-direction))
-                                                     constants/settings-bar-scroll-triangle-width)])
-                            color
-                            :background))
-
-        ;; Render color scheme page
-        (let [center-circle (settings-circle 2)
-              center-radius (:radius center-circle)]
-          (graphics/text "Color Scheme"
-                         (-> center-circle
-                             (update :y
-                                     (partial +
-                                              (* center-radius
-                                                 constants/settings-color-header-text-y))))
-                         (* center-radius constants/settings-color-header-text-size)
-                         (:text (storage/color-scheme))
-                         :background)
-
-          (doseq [i (range (count constants/color-schemes))]
-            (let [color-scheme (nth constants/color-schemes i)
-                  name (:name color-scheme)
-                  y (* center-radius
-                       (+ constants/settings-color-text-y
-                          (* i constants/settings-color-spacing)))
-                  display-colors (mapv #(% color-scheme)
-                                       [:background :foreground :highlight])]
-              (doseq [[color layer]
-                      (if (= i (color-scheme-index-at mouse))
-                        [[(:highlight color-scheme) 0]]
-                        (mapv vector
-                              display-colors
-                              (range (count display-colors))))]
-                (let [width (* 2
-                               (- 1 (* layer constants/settings-color-width-factor))
-                               constants/settings-color-width
-                               center-radius)
-                      height (* constants/settings-color-height
-                                (- 1 (* layer constants/settings-color-height-factor))
-                                center-radius)]
-                  (graphics/rect [(-> center-circle
-                                      (update :y #(- (+ % y)
-                                                     (* 0.5
-                                                        height)))
-                                      (update :x #(- % (* 0.5 width))))
-                                  {:x width
-                                   :y height}]
-                                 color
-                                 :background)
-                  (doseq [side [1 -1]]
-                    (graphics/circle (-> center-circle
-                                         (update :y (partial + y))
-                                         (update :x (partial + (* 0.5
-                                                                  side
-                                                                  width)))
-                                         (assoc :radius (* height 0.5)))
-                                     color
-                                     :background))))
-              (graphics/text name
-                             (-> center-circle
-                                 (update :y
-                                         (partial +
-                                                  y)))
-                             (* center-radius
-                                constants/settings-color-text-size
-                                (count name))
-                             (:text color-scheme)
-                             :background))))
-
-
-        ;; Render new formbar circles
-        (doseq [[new-formbar-circle] (new-formbar-circles)]
-          (graphics/circle new-formbar-circle
-                           (:highlight (storage/color-scheme))
-                           :settings-overlay)
-          (let [line-size (* (storage/formbar-radius)
-                             constants/new-formbar-circle-radius
-                             constants/new-icon-size)]
-            (doseq [dim [:x :y]]
-              (graphics/line (update new-formbar-circle dim (partial + line-size))
-                             (update new-formbar-circle dim #(- % line-size))
-                             (* (storage/formbar-radius)
-                                constants/new-formbar-circle-radius
-                                constants/new-icon-width)
-                             (:background (storage/color-scheme))
-                             :settings-overlay))))
-        (let [formbar-path (formbar-path-at mouse)]
-          (when formbar-path
-            (let [current-formbar-arrangement (formbar-arrangement)
-                  hovered-formbar (get-in current-formbar-arrangement formbar-path)
-                  {:keys [width height]} hovered-formbar
-                  center (geom/add-points hovered-formbar
-                                          (geom/scale-point {:x width
-                                                             :y height}
-                                                            0.5))]
-              (graphics/circle (assoc hovered-formbar
-                                      :radius (storage/formbar-radius))
-                               (:highlight (storage/color-scheme))
-                               :settings-overlay)
-              (when (pos? width)
-                (graphics/circle (-> hovered-formbar
-                                     (update :x (partial + width))
-                                     (assoc :radius (storage/formbar-radius)))
-                                 (:highlight (storage/color-scheme))
-                                 :settings-overlay)
-                (graphics/rect [(update hovered-formbar
-                                        :y #(- % (storage/formbar-radius)))
-                                {:x width
-                                 :y (* 2 (storage/formbar-radius))}]
-                               (:highlight (storage/color-scheme))
-                               :settings-overlay))
-              (when (pos? height)
-                (graphics/circle (-> hovered-formbar
-                                     (update :y (partial + height))
-                                     (assoc :radius (storage/formbar-radius)))
-                                 (:highlight (storage/color-scheme))
-                                 :settings-overlay)
-                (graphics/rect [(update hovered-formbar
-                                        :x #(- % (storage/formbar-radius)))
-                                {:x (* 2 (storage/formbar-radius))
-                                 :y height}]
-                               (:highlight (storage/color-scheme))
-                               :settings-overlay))
-              (let [offset (geom/scale-point geom/unit
-                                             (* (Math/sqrt 0.5)
-                                                constants/new-icon-size
-                                                (storage/formbar-radius)))
-                    upside-down-offset (update offset :y -)]
-                (graphics/line (geom/add-points center
-                                                offset)
-                               (geom/add-points center
-                                                (geom/scale-point offset -1))
-                               (* (storage/formbar-radius) constants/new-icon-width)
-                               (:background (storage/color-scheme))
-                               :settings-overlay)
-                (graphics/line (geom/add-points center
-                                                upside-down-offset)
-                               (geom/add-points center
-                                                (geom/scale-point upside-down-offset -1))
-                               (* (storage/formbar-radius) constants/new-icon-width)
-                               (:background (storage/color-scheme))
-                               :settings-overlay))))))
-
       nil)
-    (page-action (attr :page) :render)
+    (page-action (attr :page)
+                 :render
+                 (attr :mouse) mouse-zone)
 
     ;; Draw "settings" circle and icon, or "back" icon
     (let [radius (/ (* (- 1 constants/corner-zone-bar-thickness)
@@ -1998,7 +810,7 @@
     (let [{:keys [mouse page]} @app-state]
       (when (:down? mouse)
         (when (= (:down-zone mouse) :settings-slider)
-          (let [settings-circle (settings-circle 1)
+          (let [settings-circle (settings-page/settings-circle 1)
                 x-off (apply - (map :x [mouse settings-circle]))
                 adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))]
             (storage/set-attr! (second
@@ -2013,7 +825,7 @@
                          (geom/angle-point
                           (let [raw-angle (mod (geom/point-angle
                                                 (geom/subtract-points mouse
-                                                                      (settings-circle 1)))
+                                                                      (settings-page/settings-circle 1)))
                                                geom/TAU)
                                 snap-angle (some (fn [angle]
                                                    (when (< (min (Math/abs (- angle raw-angle))
@@ -2033,15 +845,21 @@
                         1))
             (update-attr! :selected-layout-path
                           #(vec (take 1 %))))
-          (update-attr! ({:code :ideal-scroll-pos
-                          :settings :ideal-settings-scroll-pos}
-                         page)
-                        #(- %
-                            (/ (geom/scalar-point-projection (geom/subtract-points mouse
-                                                                                   (:last-pos mouse))
-                                                             (storage/attr :scroll-direction))
-                               (* (storage/base-zoom)
-                                  constants/outer-form-spacing)))))))
+          (page-action page :scroll
+                       (-
+                        (/ (geom/scalar-point-projection (geom/subtract-points mouse
+                                                                               (:last-pos mouse))
+                                                         (storage/attr :scroll-direction))
+                           (* (storage/base-zoom)
+                              constants/outer-form-spacing))))
+          (when (= page :code)
+            (update-attr! :ideal-scroll-pos
+                          #(- %
+                              (/ (geom/scalar-point-projection (geom/subtract-points mouse
+                                                                                     (:last-pos mouse))
+                                                               (storage/attr :scroll-direction))
+                                 (* (storage/base-zoom)
+                                    constants/outer-form-spacing))))))))
     (update-attr! :ideal-scroll-pos
                   #(min (storage/project-form-count)
                         (max 0
@@ -2051,15 +869,7 @@
                             %
                             (Math/pow (:move (storage/camera-speed 0))
                                       delta)))
-    (update-attr! :ideal-settings-scroll-pos
-                  #(min (dec constants/settings-pages)
-                        (max 0
-                             %)))
-    (update-attr! :settings-scroll-pos
-                  #(u/tween (attr :ideal-settings-scroll-pos)
-                            %
-                            (Math/pow (:move (storage/camera-speed 0))
-                                      delta)))
+    (all-pages-action :update delta)
     (update-attr! :mouse
                   #(assoc %
                           :last-pos
@@ -2117,26 +927,23 @@
         layout (adjusted-form-layouts)
         layout-path (layout-path-at layout mouse)
         zone (get-mouse-zone)
-        settings-slider (settings-slider-at mouse)]
+        settings-slider (settings-page/settings-slider-at mouse)]
     (update-attr! :mouse
                   (fn [state]
                     (assoc state
                            :down? true
                            :down-path (vec layout-path)
                            :down-zone zone
-                           :down-formbar-form-path (formbar-form-path-at mouse)
+                           :down-formbar-form-path (formbar/formbar-form-path-at mouse)
                            :down-settings-slider settings-slider)))
     (when (not= layout-path (attr :literal-text-input-path))
       (hide-literal-text-input))
     (when (= zone :settings-circle)
-      (set-attr! :ideal-settings-scroll-pos
-                 (settings-circle-at (attr :mouse))))))
+      (settings-page/set-ideal-scroll-pos! (settings-page/settings-circle-at (attr :mouse))))))
 
 (defn refresh-html-colors []
   (doseq [html-object (mapv attr
-                            [:literal-text-input
-                             :project-dropdown-input
-                             :project-rename-input])]
+                            [:literal-text-input])]
     (set! (.-color (.-style html-object))
           (graphics/html-color (:text (storage/color-scheme)))))
   (all-pages-action :refresh-html-colors)
@@ -2145,8 +952,7 @@
       (.insertRule ss
                    (str "::selection { background: "
                         (graphics/html-color (:background (storage/color-scheme)))
-                        "}"))))
-  (refresh-project-dropdown-input-names))
+                        "}")))))
 
 (defn on-click-up [event]
   (update-mouse-pos event)
@@ -2197,7 +1003,7 @@
           :formbar
           (let [{:keys [down-formbar-form-path]} mouse]
             (when down-formbar-form-path
-              (let [arrangement (formbar-arrangement)]
+              (let [arrangement (formbar/formbar-arrangement)]
                 (storage/track-discard
                  (get-in arrangement down-formbar-form-path))
                 (storage/delete-project-formbar-form-at down-formbar-form-path))))
@@ -2216,7 +1022,7 @@
           (when (and (= page :code)
                      (placement-form))
             (storage/add-project-formbar-form-at current-placement-form
-                                             (formbar-path-at mouse)
+                                             (formbar/formbar-path-at mouse)
                                              (get-formbar-insertion-index))))
         
         :empty
@@ -2241,7 +1047,7 @@
           (enter-page :code))
 
         :color-scheme
-        (do (storage/set-attr! :color-scheme (color-scheme-index-at mouse))
+        (do (storage/set-attr! :color-scheme (settings-page/color-scheme-index-at mouse))
             (refresh-html-colors))
 
         :text-icon
@@ -2260,10 +1066,10 @@
 
         :formbar
         (when (= (attr :page) :settings)
-          (storage/delete-project-formbar-at (formbar-path-at mouse)))
+          (storage/delete-project-formbar-at (formbar/formbar-path-at mouse)))
 
         :new-formbar
-        (storage/add-project-formbar-at (new-formbar-circle-path-at mouse))
+        (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
 
         :empty
         (do (hide-literal-text-input)
@@ -2271,18 +1077,18 @@
 
         :new-project
         (do (storage/new-project)
-            (refresh-project-dropdown-input-names))
+            (settings-page/refresh-dropdown-names))
 
         :duplicate-project
         (do (storage/duplicate-project)
-            (refresh-project-dropdown-input-names))
+            (settings-page/refresh-dropdown-names))
 
         :delete-project
         (do (storage/delete-project)
-            (refresh-project-dropdown-input-names))
+            (settings-page/refresh-dropdown-names))
 
         :rename-project
-        (activate-project-rename-input)
+        (settings-page/activate-project-rename-input)
 
         nil))
     (update-attr! :mouse
@@ -2293,16 +1099,11 @@
     (set-attr! :camera-move-diff (- (count layout-path)
                                     (count (attr :selected-layout-path))))))
 
-(defn load-project []
-  (storage/load-project (.-selectedIndex (:project-dropdown-input @app-state))))
-
 (defn init []
   (set-attr! :camera-pos {:x 0 :y 0})
   (set-attr! :camera-zoom 1)
   (set-attr! :scroll-pos 0)
   (set-attr! :ideal-scroll-pos 0)
-  (set-attr! :settings-scroll-pos 0)
-  (set-attr! :settings-ideal-scroll-pos 0)
   (set-attr! :eval-zone-radius constants/lower-corner-zone-radius)
   (set-attr! :page :code)
   (let [literal-text-input (.createElement js/document "input")
@@ -2317,36 +1118,8 @@
     (set! (.-border style) "none")
     (set! (.-outline style) "none")
     (set! (.-display (.-style literal-text-input)) "none"))
-  (let [project-dropdown-input (.createElement js/document "select")
-        style (.-style project-dropdown-input)]
-    (set! (.-onchange project-dropdown-input)
-          #(do (load-project)
-               (refresh-project-dropdown-input-names)))
-    (.appendChild (.-body js/document) project-dropdown-input)
-    (set-attr! :project-dropdown-input project-dropdown-input)
-    (set! (.-textAlign style) "center")
-    (set! (.-position style) "absolute")
-    (set! (.-fontFamily style) constants/font-name)
-    (set! (.-background style) "transparent")
-    (set! (.-border style) "none")
-    (set! (.-outline style) "none"))
-  (let [project-rename-input (.createElement js/document "input")
-        style (.-style project-rename-input)]
-    (set! (.-onchange project-rename-input)
-          #(do (storage/set-project-attr! :name (.-value project-rename-input))
-               (refresh-project-dropdown-input-names)
-               (hide-project-rename-input)))
-    (.appendChild (.-body js/document) project-rename-input)
-    (set-attr! :project-rename-input project-rename-input)
-    (set! (.-textAlign style) "center")
-    (set! (.-position style) "absolute")
-    (set! (.-fontFamily style) constants/font-name)
-    (set! (.-background style) "transparent")
-    (set! (.-border style) "none")
-    (set! (.-outline style) "none")
-    (hide-project-rename-input))
 
-  (doseq [action [:init :refresh-html-colors :resize]]
+  (doseq [action [:init :refresh-html-colors :resize-html]]
     (all-pages-action action))
 
   (refresh-html-colors)
