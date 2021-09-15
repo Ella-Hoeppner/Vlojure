@@ -1,12 +1,25 @@
 (ns vlojure.app
-  (:require [vlojure.graphics :as graphics]
+  (:require [clojure.string :as string]
+            [vlojure.graphics :as graphics]
             [vlojure.storage :as storage]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as constants]
             [vlojure.vedn :as vedn]
             [vlojure.evaluation :as evaluation]
-            [clojure.string :as string]))
+            [vlojure.pages.text :as text-page]))
+
+(def pages
+  {:text text-page/page})
+
+(defn page-action [page action & args]
+  (let [action (get-in pages [page action])]
+    (when action
+      (apply action args))))
+
+(defn all-pages-action [action & args]
+  (doseq [page (keys pages)]
+    (apply page-action (conj args action page))))
 
 (defonce app-state (atom {}))
 
@@ -33,26 +46,6 @@
       0
       (- (formbar-offset side-stage-count)
          (storage/formbar-radius)))))
-
-(defn fill-empty-project []
-  (when (zero? (count (:children (storage/project-attr :form))))
-    (storage/set-project-attr! :form
-                               (vedn/clj->vedn "nil"))))
-
-(defn activate-text-page-input []
-  (let [text-page-input (attr :text-page-input)]
-    (set! (.-display (.-style text-page-input)) "block")
-    (set! (.-value text-page-input)
-          (let [form (storage/project-attr :form)]
-            (apply str
-                   (mapcat (fn [subform]
-                             (str (vedn/vedn->clj subform)
-                                  "\n\n"))
-                           (:children form)))))))
-
-(defn hide-text-page-input []
-  (let [text-page-input (attr :text-page-input)]
-    (set! (.-display (.-style text-page-input)) "none")))
 
 (defn refresh-project-dropdown-input-names []
   (let [project-dropdown-input (attr :project-dropdown-input)
@@ -111,12 +104,12 @@
       (set-attr! :literal-text-input-path nil))))
 
 (defn enter-page [page]
-  (set-attr! :page page)
+  (let [last-page (attr :page)]
+    (page-action last-page :exit))
+  (page-action page :enter)
   (when (= page :settings)
     (refresh-project-dropdown-input-names))
-  (if (= page :text)
-    (activate-text-page-input)
-    (hide-text-page-input)))
+  (set-attr! :page page))
 
 (defn adjusted-form-circle []
   (geom/circle-within
@@ -300,8 +293,7 @@
         {:keys [page
                 literal-text-input
                 project-dropdown-input
-                project-rename-input
-                text-page-input]} @app-state]
+                project-rename-input]} @app-state]
     (when literal-text-input
       (let [{:keys [literal-text-input-path]} @app-state
             {:keys [x y radius]} (when literal-text-input-path
@@ -403,29 +395,7 @@
         (set! (.-fontSize style)
               (str new-text-size
                    "px"))))
-    (when text-page-input
-      (let [width (graphics/app-width)
-            height (graphics/app-height)
-            left-x (graphics/screen-x (+ (:x (first (graphics/app-rect)))
-                                constants/text-page-border))
-            top-y (graphics/screen-y (+ (:y (first (graphics/app-rect)))
-                               constants/text-page-border))]
-        (set! (.-left (.-style text-page-input))
-              (str left-x
-                   "px"))
-        (set! (.-width (.-style text-page-input))
-              (str (- (graphics/screen-x (- (:x (apply geom/add-points (graphics/app-rect)))
-                                   constants/text-page-border))
-                      top-y)
-                   "px"))
-        (set! (.-top (.-style text-page-input))
-              (str top-y
-                   "px"))
-        (set! (.-height (.-style text-page-input))
-              (str (- (graphics/screen-y (- (:y (apply geom/add-points (graphics/app-rect)))
-                                   constants/text-page-border))
-                      top-y)
-                   "px"))))))
+    (page-action :text :resize)))
 
 (defn layout-path-encapsulated? [layout path]
   (boolean
@@ -977,96 +947,87 @@
 (defn get-mouse-zone []
   (let [[app-pos app-size] (graphics/app-rect)
         {:keys [mouse eval-zone-radius]} @app-state]
-    (case (attr :page)
-      :code
-      (cond
-        (<= (geom/point-magnitude
-             (geom/subtract-points app-pos
-                                   mouse))
-            constants/upper-corner-zone-radius)
-        :settings-icon
+    (or (page-action (attr :page) :mouse-zone mouse)
+        (case (attr :page)
+          :code
+          (cond
+            (<= (geom/point-magnitude
+                 (geom/subtract-points app-pos
+                                       mouse))
+                constants/upper-corner-zone-radius)
+            :settings-icon
 
-        (<= (geom/point-magnitude
-             (geom/subtract-points (geom/add-points app-pos
-                                                    (select-keys app-size [:x]))
-                                   mouse))
-            constants/upper-corner-zone-radius)
-        :text-icon
+            (<= (geom/point-magnitude
+                 (geom/subtract-points (geom/add-points app-pos
+                                                        (select-keys app-size [:x]))
+                                       mouse))
+                constants/upper-corner-zone-radius)
+            :text-icon
 
-        (<= (geom/point-magnitude
-             (geom/subtract-points (geom/add-points app-pos
-                                                    (select-keys app-size [:y]))
-                                   mouse))
-            constants/lower-corner-zone-radius)
-        :discard
+            (<= (geom/point-magnitude
+                 (geom/subtract-points (geom/add-points app-pos
+                                                        (select-keys app-size [:y]))
+                                       mouse))
+                constants/lower-corner-zone-radius)
+            :discard
 
-        (<= (geom/point-magnitude
-             (geom/subtract-points (geom/add-points app-pos
-                                                    app-size)
-                                   mouse))
-            eval-zone-radius)
-        :eval
+            (<= (geom/point-magnitude
+                 (geom/subtract-points (geom/add-points app-pos
+                                                        app-size)
+                                       mouse))
+                eval-zone-radius)
+            :eval
 
-        (formbar-path-at mouse)
-        :formbar
+            (formbar-path-at mouse)
+            :formbar
 
-        (reduce #(or %1
-                     (geom/in-circle? %2 mouse))
-                false
-                (:sublayouts
-                 (adjusted-form-layouts)))
-        :program
+            (reduce #(or %1
+                         (geom/in-circle? %2 mouse))
+                    false
+                    (:sublayouts
+                     (adjusted-form-layouts)))
+            :program
 
-        :else :empty)
+            :else :empty)
 
-      :settings
-      (let [button-circles (settings-button-circles)]
-        (or (when (on-settings-page? 0)
-              (some (fn [index]
-                    (when (geom/in-circle? (nth button-circles index)
-                                           mouse)
-                      (nth constants/settings-project-buttons index)))
-                  (range (count button-circles))))
-            (cond
-              (<= (geom/point-magnitude
-                   (geom/subtract-points app-pos
-                                         mouse))
-                  constants/upper-corner-zone-radius)
-              :settings-icon
+          :settings
+          (let [button-circles (settings-button-circles)]
+            (or (when (on-settings-page? 0)
+                  (some (fn [index]
+                          (when (geom/in-circle? (nth button-circles index)
+                                                 mouse)
+                            (nth constants/settings-project-buttons index)))
+                        (range (count button-circles))))
+                (cond
+                  (<= (geom/point-magnitude
+                       (geom/subtract-points app-pos
+                                             mouse))
+                      constants/upper-corner-zone-radius)
+                  :settings-icon
 
-              (formbar-path-at mouse)
-              :formbar
+                  (formbar-path-at mouse)
+                  :formbar
 
-              (new-formbar-circle-path-at mouse)
-              :new-formbar
+                  (new-formbar-circle-path-at mouse)
+                  :new-formbar
 
-              (and (on-settings-page? 1)
-                   (geom/in-circle? (settings-bar-scroll-circle) mouse))
-              :scroll-circle
+                  (and (on-settings-page? 1)
+                       (geom/in-circle? (settings-bar-scroll-circle) mouse))
+                  :scroll-circle
 
-              (and (on-settings-page? 1)
-                   (settings-slider-at mouse))
-              :settings-slider
+                  (and (on-settings-page? 1)
+                       (settings-slider-at mouse))
+                  :settings-slider
 
-              (color-scheme-index-at mouse)
-              :color-scheme
+                  (color-scheme-index-at mouse)
+                  :color-scheme
 
-              (settings-circle-at mouse)
-              :settings-circle
+                  (settings-circle-at mouse)
+                  :settings-circle
 
-              :else :empty)))
+                  :else :empty)))
 
-      :text
-      (cond
-        (<= (geom/point-magnitude
-             (geom/subtract-points app-pos
-                                   mouse))
-            constants/upper-corner-zone-radius)
-        :back-icon
-
-        :else :empty)
-
-      :empty)))
+          :empty))))
 
 (defn render-sublayouts [layout & [layer]]
   (doseq [sublayout (flatten-layout layout)]
@@ -1930,18 +1891,8 @@
                                (:background (storage/color-scheme))
                                :settings-overlay))))))
 
-      :text
-      (graphics/rect (let [[app-pos app-size] (graphics/app-rect)]
-                       [(reduce #(update %1 %2 (partial + constants/text-page-border))
-                                app-pos
-                                [:x :y])
-                        (reduce #(update %1 %2 (fn [v] (- v (* 2 constants/text-page-border))))
-                                app-size
-                                [:x :y])])
-                     (:foreground (storage/color-scheme))
-                     :background)
-
       nil)
+    (page-action (attr :page) :render)
 
     ;; Draw "settings" circle and icon, or "back" icon
     (let [radius (/ (* (- 1 constants/corner-zone-bar-thickness)
@@ -1949,7 +1900,7 @@
                     (inc (Math/sqrt 2)))
           base-circle-pos (geom/add-points app-pos
                                            (geom/scale-point geom/unit radius))
-          text-page-valid? (attr :text-page-valid?)
+          text-page-valid? (text-page/text-valid?)
           background-color (if (or (not text-page-valid?)
                                    (#{:settings-icon :back-icon} mouse-zone))
                              (:highlight (storage/color-scheme))
@@ -2158,7 +2109,7 @@
 (defn remove-form [path]
   (storage/update-project-attr! :form
                             #(vedn/remove-child % path))
-  (fill-empty-project))
+  (storage/fill-empty-project))
 
 (defn on-click-down [event]
   (update-mouse-pos event)
@@ -2185,10 +2136,10 @@
   (doseq [html-object (mapv attr
                             [:literal-text-input
                              :project-dropdown-input
-                             :project-rename-input
-                             :text-page-input])]
+                             :project-rename-input])]
     (set! (.-color (.-style html-object))
           (graphics/html-color (:text (storage/color-scheme)))))
+  (all-pages-action :refresh-html-colors)
   (let [ss (first js/document.styleSheets)]
     (when ss
       (.insertRule ss
@@ -2286,7 +2237,7 @@
                       :code))
 
         :back-icon
-        (when (attr :text-page-valid?)
+        (when (text-page/text-valid?)
           (enter-page :code))
 
         :color-scheme
@@ -2354,7 +2305,6 @@
   (set-attr! :settings-ideal-scroll-pos 0)
   (set-attr! :eval-zone-radius constants/lower-corner-zone-radius)
   (set-attr! :page :code)
-  (set-attr! :text-page-valid? true)
   (let [literal-text-input (.createElement js/document "input")
         style (.-style literal-text-input)]
     (set! (.-type literal-text-input) "text")
@@ -2395,25 +2345,9 @@
     (set! (.-border style) "none")
     (set! (.-outline style) "none")
     (hide-project-rename-input))
-  (let [text-page-input (.createElement js/document "textarea")
-        style (.-style text-page-input)]
-    (set! (.-type text-page-input) "text")
-    (.appendChild (.-body js/document) text-page-input)
-    (set-attr! :text-page-input text-page-input)
-    (set! (.-onchange text-page-input)
-          (fn [e]
-            (try (let [current-text (.-value (attr :text-page-input))]
-                   (storage/set-project-attr! :form (vedn/clj->vedn current-text))
-                   (fill-empty-project)
-                   (set-attr! :text-page-valid? true))
-                 (catch :default _
-                   (set-attr! :text-page-valid? false)))))
-    (set! (.-resize style) "none")
-    (set! (.-position style) "absolute")
-    (set! (.-fontFamily style) constants/font-name)
-    (set! (.-background style) "transparent")
-    (set! (.-border style) "none")
-    (set! (.-outline style) "none"))
+
+  (doseq [action [:init :refresh-html-colors :resize]]
+    (all-pages-action action))
 
   (refresh-html-colors)
 

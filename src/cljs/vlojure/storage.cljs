@@ -243,6 +243,11 @@
                   #(vec (rest %)))
     (load-project 0)))
 
+(defn fill-empty-project []
+  (when (zero? (count (:children (project-attr :form))))
+    (set-project-attr! :form
+                       (vedn/clj->vedn "nil"))))
+
 (defn project-form-count []
   (count (:children (project-attr :form))))
 
