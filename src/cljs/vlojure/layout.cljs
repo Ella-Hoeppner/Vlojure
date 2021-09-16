@@ -50,7 +50,7 @@
       (graphics/circle layout
                        (:foreground (storage/color-scheme))
                        layer))
-    (when (#{:map :lit-fn} (:type layout))
+    (when (#{:map :set} (:type layout))
       (let [r (:radius layout)]
         (doseq [base-angle [(* geom/PI 0.25)
                             (* geom/PI 0.75)
