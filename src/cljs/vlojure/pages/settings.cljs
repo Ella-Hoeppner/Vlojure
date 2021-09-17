@@ -4,10 +4,7 @@
             [vlojure.util :as u]
             [vlojure.formbar :as formbar]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]
-            [vlojure.vedn :as vedn]
-            [vlojure.evaluation :as evaluation]
-            [clojure.string :as string]))
+            [vlojure.constants :as constants]))
 
 (defonce dropdown-element (atom nil))
 (defonce rename-element (atom nil))
@@ -777,7 +774,7 @@
                             :settings-overlay))))))
 
    :update
-   (fn [delta]
+   (fn [delta mouse]
      (swap! ideal-scroll-pos
             #(max 0
                   (min constants/settings-pages

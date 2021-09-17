@@ -3,7 +3,8 @@
             [vlojure.storage :as storage]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]))
+            [vlojure.constants :as constants]
+            [vlojure.vedn :as vedn]))
 
 (defn form-layout [form starting-layout]
   (let [current-layout starting-layout
@@ -258,3 +259,66 @@
   (doseq [sublayout (flatten-layout layout)]
     (render-layout sublayout layer)))
 
+(defn shift-layout [layout offset]
+  (-> layout
+      (geom/add-points offset)
+      (update :sublayouts
+              (fn [sublayouts]
+                (mapv #(shift-layout % offset)
+                      sublayouts)))))
+
+(defn expand-layout [layout radius-factor]
+  ((fn f [inner-layout]
+     (-> inner-layout
+         (update :radius
+                 (partial * radius-factor))
+         (merge (select-keys (geom/add-points layout
+                                              (geom/scale-point (geom/subtract-points inner-layout
+                                                                                      layout)
+                                                                radius-factor))
+                             [:x :y]))
+         (update :sublayouts
+                 #(mapv f %))))
+   layout))
+
+(defn adjust-layout [layout pos zoom]
+  (-> layout
+      (update :x #(* zoom (+ % (:x pos))))
+      (update :y #(* zoom (+ % (:y pos))))
+      (update :radius (partial * zoom))
+      (update :sublayouts
+              (fn [sub]
+                (when sub
+                  (mapv #(adjust-layout % pos zoom)
+                        sub))))))
+
+(defn map-layout [layout from to]
+  ((fn f [layout {:keys [x y] :as offset} radius-change-factor]
+     (let []
+       (-> layout
+           (update :x #(+ x (* % radius-change-factor)))
+           (update :y #(+ y (* % radius-change-factor)))
+           (update :radius (partial * radius-change-factor))
+           (update :sublayouts
+                   (fn [sub]
+                     (when sub
+                       (mapv #(f %
+                                 offset
+                                 radius-change-factor)
+                             sub)))))))
+   layout
+   (geom/subtract-points (geom/subtract-points to (geom/scale-point geom/unit (:radius to)))
+                         (geom/subtract-points from (geom/scale-point geom/unit (:radius from))))
+   (/ (:radius to) (:radius from))))
+
+(defn get-sublayout [layout path]
+  (if (empty? path)
+    layout
+    (get-sublayout (nth (:sublayouts layout)
+                        (first path))
+                   (rest path))))
+
+(defn layout-path-encapsulated? [layout path]
+  (boolean
+   (u/in? vedn/encapsulator-types
+          (:type (get-sublayout layout (butlast path))))))
