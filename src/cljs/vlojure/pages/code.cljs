@@ -298,7 +298,9 @@
                       "px"))))))
 
    :refresh-html-colors
-   (fn [])
+   (fn []
+     (set! (.-color (.-style @literal-text-input))
+           (graphics/html-color (:text (storage/color-scheme)))))
 
    :mouse-zone
    (fn [mouse]
