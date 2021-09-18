@@ -6,7 +6,7 @@
             [vlojure.vedn :as vedn]))
 
 (defonce input-element (atom nil))
-(defonce current-text-validity (atom false))
+(defonce current-text-validity (atom true))
 
 
 
