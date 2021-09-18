@@ -18,13 +18,16 @@
                               ["/base.js"
                                "/manifest.edn"])
           (assets/load-assets "public"
-                              [#"\/bootstrap\/.*"])))
+                              ["/favicon.png"
+                               #"\/bootstrap\/.*"])))
 
 (def pages
   {"/index.html" (html {:lang "en"}
                        [:head
                         [:meta {:charset "utf-8"}]
-                        (include-css "main.css")]
+                        (include-css "main.css")
+                        [:title "Vlojure"]
+                        [:link {:rel "icon" :href "/favicon.png"}]]
                        [:body
                         [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]
                         #_(include-js "base.js")])
