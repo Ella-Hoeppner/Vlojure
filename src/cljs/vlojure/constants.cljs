@@ -1,7 +1,7 @@
 (ns vlojure.constants
   (:require [vlojure.vedn :as vedn]))
 
-(def char-escape-sting {\newline "\\n" \tab "\\t" \return "\\r" \" "\\\"" \\ "\\\\" \formfeed "\\f" \backspace "\\b"})
+(def char-escape-string {\newline "\\n" \tab "\\t" \return "\\r" \" "\\\"" \\ "\\\\" \formfeed "\\f" \backspace "\\b"})
 
 (def color-schemes
   [{:name "Espresso"

@@ -223,7 +223,7 @@
                                          (vedn/clj->vedn
                                           (if (string? result)
                                             (str \"
-                                                 (string/escape result constants/char-escape-sting)
+                                                 (string/escape result constants/char-escape-string)
                                                  \")
                                             (str result))))))))
 
