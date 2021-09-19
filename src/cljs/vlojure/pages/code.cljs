@@ -756,15 +756,14 @@
 
            nil)
          (case (:down-zone mouse)
-
            :program
            (let [zoomed-form (vedn/get-child (storage/project-attr :form) down-path)
                  {:keys [type value]} zoomed-form]
              (if (= type :literal)
                (activate-literal-text-input down-path)
                (do
-                 (reset! @ideal-scroll-pos (first down-path))
-                 (reset! @selected-layout-path down-path)))
+                 (reset! ideal-scroll-pos (first down-path))
+                 (reset! selected-layout-path down-path)))
              (when (not= down-path @literal-text-input-path)
                (hide-literal-text-input)))
 
