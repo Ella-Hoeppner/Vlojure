@@ -5,6 +5,12 @@
             [vlojure.geometry :as geom]
             [vlojure.vedn :as vedn]))
 
+;;; This file contains the logic for the "text" page. This page shows the user
+;;; the code for their current project in text form, rather than the visual
+;;; form that is normally displayed in the main "code" page. Here the player
+;;; can edit their code in text form, or copy the code to move it to an
+;;; external location.
+
 (defonce input-element (atom nil))
 (defonce current-text-validity (atom true))
 

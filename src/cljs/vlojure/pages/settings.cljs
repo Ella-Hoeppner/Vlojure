@@ -6,6 +6,11 @@
             [vlojure.geometry :as geom]
             [vlojure.constants :as constants]))
 
+;;; This file contains the logic for the "settings" page. This page lets the
+;;; user create and delete projects as well as renaming and switching between
+;;; them, adjust the color scheme and different aspects of the app's visual
+;;; appearance, and add or remove formbars for the current project.
+
 (defonce dropdown-element (atom nil))
 (defonce rename-element (atom nil))
 (defonce ideal-scroll-pos (atom 0))

@@ -10,6 +10,12 @@
             [vlojure.evaluation :as evaluation]
             [clojure.string :as string]))
 
+;;; This file contains the logic for the "code" page, which is the main page
+;;; of the app. This is the page which loads when the player first opens
+;;; Vlojure, and is the page in which they are intended to the majority of
+;;; their code editing. This file defines the graphics and user interface
+;;; for the code page.
+
 (defonce literal-text-input (atom nil))
 (defonce literal-text-input-path (atom nil))
 (defonce ideal-scroll-pos (atom 0))
@@ -102,30 +108,6 @@
                         (conj sub-path i))))
                   (range (count sublayouts)))
             '())))))
-
-(defn layout-insertion-path-at [layout pos]
-  (when (geom/in-circle? layout pos)
-    (let [{:keys [sublayouts]} layout]
-      (if (empty? sublayouts)
-        '()
-        (or (some (fn [i]
-                    (let [sublayout (nth sublayouts i)
-                          sub-path (layout-insertion-path-at sublayout pos)]
-                      (when sub-path
-                        (conj sub-path i))))
-                  (range (count sublayouts)))
-            (let [sub-count (count sublayouts)
-                  mouse-angle (mod (geom/point-angle (geom/subtract-points pos layout))
-                                   geom/TAU)
-                  upper-angle (* geom/TAU 0.75)
-                  angle-offset (- mouse-angle upper-angle)]
-              (if (< (Math/abs (- mouse-angle upper-angle))
-                     (/ geom/TAU (* 3 sub-count)))
-                (list -1)
-                (list (int (/ (* sub-count
-                                 (mod (- angle-offset)
-                                      geom/TAU))
-                              geom/TAU))))))))))
 
 (defn ideal-camera-pos []
   (geom/scale-point
@@ -393,8 +375,8 @@
                                      :drag)))
        (let [layout-path (layout-path-at (adjusted-form-layouts)
                                          mouse)
-             insertion-path (layout-insertion-path-at (adjusted-form-layouts)
-                                                      mouse)
+             insertion-path (layout/layout-insertion-path-at (adjusted-form-layouts)
+                                                              mouse)
              literal? (and (= (count layout-path) (count insertion-path))
                            (= :literal (:type (vedn/get-child (storage/project-attr :form)
                                                               insertion-path))))
@@ -701,7 +683,7 @@
        (if (:dragging? mouse)
          (case mouse-zone
            :program
-           (let [insertion-path (layout-insertion-path-at layout mouse)
+           (let [insertion-path (layout/layout-insertion-path-at layout mouse)
                  current-placement-form (placement-form mouse)]
              (when current-placement-form
                (storage/update-project-attr! :form

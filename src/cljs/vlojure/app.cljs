@@ -13,6 +13,11 @@
             [vlojure.pages.settings :as settings-page]
             [vlojure.pages.code :as code-page]))
 
+;;; This file defines the core logic of the app that is common between the
+;;; different pages. The logic specific to the code page, the settings page,
+;;; and the text page are defined in the /pages/ directory. This file ties
+;;; together the pages and provides functionality for dealing with user input.
+
 (def pages
   {:text text-page/page
    :settings settings-page/page

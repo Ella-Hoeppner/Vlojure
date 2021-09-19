@@ -322,3 +322,27 @@
   (boolean
    (u/in? vedn/encapsulator-types
           (:type (get-sublayout layout (butlast path))))))
+
+(defn layout-insertion-path-at [layout pos]
+  (when (geom/in-circle? layout pos)
+    (let [{:keys [sublayouts]} layout]
+      (if (empty? sublayouts)
+        '()
+        (or (some (fn [i]
+                    (let [sublayout (nth sublayouts i)
+                          sub-path (layout-insertion-path-at sublayout pos)]
+                      (when sub-path
+                        (conj sub-path i))))
+                  (range (count sublayouts)))
+            (let [sub-count (count sublayouts)
+                  mouse-angle (mod (geom/point-angle (geom/subtract-points pos layout))
+                                   geom/TAU)
+                  upper-angle (* geom/TAU 0.75)
+                  angle-offset (- mouse-angle upper-angle)]
+              (if (< (Math/abs (- mouse-angle upper-angle))
+                     (/ geom/TAU (* 3 sub-count)))
+                (list -1)
+                (list (int (/ (* sub-count
+                                 (mod (- angle-offset)
+                                      geom/TAU))
+                              geom/TAU))))))))))
