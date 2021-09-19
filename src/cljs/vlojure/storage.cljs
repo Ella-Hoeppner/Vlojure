@@ -6,6 +6,11 @@
             [clojure.edn :as edn]
             [clojure.string :as string]))
 
+;;; This file defines ways of interacting with browsers' local storage, which
+;;; allows a user's code and preferences to be saved once the page is closed.
+;;; All of a user's projects and settings are saved in local storage, and can
+;;; be accessed and modified using the functions defined in this file.
+
 (def storage js/window.localStorage)
 
 (defonce app-state (atom {}))

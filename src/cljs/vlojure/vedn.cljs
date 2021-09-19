@@ -2,6 +2,11 @@
   (:require [vlojure.util :as u]
             [clojure.set :as sets]))
 
+;;; This file defines an edn/clj(s) reader that creates "vedn" ("visual edn")
+;;; objects. The most important functions in this file are "clj->vedn" and
+;;; "vedn->clj", which can be used to convert clojure(script) code to vedn
+;;; and vice versa, respectively.
+
 (def whitespace-characters #{" " "\t" "\n" \,})
 
 (def encapsulators ["'"
@@ -305,6 +310,3 @@
                        children
                        (conj (repeat false) true)))
            (type->closer type)))))
-
-#_
-(vedn/clj->vedn "'[1 #_'(3 4) 2]")

@@ -3,7 +3,6 @@
             [cljs.env :as env]
             [shadow.cljs.bootstrap.browser :as shadow.bootstrap]))
 
-;; Set up eval environment
 (defonce c-state (cljs/empty-state))
 (defonce !eval-ready? (atom false))
 

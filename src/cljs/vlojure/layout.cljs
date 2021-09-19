@@ -6,6 +6,11 @@
             [vlojure.constants :as constants]
             [vlojure.vedn :as vedn]))
 
+;;; This file defines functionality for rendering and interacting with
+;;; layouts. A "layout" is a structure that defines the size and location of
+;;; the elements within a ClojureScript expression. Layouts are displayed in
+;;; the body of the "code" page, and also within formbars.
+
 (defn form-layout [form starting-layout]
   (let [current-layout starting-layout
         {:keys [type value children]} form]

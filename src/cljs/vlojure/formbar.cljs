@@ -6,6 +6,12 @@
             [vlojure.constants :as constants]
             [vlojure.layout :as layout]))
 
+;;; This file defines functionality for rendering and interacting with
+;;; formbars. Formbars are displayed on the sides of the screen when the user
+;;; is on the code page. The user can drag forms to and from the formbar to
+;;; edit their programs, and remove forms from the formbar by dragging them
+;;; into the discard corner.
+
 (defn formbar-offset [index]
   (+ (* (storage/formbar-radius)
         (inc constants/formbar-pos))
