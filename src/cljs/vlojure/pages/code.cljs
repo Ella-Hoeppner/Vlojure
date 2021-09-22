@@ -203,10 +203,16 @@
                                        (first
                                         (:children
                                          (vedn/clj->vedn
-                                          (if (string? result)
+                                          (cond
+                                            (string? result)
                                             (str \"
                                                  (string/escape result constants/char-escape-string)
                                                  \")
+
+                                            (fn? result)
+                                            (apply str (rest (butlast (str [result]))))
+
+                                            :else
                                             (str result))))))))
 
 (defn log-eval-error [error]

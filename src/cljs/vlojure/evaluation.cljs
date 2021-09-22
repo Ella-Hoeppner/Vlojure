@@ -14,9 +14,9 @@
             (if (:error x)
               (failure-callback (:error x))
               (success-callback (:value x))))]
-    (cljs/eval-str c-state 
-                  (str source)
-                   "[test]"
+    (cljs/eval-str c-state
+                   (str source)
+                   nil
                    options f)))
 
 (defn init []
