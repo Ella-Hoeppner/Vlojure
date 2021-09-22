@@ -30,6 +30,8 @@
 (def encapsulator->type (zipmap encapsulators
                                 encapsulator-types))
 
+(def type->encapsulator (sets/map-invert encapsulator->type))
+
 (def opener->type {"(" :list
                    "[" :vector
                    "{" :map
@@ -309,8 +311,11 @@
 
 (defn vedn->clj [form]
   (let [{:keys [type value children]} form]
-    (if (= type :literal)
+    (cond
+      (= type :literal)
       value
+
+      (type->opener type)
       (str (type->opener type)
            (apply str
                   (map (fn [child first?]
@@ -318,4 +323,8 @@
                               (vedn->clj child)))
                        children
                        (conj (repeat false) true)))
-           (type->closer type)))))
+           (type->closer type))
+
+      (type->encapsulator type)
+      (str (type->encapsulator type)
+           (vedn->clj (first children))))))
