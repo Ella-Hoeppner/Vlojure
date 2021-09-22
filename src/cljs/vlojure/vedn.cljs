@@ -87,15 +87,24 @@
                               subtoken-start
                               true))
                      (if special-token
-                       (let [special-token-size (count special-token)]
-                         (recur (+ index special-token-size)
-                                (conj subtokens
-                                      (subs token
-                                            subtoken-start
-                                            index)
-                                      special-token)
-                                (+ index special-token-size)
-                                false))
+                       (if (= (subs token subtoken-start (inc index)) "#object[")
+                         (let [closing-index (some #(when (= (nth token %) \])
+                                                          (inc %))
+                                                       (range index ##Inf))]
+                               (recur closing-index
+                                      (conj subtokens
+                                            (subs token subtoken-start closing-index))
+                                      closing-index
+                                      false))
+                         (let [special-token-size (count special-token)]
+                           (recur (+ index special-token-size)
+                                  (conj subtokens
+                                        (subs token
+                                              subtoken-start
+                                              index)
+                                        special-token)
+                                  (+ index special-token-size)
+                                  false)))
                        (if (and (= (nth token index) \#)
                                 (= (first (subs token (inc index))) \"))
                          (recur (+ 2 index)
