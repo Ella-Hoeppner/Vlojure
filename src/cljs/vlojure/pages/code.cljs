@@ -637,7 +637,7 @@
    (fn [delta mouse mouse-zone]
      (swap! ideal-scroll-pos
             #(max 0
-                  (min constants/settings-pages
+                  (min (count (:children (storage/project-attr :form)))
                        %)))
      (when @scroll-pos
        (swap! scroll-pos
