@@ -79,8 +79,10 @@
 (def formbar-spacing 1.1)
 (def formbar-outline-thickness 0.15)
 (def formbar-form-size 0.85)
-(def formbar-placement-offset 0.9)
-(def formbar-placement-size 0.55)
+(def formbar-form-placement-offset 0.9)
+(def formbar-form-placement-size 0.55)
+
+(def formbar-placement-circle-radius 0.075)
 
 (def lower-corner-zone-radius 0.15)
 (def upper-corner-zone-radius 0.075)

@@ -617,19 +617,19 @@
                      (-> bar-arrangement
                          (assoc :radius
                                 (* form-spacing
-                                   constants/formbar-placement-size)))
+                                   constants/formbar-form-placement-size)))
                      (let [horizontal? (#{:top :bottom} screen-side)]
                        (-> bar-arrangement
                            (assoc :radius
                                   (* form-spacing
-                                     constants/formbar-placement-size))
+                                     constants/formbar-form-placement-size))
                            (update (if horizontal? :x :y)
                                    #(+ % (* (- insertion-index 0.5) 2 form-spacing)))
                            (update (if horizontal? :y :x)
                                    #((if (#{:top :left} screen-side) + -)
                                      %
                                      (* form-spacing
-                                        constants/formbar-placement-offset))))))]
+                                        constants/formbar-form-placement-offset))))))]
                (layout/render-sublayouts (layout/form-layout (placement-form mouse) placement-circle)
                                          :formbar)))))))
 

@@ -142,6 +142,158 @@
                     (range (count arrangement)))))
           constants/screen-sides)))
 
+(defn formbar-discard-path-at [pos]
+  (let [full-arrangement (formbar-arrangement)]
+    (some (fn [side]
+            (let [arrangement (get full-arrangement side)
+                  horizontal? (#{:top :bottom} side)]
+              (some (fn [stage-index]
+                      (let [stage (nth arrangement stage-index)]
+                        (some (fn [bar-index]
+                                (let [bar (nth stage bar-index)]
+                                  (when (<= (geom/point-magnitude
+                                             (geom/subtract-points pos
+                                                                   (geom/add-points bar
+                                                                                    (geom/scale-point
+                                                                                     (if horizontal?
+                                                                                       {:x (:width bar)}
+                                                                                       {:y (:height bar)})
+                                                                                     0.5))))
+                                            (* (- 1 constants/formbar-outline-thickness)
+                                               (storage/formbar-radius)))
+                                    [side stage-index bar-index])))
+                              (range (count stage)))))
+                    (range (count arrangement)))))
+          constants/screen-sides)))
+
+(defn formbar-insertion-path-at [pos]
+  (let [arrangement (formbar-arrangement)
+        layer-size (* 2
+                      (storage/formbar-radius)
+                      constants/formbar-spacing)
+        potential-paths
+        (filter identity
+                (mapv (fn [side]
+                        (let [[app-pos app-size] (graphics/app-rect)
+                              side-offset (case side
+                                            :left (- (:x pos)
+                                                     (:x app-pos))
+                                            :right (- (+ (:x app-pos)
+                                                         (:x app-size))
+                                                      (:x pos))
+                                            :top (- (:y pos)
+                                                    (:y app-pos))
+                                            :bottom (- (+ (:y app-pos)
+                                                          (:y app-size))
+                                                       (:y pos)))
+                              layer-index (max 0
+                                               (/ side-offset
+                                                  layer-size))
+                              rounded-layer-index (int layer-index)
+                              side-layers (get arrangement side)
+                              layer-count (count side-layers)]
+                          (when (or (< rounded-layer-index layer-count)
+                                    (and (= rounded-layer-index layer-count)
+                                         (< (mod layer-index 1)
+                                            0.5)))
+                            (let [layer-bars (if (= rounded-layer-index layer-count)
+                                               []
+                                               (nth side-layers rounded-layer-index))
+                                  bar-centers (mapv (fn [bar]
+                                                      (geom/add-points bar
+                                                                       (geom/scale-point
+                                                                        {:x (:width bar)
+                                                                         :y (:height bar)}
+                                                                        0.5)))
+                                                    layer-bars)
+                                  perpendicular-dim (if (#{:top :bottom} side)
+                                                      :x :y)
+                                  perpendicular-pos (get pos perpendicular-dim)
+                                  bar-positions (mapv #(get % perpendicular-dim)
+                                                      bar-centers)
+                                  insertion-index (if (empty? bar-centers)
+                                                    0
+                                                    (or (some #(when (< perpendicular-pos
+                                                                        (nth bar-positions %))
+                                                                 %)
+                                                              (range (count bar-centers)))
+                                                        (count bar-centers)))
+                                  error (cond (empty? layer-bars)
+                                              (Math/abs
+                                               (- perpendicular-pos 0.5))
+
+                                              (= insertion-index 0)
+                                              (let [bar (first layer-bars)]
+                                                (max 0
+                                                     (- (Math/abs (- perpendicular-pos
+                                                                     (get bar perpendicular-dim)))
+                                                        (storage/formbar-radius))))
+
+                                              (>= insertion-index (count layer-bars))
+                                              (let [bar (last layer-bars)]
+                                                (max 0
+                                                     (- (Math/abs (- perpendicular-pos
+                                                                     (get bar perpendicular-dim)))
+                                                        (+ (storage/formbar-radius)
+                                                           (max (:width bar)
+                                                                (:height bar))))))
+
+                                              :else 0)]
+                              {:path [side
+                                      rounded-layer-index
+                                      insertion-index]
+                               :error error}))))
+                      constants/screen-sides))
+        min-error (apply min
+                         (mapv :error potential-paths))]
+    (some #(when (= min-error (:error %))
+             (:path %))
+          potential-paths)))
+
+(defn formbar-insertion-circle [path]
+  (let [[app-pos app-size] (graphics/app-rect)
+        arrangement (formbar-arrangement)
+        layer-path (take 2 path)
+        [bar-side layer-index bar-index] path
+        layer (get-in arrangement layer-path)
+        layer-count (count layer)]
+    (assoc (if (empty? layer)
+             (geom/add-points app-pos
+                              (let [outer-layer-spacing (* 2
+                                                           (storage/formbar-radius)
+                                                           (+ 0.5 layer-index)
+                                                           constants/formbar-spacing)]
+                                (case bar-side
+                                  :left (-> app-size
+                                            (update :y (partial * 0.5))
+                                            (assoc :x outer-layer-spacing))
+                                  :right (-> app-size
+                                             (update :y (partial * 0.5))
+                                             (update :x
+                                                     #(- % outer-layer-spacing)))
+                                  :top (-> app-size
+                                           (update :x (partial * 0.5))
+                                           (assoc :y outer-layer-spacing))
+                                  :bottom (-> app-size
+                                              (update :x (partial * 0.5))
+                                              (update :y
+                                                      #(- % outer-layer-spacing))))))
+             (let [vertical? (#{:left :right} bar-side)
+                   start-offset (* (storage/formbar-radius)
+                                   (inc constants/formbar-spacing)
+                                   0.5)]
+               (if (>= bar-index (count layer))
+                 (let [bar (last layer)]
+                   (geom/add-points (select-keys bar [:x :y])
+                                    {:x (:width bar)
+                                     :y (:height bar)}
+                                    {(if vertical? :y :x)
+                                     start-offset}))
+                 (geom/add-points (select-keys (nth layer bar-index) [:x :y])
+                                  {(if vertical? :y :x)
+                                   (- start-offset)}))))
+           :radius constants/formbar-placement-circle-radius)))
+
 (defn new-formbar-circles []
   (let [[app-pos app-size] (graphics/app-rect)
         arrangement (formbar-arrangement)]

@@ -233,6 +233,7 @@
     (update-attr! :mouse
                   (fn [state]
                     (assoc state
+                           :down-pos (select-keys mouse [:x :y])
                            :down? true
                            :down-path (vec layout-path)
                            :down-zone zone
@@ -253,7 +254,8 @@
 
 (defn on-click-up [event]
   (update-mouse-pos event)
-  (let [{:keys [mouse]} @app-state]
+  (let [{:keys [mouse]} @app-state
+        currently-dragging? (mouse-dragging?)]
     (page-action (attr :page)
                  :click-up
                  (assoc mouse :dragging? (mouse-dragging?))
@@ -263,48 +265,75 @@
                     (assoc state
                            :down? false
                            :drag-dist 0)))
-    (let [mouse-zone (get-mouse-zone)]
-      (when-not (:dragging? mouse)
-        (case (:down-zone mouse)
-          :settings-icon
-          (enter-page (case (attr :page)
-                        :code :settings
-                        :code))
+    (if currently-dragging?
+      (when (and (= (attr :page) :settings)
+                 (#{:formbar :formbar-discard} (:down-zone mouse)))
+        (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
+          (when formbar-placement-path
+            (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
+              (when (not (or (= formbar-placement-path
+                                dragged-formbar-path)
+                             (= formbar-placement-path
+                                (update dragged-formbar-path 2 inc))))
+                (let [forms (:forms
+                             (get-in (storage/project-attr :formbars)
+                                     dragged-formbar-path))
+                      create-new! (fn []
+                                    (storage/add-project-formbar-at formbar-placement-path)
+                                    (doseq [index (range (count forms))]
+                                      (let [form (nth forms index)]
+                                        (storage/add-project-formbar-form-at form formbar-placement-path index))))
+                      delete-old! (fn []
+                                    (storage/delete-project-formbar-at dragged-formbar-path))]
+                  (if (and (= (take 2 formbar-placement-path)
+                              (take 2 dragged-formbar-path))
+                           (< (nth formbar-placement-path 2)
+                              (nth dragged-formbar-path 2)))
+                    (do (delete-old!)
+                        (create-new!))
+                    (do (create-new!)
+                        (delete-old!)))))))))
+      (case (:down-zone mouse)
+        :settings-icon
+        (enter-page (case (attr :page)
+                      :code :settings
+                      :code))
 
-          :back-icon
-          (when (text-page/text-valid?)
-            (enter-page :code))
+        :back-icon
+        (when (text-page/text-valid?)
+          (enter-page :code))
 
-          :color-scheme
-          (do (storage/set-attr! :color-scheme (settings-page/color-scheme-index-at mouse))
-              (refresh-html-colors))
+        :color-scheme
+        (do (storage/set-attr! :color-scheme (settings-page/color-scheme-index-at mouse))
+            (refresh-html-colors))
 
-          :text-icon
-          (enter-page :text)
+        :text-icon
+        (enter-page :text)
 
-          :formbar
-          (when (= (attr :page) :settings)
-            (storage/delete-project-formbar-at (formbar/formbar-path-at mouse)))
+        :formbar-discard
+        (storage/delete-project-formbar-at
+         (formbar/formbar-discard-path-at
+          (:down-pos mouse)))
 
-          :new-formbar
-          (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
+        :new-formbar
+        (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
 
-          :new-project
-          (do (storage/new-project)
-              (settings-page/refresh-dropdown-names))
+        :new-project
+        (do (storage/new-project)
+            (settings-page/refresh-dropdown-names))
 
-          :duplicate-project
-          (do (storage/duplicate-project)
-              (settings-page/refresh-dropdown-names))
+        :duplicate-project
+        (do (storage/duplicate-project)
+            (settings-page/refresh-dropdown-names))
 
-          :delete-project
-          (do (storage/delete-project)
-              (settings-page/refresh-dropdown-names))
+        :delete-project
+        (do (storage/delete-project)
+            (settings-page/refresh-dropdown-names))
 
-          :rename-project
-          (settings-page/activate-project-rename-input)
+        :rename-project
+        (settings-page/activate-project-rename-input)
 
-          nil)))))
+        nil))))
 
 (defn init []
   (set-attr! :page :code)

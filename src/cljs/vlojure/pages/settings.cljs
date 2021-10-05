@@ -322,6 +322,9 @@
                  constants/upper-corner-zone-radius)
              :settings-icon
 
+             (formbar/formbar-discard-path-at mouse)
+             :formbar-discard
+
              (formbar/formbar-path-at mouse)
              :formbar
 
@@ -352,7 +355,7 @@
                         (:foreground (storage/color-scheme))
                         :background))
 
-        ;; Sliders
+     ;; Sliders
      (let [center-circle (settings-circle 1)
            center-radius (:radius center-circle)]
        (doseq [slider-index (range (count constants/settings-sliders))]
@@ -396,7 +399,7 @@
                           (:text (storage/color-scheme))
                           :background))))
 
-        ;; Render project dropdown
+     ;; Render project dropdown
      (let [center-circle (settings-circle 0)
            center-radius (:radius center-circle)
            bar-width (* 2 center-radius constants/settings-project-dropdown-width)
@@ -607,7 +610,7 @@
                                     (:background (storage/color-scheme))
                                     :background)))))))))
 
-        ;; Render scroll circle
+     ;; Render scroll circle
      (let [scroll-circle (settings-bar-scroll-circle)
            scroll-direction (storage/attr :scroll-direction)
            triangle-base (geom/add-points scroll-circle
@@ -641,7 +644,7 @@
                          color
                          :background))
 
-        ;; Render color scheme page
+     ;; Render color scheme page
      (let [center-circle (settings-circle 2)
            center-radius (:radius center-circle)]
        (graphics/text "Color Scheme"
@@ -705,7 +708,7 @@
                           :background))))
 
 
-        ;; Render new formbar circles
+     ;; Render new formbar circles
      (doseq [[new-formbar-circle] (formbar/new-formbar-circles)]
        (graphics/circle new-formbar-circle
                         (:highlight (storage/color-scheme))
@@ -721,6 +724,8 @@
                              constants/new-icon-width)
                           (:background (storage/color-scheme))
                           :settings-overlay))))
+
+     ;; Render formbar overlays
      (let [formbar-path (formbar/formbar-path-at mouse)]
        (when formbar-path
          (let [current-formbar-arrangement (formbar/formbar-arrangement)
@@ -763,20 +768,38 @@
                                              constants/new-icon-size
                                              (storage/formbar-radius)))
                  upside-down-offset (update offset :y -)]
+             (graphics/circle (assoc center
+                                     :radius (* (- 1 constants/formbar-outline-thickness)
+                                                (storage/formbar-radius)))
+                              (:background (storage/color-scheme))
+                              :settings-overlay)
              (graphics/line (geom/add-points center
                                              offset)
                             (geom/add-points center
                                              (geom/scale-point offset -1))
                             (* (storage/formbar-radius) constants/new-icon-width)
-                            (:background (storage/color-scheme))
+                            (:highlight (storage/color-scheme))
                             :settings-overlay)
              (graphics/line (geom/add-points center
                                              upside-down-offset)
                             (geom/add-points center
                                              (geom/scale-point upside-down-offset -1))
                             (* (storage/formbar-radius) constants/new-icon-width)
+                            (:highlight (storage/color-scheme))
+                            :settings-overlay)))))
+     (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
+       (when (and formbar-insertion-path
+                  (:down? mouse)
+                  (#{:formbar :formbar-discard}
+                   (:down-zone mouse)))
+         (let [formbar-insertion-circle (formbar/formbar-insertion-circle formbar-insertion-path)]
+           (graphics/circle formbar-insertion-circle
+                            (:foreground (storage/color-scheme))
+                            :settings-overlay)
+           (graphics/circle (update formbar-insertion-circle
+                                    :radius (partial * 0.9))
                             (:background (storage/color-scheme))
-                            :settings-overlay))))))
+                            :settings-overlay)))))
 
    :update
    (fn [delta mouse]
