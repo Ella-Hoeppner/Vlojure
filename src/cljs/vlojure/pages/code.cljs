@@ -245,7 +245,8 @@
 
    :enter
    (fn []
-     (reset! scroll-pos @ideal-scroll-pos))
+     (reset! scroll-pos @ideal-scroll-pos)
+     (reset! camera-pos (ideal-camera-pos)))
 
    :exit
    (fn []
