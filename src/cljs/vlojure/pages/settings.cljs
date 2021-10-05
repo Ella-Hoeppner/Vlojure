@@ -805,7 +805,7 @@
    (fn [delta mouse]
      (swap! ideal-scroll-pos
             #(max 0
-                  (min constants/settings-pages
+                  (min (dec constants/settings-pages)
                        %)))
      (when @scroll-pos
        (swap! scroll-pos
