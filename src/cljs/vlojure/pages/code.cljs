@@ -308,11 +308,7 @@
              constants/upper-corner-zone-radius)
          :text-icon
 
-         (<= (geom/point-magnitude
-              (geom/subtract-points (geom/add-points app-pos
-                                                     (select-keys app-size [:y]))
-                                    mouse))
-             constants/lower-corner-zone-radius)
+         (graphics/in-discard-corner? mouse)
          :discard
 
          (<= (geom/point-magnitude
@@ -462,19 +458,6 @@
        (formbar/render-formbars mouse)
 
        ;; Draw discard circle, icon, and last discarded form
-       (graphics/circle (assoc (geom/add-points app-pos
-                                                (select-keys app-size [:y]))
-                               :radius constants/lower-corner-zone-radius)
-                        (if (= mouse-zone :discard)
-                          (:highlight (storage/color-scheme))
-                          (:foreground (storage/color-scheme)))
-                        :menu)
-       (graphics/circle (assoc (geom/add-points app-pos
-                                                (select-keys app-size [:y]))
-                               :radius (* (- 1 constants/corner-zone-bar-thickness)
-                                          constants/lower-corner-zone-radius))
-                        (:background (storage/color-scheme))
-                        :menu)
        (let [last-discard (first (storage/project-attr :discard-history))
              radius (/ (* (- 1 constants/corner-zone-bar-thickness)
                           constants/lower-corner-zone-radius)
@@ -482,35 +465,14 @@
              base-circle-pos (-> app-pos
                                  (update :y (partial + (- (:y app-size) radius)))
                                  (update :x (partial + radius)))]
-         (if last-discard
+         (graphics/render-discard-zone (= mouse-zone :discard)
+                                       last-discard)
+         (when last-discard
            (layout/render-sublayouts (layout/form-layout last-discard
                                                          (assoc base-circle-pos
                                                                 :radius (* radius
                                                                            constants/discard-zone-form-radius-factor)))
-                                     :menu)
-           (let [angle-offset (geom/scale-point (geom/angle-point (* 0.25 geom/PI))
-                                                (* radius
-                                                   constants/discard-zone-icon-radius-factor))]
-             (graphics/circle (assoc base-circle-pos
-                                     :radius (* radius
-                                                constants/discard-zone-icon-radius-factor))
-                              (:foreground (storage/color-scheme))
-                              :menu)
-             (graphics/circle (assoc base-circle-pos
-                                     :radius (* radius
-                                                constants/discard-zone-icon-radius-factor
-                                                (- 1 constants/discard-zone-icon-thickness)))
-                              (:background (storage/color-scheme))
-                              :menu)
-             (graphics/line (geom/add-points base-circle-pos
-                                             angle-offset)
-                            (geom/subtract-points base-circle-pos
-                                                  angle-offset)
-                            (* radius
-                               (* constants/discard-zone-icon-radius-factor
-                                  constants/discard-zone-icon-thickness))
-                            (:foreground (storage/color-scheme))
-                            :menu))))
+                                     :menu)))
 
        ;; Draw eval circle, icon, and last evaluation result
        (let []

@@ -4,6 +4,7 @@
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as constants]
+            [vlojure.storage :as storage]
             [vlojure.vedn :as vedn]
             [vlojure.evaluation :as evaluation]
             [clojure.string :as string]))
@@ -218,3 +219,57 @@
                (u/log "Font loaded."))))
     
     (resize)))
+
+(defn in-discard-corner? [pos]
+  (let [[app-pos app-size] (app-rect)]
+    (<= (geom/point-magnitude
+         (geom/subtract-points (geom/add-points app-pos
+                                                (select-keys app-size [:y]))
+                               pos))
+        constants/lower-corner-zone-radius)))
+
+(defn render-discard-zone [& [highlighted? blank-symbol?]]
+  (let [[app-pos app-size] (app-rect)]
+    (circle (assoc (geom/add-points app-pos
+                                    (select-keys app-size [:y]))
+                   :radius constants/lower-corner-zone-radius)
+                     (if highlighted?
+                       (:highlight (storage/color-scheme))
+                       (:foreground (storage/color-scheme)))
+                     :menu)
+    (circle (assoc (geom/add-points app-pos
+                                    (select-keys app-size [:y]))
+                   :radius (* (- 1 constants/corner-zone-bar-thickness)
+                              constants/lower-corner-zone-radius))
+            (:background (storage/color-scheme))
+            :menu)
+    (when blank-symbol?
+      (let [radius (/ (* (- 1 constants/corner-zone-bar-thickness)
+                         constants/lower-corner-zone-radius)
+                      (inc (Math/sqrt 2)))
+            base-circle-pos (-> app-pos
+                                (update :y (partial + (- (:y app-size) radius)))
+                                (update :x (partial + radius)))
+            angle-offset (geom/scale-point (geom/angle-point (* 0.25 geom/PI))
+                                           (* radius
+                                              constants/discard-zone-icon-radius-factor))]
+        (circle (assoc base-circle-pos
+                       :radius (* radius
+                                  constants/discard-zone-icon-radius-factor))
+                (:foreground (storage/color-scheme))
+                :menu)
+        (circle (assoc base-circle-pos
+                       :radius (* radius
+                                  constants/discard-zone-icon-radius-factor
+                                  (- 1 constants/discard-zone-icon-thickness)))
+                (:background (storage/color-scheme))
+                :menu)
+        (line (geom/add-points base-circle-pos
+                               angle-offset)
+              (geom/subtract-points base-circle-pos
+                                    angle-offset)
+              (* radius
+                 (* constants/discard-zone-icon-radius-factor
+                    constants/discard-zone-icon-thickness))
+              (:foreground (storage/color-scheme))
+              :menu)))))

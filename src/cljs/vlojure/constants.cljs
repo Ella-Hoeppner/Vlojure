@@ -154,7 +154,7 @@
 (def settings-color-height 0.2)
 (def settings-color-height-factor 0.25)
 
-(def settings-pages 3)
+(def settings-pages 4)
 
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)

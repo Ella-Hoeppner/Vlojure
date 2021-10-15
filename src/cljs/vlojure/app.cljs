@@ -274,7 +274,8 @@
               (when (not (or (= formbar-placement-path
                                 dragged-formbar-path)
                              (= formbar-placement-path
-                                (update dragged-formbar-path 2 inc))))
+                                (update dragged-formbar-path 2 inc))
+                             (graphics/in-discard-corner? mouse)))
                 (let [forms (:forms
                              (get-in (storage/project-attr :formbars)
                                      dragged-formbar-path))
@@ -309,11 +310,6 @@
 
         :text-icon
         (enter-page :text)
-
-        :formbar-discard
-        (storage/delete-project-formbar-at
-         (formbar/formbar-discard-path-at
-          (:down-pos mouse)))
 
         :new-formbar
         (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
