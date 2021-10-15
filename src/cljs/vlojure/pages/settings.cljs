@@ -405,6 +405,80 @@
                           (:text (storage/color-scheme))
                           :background))))
 
+     ;; Render formbar settings page
+     (let [center-circle (settings-circle 0)
+           center-radius (:radius center-circle)]
+       (graphics/text "Formbar Commands"
+                      (-> center-circle
+                          (update :y (partial + (* center-radius constants/settings-special-forms-text-y))))
+                      (* center-radius constants/settings-special-forms-text-size)
+                      (:text (storage/color-scheme))
+                      :background)
+       (graphics/text "Saved Formbars"
+                      (-> center-circle
+                          (update :y (partial + (* center-radius constants/settings-saved-formbars-text-y))))
+                      (* center-radius constants/settings-saved-formbars-text-size)
+                      (:text (storage/color-scheme))
+                      :background)
+       (let [saved-formbar-box-width (* 2 center-radius constants/settings-saved-formbars-box-width)
+             scroll-bar-radius (* center-radius constants/settings-saved-formbars-scroll-radius)
+             special-formbar-count (count constants/special-formbar-types)]
+         (doseq [i (range special-formbar-count)]
+           (graphics/circle (-> center-circle
+                                (update :x (partial + (* center-radius constants/settings-special-forms-radius 2
+                                                         constants/settings-special-forms-spacing
+                                                         (- i (* 0.5 (dec special-formbar-count))))))
+                                (update :y (partial + (* center-radius constants/settings-special-forms-y)))
+                                (assoc :radius (* center-radius constants/settings-special-forms-radius)))
+                            (:background (storage/color-scheme))
+                            :background))
+         (graphics/rect [(-> center-circle
+                             (update :x #(- % (* saved-formbar-box-width 0.5)))
+                             (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y))))
+                         {:x (- saved-formbar-box-width
+                                (+ (* center-radius constants/settings-saved-formbars-scroll-spacing)
+                                   (* 2 scroll-bar-radius)))
+                          :y (* center-radius constants/settings-saved-formbars-box-height)}]
+                        (:background (storage/color-scheme))
+                        :background)
+         (graphics/rect [(-> center-circle
+                             (update :x #(- (+ % (* saved-formbar-box-width 0.5)) (* 2 scroll-bar-radius)))
+                             (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y)
+                                                 scroll-bar-radius)))
+                         {:x (* 2 scroll-bar-radius)
+                          :y (- (* center-radius constants/settings-saved-formbars-box-height)
+                                (* 2 scroll-bar-radius))}]
+                        (:background (storage/color-scheme))
+                        :background)
+         (graphics/circle (-> center-circle
+                              (update :x #(- (+ % scroll-bar-radius (* saved-formbar-box-width 0.5))
+                                             (* 2 scroll-bar-radius)))
+                              (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y)
+                                                  scroll-bar-radius))
+                              (assoc :radius scroll-bar-radius))
+                          (:background (storage/color-scheme))
+                          :background)
+         (graphics/circle (-> center-circle
+                              (update :x #(- (+ % scroll-bar-radius (* saved-formbar-box-width 0.5))
+                                             (* 2 scroll-bar-radius)))
+                              (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y)
+                                                  scroll-bar-radius))
+                              (assoc :radius (* scroll-bar-radius
+                                                constants/settings-slider-inner-radius-factor)))
+                          (:foreground (storage/color-scheme))
+                          :background)
+         (graphics/circle (-> center-circle
+                              (update :x #(- (+ % scroll-bar-radius (* saved-formbar-box-width 0.5))
+                                             (* 2 scroll-bar-radius)))
+                              (update :y (partial +
+                                                  (* center-radius constants/settings-saved-formbars-box-y)
+                                                  scroll-bar-radius
+                                                  (- (* center-radius constants/settings-saved-formbars-box-height)
+                                                     (* 2 scroll-bar-radius))))
+                              (assoc :radius scroll-bar-radius))
+                          (:background (storage/color-scheme))
+                          :background)))
+
      ;; Render project dropdown
      (let [center-circle (settings-circle 1)
            center-radius (:radius center-circle)
