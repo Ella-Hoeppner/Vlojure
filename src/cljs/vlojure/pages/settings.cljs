@@ -44,7 +44,7 @@
 
 (defn settings-button-circles []
   (vec
-   (let [center-circle (settings-circle 1)
+   (let [center-circle (settings-circle constants/settings-project-selector-page)
          center-radius (:radius center-circle)
          bar-width (* 2 center-radius constants/settings-project-dropdown-width)
          button-radius (* bar-width constants/settings-project-button-radius)
@@ -78,28 +78,28 @@
 
 (defn settings-slider-at [pos]
   (some (fn [index]
-          (let [settings-circle (settings-circle 2)
-                left (-> settings-circle
+          (let [slider-settings-circle (settings-circle constants/settings-sliders-page)
+                left (-> slider-settings-circle
                          (update :radius (partial * constants/settings-slider-radius))
-                         (update :x #(- % (* (:radius settings-circle)
+                         (update :x #(- % (* (:radius slider-settings-circle)
                                              constants/settings-slider-width)))
                          (update :y (partial +
-                                             (* (:radius settings-circle)
+                                             (* (:radius slider-settings-circle)
                                                 (+ constants/settings-top-slider-y
                                                    (* constants/settings-slider-spacing index))))))
-                right (-> settings-circle
+                right (-> slider-settings-circle
                           (update :radius (partial * constants/settings-slider-radius))
                           (update :x (partial +
-                                              (* (:radius settings-circle)
+                                              (* (:radius slider-settings-circle)
                                                  constants/settings-slider-width)))
                           (update :y (partial +
-                                              (* (:radius settings-circle)
+                                              (* (:radius slider-settings-circle)
                                                  (+ constants/settings-top-slider-y
                                                     (* constants/settings-slider-spacing index))))))
-                slider-rect [(update left :y #(- % (* (:radius settings-circle)
+                slider-rect [(update left :y #(- % (* (:radius slider-settings-circle)
                                                       constants/settings-slider-radius)))
                              {:x (apply - (map :x [right left]))
-                              :y (* 2 (:radius settings-circle)
+                              :y (* 2 (:radius slider-settings-circle)
                                     constants/settings-slider-radius)}]]
             (when (or (geom/in-circle? right
                                        pos)
@@ -112,7 +112,7 @@
 
 (defn color-scheme-index-at [pos]
   (if (on-stage? 3)
-    (let [center-circle (settings-circle 3)
+    (let [center-circle (settings-circle constants/settings-color-scheme-page)
           center-radius (:radius center-circle)]
       (some (fn [index]
               (let [y (* center-radius
@@ -227,7 +227,7 @@
            dropdown @dropdown-element
            rename @rename-element]
        (when dropdown
-         (let [{:keys [x y radius]} (settings-circle 1)
+         (let [{:keys [x y radius]} (settings-circle constants/settings-project-selector-page)
                dropdown-width (* current-size
                                  radius
                                  constants/settings-project-dropdown-width)
@@ -263,7 +263,7 @@
                  (str new-text-size
                       "px"))))
        (when rename
-         (let [{:keys [x y radius]} (settings-circle 1)
+         (let [{:keys [x y radius]} (settings-circle constants/settings-project-selector-page)
                dropdown-width (* current-size
                                  radius
                                  constants/settings-project-dropdown-width)
@@ -362,7 +362,7 @@
                         :background))
 
      ;; Sliders
-     (let [center-circle (settings-circle 2)
+     (let [center-circle (settings-circle constants/settings-sliders-page)
            center-radius (:radius center-circle)]
        (doseq [slider-index (range (count constants/settings-sliders))]
          (let [[slider-name slider-key] (nth constants/settings-sliders slider-index)
@@ -406,7 +406,7 @@
                           :background))))
 
      ;; Render formbar settings page
-     (let [center-circle (settings-circle 0)
+     (let [center-circle (settings-circle constants/settings-saved-formbars-page)
            center-radius (:radius center-circle)]
        (graphics/text "Formbar Commands"
                       (-> center-circle
@@ -480,7 +480,7 @@
                           :background)))
 
      ;; Render project dropdown
-     (let [center-circle (settings-circle 1)
+     (let [center-circle (settings-circle constants/settings-project-selector-page)
            center-radius (:radius center-circle)
            bar-width (* 2 center-radius constants/settings-project-dropdown-width)
            bar-height (* center-radius constants/settings-project-dropdown-height)]
@@ -725,7 +725,7 @@
                          :background))
 
      ;; Render color scheme page
-     (let [center-circle (settings-circle 3)
+     (let [center-circle (settings-circle constants/settings-color-scheme-page)
            center-radius (:radius center-circle)]
        (graphics/text "Color Scheme"
                       (-> center-circle

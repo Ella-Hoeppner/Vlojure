@@ -170,6 +170,11 @@
 
 (def settings-pages 4)
 
+(def settings-saved-formbars-page 0)
+(def settings-project-selector-page 1)
+(def settings-sliders-page 2)
+(def settings-color-scheme-page 3)
+
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)
 (def settings-button-line-width 0.1)
