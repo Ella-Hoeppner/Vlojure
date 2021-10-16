@@ -160,7 +160,7 @@
     (let [{:keys [mouse page]} @app-state]
       (when (:down? mouse)
         (when (= (:down-zone mouse) :settings-slider)
-          (let [settings-circle (settings-page/settings-circle 1)
+          (let [settings-circle (settings-page/settings-circle constants/settings-sliders-page)
                 x-off (apply - (map :x [mouse settings-circle]))
                 adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))]
             (storage/set-attr! (second
@@ -175,7 +175,7 @@
                              (geom/angle-point
                               (let [raw-angle (mod (geom/point-angle
                                                     (geom/subtract-points mouse
-                                                                          (settings-page/settings-circle 1)))
+                                                                          (settings-page/settings-circle constants/settings-project-selector-page)))
                                                    geom/TAU)
                                     snap-angle (some (fn [angle]
                                                        (when (< (min (Math/abs (- angle raw-angle))

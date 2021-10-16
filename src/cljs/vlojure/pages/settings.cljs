@@ -111,7 +111,7 @@
         (range (count constants/settings-sliders))))
 
 (defn color-scheme-index-at [pos]
-  (if (on-stage? 3)
+  (if (on-stage? constants/settings-color-scheme-page)
     (let [center-circle (settings-circle constants/settings-color-scheme-page)
           center-radius (:radius center-circle)]
       (some (fn [index]
@@ -240,7 +240,7 @@
            (set! (.-display style)
                  (if (and (= (.-display (.-style rename))
                              "none")
-                          (on-stage? 1))
+                          (on-stage? constants/settings-project-selector-page))
                    "block"
                    "none"))
            (set! (.-left style)
@@ -273,7 +273,7 @@
                                 constants/settings-project-name-size
                                 radius)
                style (.-style rename)]
-           (when (and (not (on-stage? 1))
+           (when (and (not (on-stage? constants/settings-project-selector-page))
                       (= (.-display (.-style rename))
                          "block"))
              (refresh-dropdown-names)
@@ -309,7 +309,7 @@
    (fn [mouse]
      (let [[app-pos app-size] (graphics/app-rect)
            button-circles (settings-button-circles)]
-       (or (when (on-stage? 1)
+       (or (when (on-stage? constants/settings-project-selector-page)
              (some (fn [index]
                      (when (geom/in-circle? (nth button-circles index)
                                             mouse)
@@ -337,11 +337,11 @@
              (formbar/new-formbar-circle-path-at mouse)
              :new-formbar
 
-             (and (on-stage? 2)
+             (and (on-stage? constants/settings-sliders-page)
                   (geom/in-circle? (settings-bar-scroll-circle) mouse))
              :scroll-circle
 
-             (and (on-stage? 2)
+             (and (on-stage? constants/settings-sliders-page)
                   (settings-slider-at mouse))
              :settings-slider
 
@@ -526,7 +526,7 @@
                       (* center-radius constants/settings-project-text-size)
                       (:text (storage/color-scheme))
                       :background)
-       (when (not (on-stage? 1))
+       (when (not (on-stage? constants/settings-project-selector-page))
          (graphics/text (storage/project-attr :name)
                         (-> center-circle
                             (update :y (partial + (* center-radius
