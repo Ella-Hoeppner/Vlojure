@@ -68,7 +68,7 @@
                       (inc constants/settings-project-buttons-x-spacing))))))))
 
 (defn settings-bar-scroll-circle []
-  (let [center-circle (settings-circle 2)]
+  (let [center-circle (settings-circle constants/settings-sliders-page)]
     (update (geom/add-points center-circle
                              (geom/scale-point (storage/attr :scroll-direction)
                                                (* (:radius center-circle)
