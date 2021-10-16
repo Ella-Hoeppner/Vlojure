@@ -13,7 +13,7 @@
 
 (defonce dropdown-element (atom nil))
 (defonce rename-element (atom nil))
-(defonce ideal-scroll-pos (atom 1))
+(defonce ideal-scroll-pos (atom constants/settings-default-scroll-pos))
 (defonce scroll-pos (atom nil))
 
 
@@ -405,15 +405,41 @@
                           (:text (storage/color-scheme))
                           :background))))
 
-     ;; Render formbar settings page
-     (let [center-circle (settings-circle constants/settings-saved-formbars-page)
+     ;; Render formbar command page
+     (let [center-circle (settings-circle constants/settings-formbar-commands-page)
            center-radius (:radius center-circle)]
        (graphics/text "Formbar Commands"
                       (-> center-circle
-                          (update :y (partial + (* center-radius constants/settings-special-forms-text-y))))
-                      (* center-radius constants/settings-special-forms-text-size)
+                          (update :y (partial + (* center-radius constants/settings-formbar-command-text-y))))
+                      (* center-radius constants/settings-formbar-command-text-size)
                       (:text (storage/color-scheme))
                       :background)
+       (let [formbar-command-count (count constants/settings-formbar-command-types)]
+         (doseq [i (range formbar-command-count)]
+           (let [x (mod i constants/settings-formbar-commands-per-row)
+                 y (quot i constants/settings-formbar-commands-per-row)]
+             (graphics/circle (-> center-circle
+                                  (update :x (partial + (* center-radius
+                                                           constants/settings-formbar-command-radius
+                                                           2
+                                                           constants/settings-formbar-command-x-spacing
+                                                           (- x
+                                                              (* 0.5 (dec constants/settings-formbar-commands-per-row))))))
+                                  (update :y (partial +
+                                                      (* center-radius
+                                                         constants/settings-formbar-command-y)
+                                                      (* y
+                                                         center-radius
+                                                         constants/settings-formbar-command-radius
+                                                         2
+                                                         constants/settings-formbar-command-y-spacing)))
+                                  (assoc :radius (* center-radius constants/settings-formbar-command-radius)))
+                              (:background (storage/color-scheme))
+                              :background)))))
+     
+     ;; Render saved formbar page
+     (let [center-circle (settings-circle constants/settings-saved-formbars-page)
+           center-radius (:radius center-circle)]
        (graphics/text "Saved Formbars"
                       (-> center-circle
                           (update :y (partial + (* center-radius constants/settings-saved-formbars-text-y))))
@@ -421,17 +447,7 @@
                       (:text (storage/color-scheme))
                       :background)
        (let [saved-formbar-box-width (* 2 center-radius constants/settings-saved-formbars-box-width)
-             scroll-bar-radius (* center-radius constants/settings-saved-formbars-scroll-radius)
-             special-formbar-count (count constants/special-formbar-types)]
-         (doseq [i (range special-formbar-count)]
-           (graphics/circle (-> center-circle
-                                (update :x (partial + (* center-radius constants/settings-special-forms-radius 2
-                                                         constants/settings-special-forms-spacing
-                                                         (- i (* 0.5 (dec special-formbar-count))))))
-                                (update :y (partial + (* center-radius constants/settings-special-forms-y)))
-                                (assoc :radius (* center-radius constants/settings-special-forms-radius)))
-                            (:background (storage/color-scheme))
-                            :background))
+             scroll-bar-radius (* center-radius constants/settings-saved-formbars-scroll-radius)]
          (graphics/rect [(-> center-circle
                              (update :x #(- % (* saved-formbar-box-width 0.5)))
                              (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y))))
