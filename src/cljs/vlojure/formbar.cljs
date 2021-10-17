@@ -337,17 +337,11 @@
           circles)))
 
 (defn saved-formbar-contents []
-  ;; This is a placeholder. Needs to be replaced with a value pulled from storage
-  [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "/"} {:type :literal, :value "/"}]
-   [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
-    {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]
-   [{:type :literal, :value "+"}]
-   [{:type :literal, :value "+"}]
-   [{:type :literal, :value "+"}]
-   [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
-    {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]
-   [{:type :literal, :value "+"}]
-   [{:type :literal, :value "+"}]])
+  (storage/attr :saved-formbars))
+
+(defn delete-saved-formbar! [index]
+  (storage/update-attr! :saved-formbars
+                        #(u/vector-remove % index)))
 
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)

@@ -391,7 +391,7 @@
                    (range (count button-circles))))
            (cond
              (and (:down? mouse)
-                  (#{:formbar}
+                  (#{:formbar :saved-formbar}
                    (:down-zone mouse))
                   (graphics/in-discard-corner? mouse))
              :discard
@@ -1084,6 +1084,13 @@
    (fn [mouse mouse-zone]
      (cond
        (= mouse-zone :discard)
-       (storage/delete-project-formbar-at
-        (formbar/formbar-path-at
-         (:down-pos mouse)))))})
+       (case (:down-zone mouse)
+         :formbar (storage/delete-project-formbar-at
+                   (formbar/formbar-path-at
+                    (:down-pos mouse)))
+         
+         :saved-formbar (do (prn "pre")
+                            (prn (formbar/delete-saved-formbar!
+                                  (saved-formbar-index-at (:down-pos mouse))))
+                            (prn "post"))
+         nil)))})

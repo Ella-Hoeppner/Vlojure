@@ -263,6 +263,10 @@
    {:active-project 0
     :color-scheme 0
     :scroll-direction {:x 1}
+    :saved-formbars [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "mod"}]
+                     [{:type :literal, :value "Math/sin"} {:type :literal, :value "Math/cos"} {:type :literal, :value "Math/tan"} {:type :literal, :value "Math/pow"}]
+                     [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
+                      {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]]
     :projects [{:name "Calculator"
 
                 :form
