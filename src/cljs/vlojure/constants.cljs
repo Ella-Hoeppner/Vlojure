@@ -39,7 +39,7 @@
 
 (def screen-sides [:bottom :right :top :left])
 
-(def ui-layers [:background :program :drag-forms :formbar :menu :drag :settings-overlay])
+(def ui-layers [:background :program :program-overlay :formbar :menu :drag :settings-overlay])
 
 (def subform-shrink-factor 0.95)
 (def sole-subform-shrink-factor 0.75)

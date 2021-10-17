@@ -419,7 +419,7 @@
                                   placement-pos
                                   constants/drag-cursor-line-width
                                   (:highlight (storage/color-scheme))
-                                  :drag-forms)
+                                  :program-overlay)
                    (let [base-sublayout (layout/form-layout (placement-form mouse)
                                                             (assoc geom/origin :radius 1))]
                      (if literal?
@@ -427,14 +427,14 @@
                                                                        (geom/scale-point sublayout
                                                                                          (/ (:radius sublayout)))
                                                                        (:radius sublayout))
-                                                 :drag-forms)
+                                                 :program-overlay)
                        (if layout-encapsulated?
                          (let [encapsulated-sublayout (layout/get-sublayout (adjusted-form-layouts) layout-path)]
                            (layout/render-sublayouts (layout/adjust-layout base-sublayout
                                                                            (geom/scale-point encapsulated-sublayout
                                                                                              (/ (:radius encapsulated-sublayout)))
                                                                            (:radius encapsulated-sublayout))
-                                                     :drag-forms))
+                                                     :program-overlay))
                          (if (= 0 (count (:children (vedn/get-child (storage/project-attr :form)
                                                                     layout-path))))
                            (layout/render-sublayouts (layout/adjust-layout base-sublayout
@@ -443,7 +443,7 @@
                                                                                                    (:radius sublayout))))
                                                                            (* constants/drop-form-radius-factor
                                                                               (:radius sublayout)))
-                                                     :drag-forms)
+                                                     :program-overlay)
                            (let [adjusted-layout (layout/adjust-layout base-sublayout
                                                                        (geom/scale-point placement-pos
                                                                                          (/ radius))
@@ -452,9 +452,9 @@
                                                       :radius
                                                       (partial * constants/drop-form-outline-radius-factor))
                                               (:background (storage/color-scheme))
-                                              :drag-forms)
+                                              :program-overlay)
                              (layout/render-sublayouts adjusted-layout
-                                                       :drag-forms))))))))))))
+                                                       :program-overlay))))))))))))
        (formbar/render-formbars mouse)
 
        ;; Draw discard circle, icon, and last discarded form

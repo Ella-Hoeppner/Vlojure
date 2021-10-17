@@ -211,7 +211,45 @@
       :y (- (:y bottom-circle)
             (:y top-circle))}]))
 
-
+(defn saved-formbar-index-at [pos]
+  (let [saved-formbar-circle (settings-circle constants/settings-saved-formbars-page)]
+    (when (geom/in-circle? saved-formbar-circle
+                           pos)
+      (let [center-radius (:radius saved-formbar-circle)
+            formbar-radius (* center-radius constants/settings-saved-formbar-radius)
+            saved-formbar-box-width (+ (* 2 formbar-radius
+                                          constants/settings-saved-formbars-box-width)
+                                       (* center-radius
+                                          constants/saved-formbar-spacing 2
+                                          constants/settings-saved-formbar-radius))
+            saved-formbar-box-height (+ (* 2 formbar-radius
+                                           constants/settings-saved-formbars-box-height)
+                                        (* center-radius
+                                           constants/saved-formbar-spacing
+                                           constants/settings-saved-formbar-radius
+                                           (inc constants/settings-saved-formbars-box-height)))
+            formbar-zone-corner (-> saved-formbar-circle
+                                    (select-keys [:x :y])
+                                    (update :x (partial + (- (* constants/settings-saved-formbars-box-x center-radius)
+                                                             (* 0.5 saved-formbar-box-width))))
+                                    (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y))))]
+        (when (geom/in-rect? [formbar-zone-corner
+                              {:x saved-formbar-box-width
+                               :y saved-formbar-box-height}]
+                             pos)
+          (int
+           (u/clamp 0 (dec constants/settings-saved-formbars-box-height)
+                    (u/map-range 0 saved-formbar-box-height
+                                 0 (- constants/settings-saved-formbars-box-height
+                                      (* center-radius
+                                         constants/saved-formbar-spacing
+                                         constants/settings-saved-formbar-radius))
+                                 (- (:y pos)
+                                    (:y formbar-zone-corner)
+                                    (* center-radius
+                                       constants/saved-formbar-spacing
+                                       0.5
+                                       constants/settings-saved-formbar-radius))))))))))
 
 (def page
   {:init
@@ -392,6 +430,9 @@
              (color-scheme-index-at mouse)
              :color-scheme
 
+             (saved-formbar-index-at mouse)
+             :saved-formbar
+
              (settings-circle-at mouse)
              :settings-circle
 
@@ -540,50 +581,55 @@
 
          ; Saved formbars
          (let [saved-formbar-contents (formbar/saved-formbar-contents)
-               formbar-index-offset @saved-formbar-scroll-pos]
+               formbar-index-offset @saved-formbar-scroll-pos
+               hovered-formbar-index (saved-formbar-index-at mouse)]
            (doseq [formbar-index (map (partial + formbar-index-offset)
                                       (range (min (- (count saved-formbar-contents) formbar-index-offset)
                                                   constants/settings-saved-formbars-box-height)))]
              (let [adjusted-formbar-index (- formbar-index formbar-index-offset)
                    formbar-forms (nth saved-formbar-contents formbar-index)
                    formbar-oversized (> (count formbar-forms)
-                                        constants/settings-saved-formbars-box-width)]
-               (doseq [[scale color]
-                       [[1 (:foreground (storage/color-scheme))]
-                        [(- 1 constants/formbar-outline-thickness) (:background (storage/color-scheme))]]]
-                 (doseq [i (if formbar-oversized
-                             [0]
-                             [0 (dec (count formbar-forms))])]
-                   (graphics/circle (-> formbar-zone-corner
-                                        (assoc :radius (* scale formbar-radius))
-                                        (update :x (partial +
-                                                            (* formbar-radius
-                                                               (inc (+ constants/saved-formbar-spacing
-                                                                       (* 2 i))))))
-                                        (update :y (partial +
-                                                            (* formbar-radius
-                                                               (inc (+ (* constants/saved-formbar-spacing
-                                                                          (inc adjusted-formbar-index))
-                                                                       (* 2 adjusted-formbar-index)))))))
-                                    color
-                                    :program))
-                 (graphics/rect [(-> formbar-zone-corner
-                                     (update :x (partial +
-                                                         (* formbar-radius
-                                                            (inc constants/saved-formbar-spacing))))
-                                     (update :y #(- (+ % (* formbar-radius
-                                                            (inc (+ (* constants/saved-formbar-spacing
-                                                                       (inc adjusted-formbar-index))
-                                                                    (* 2 adjusted-formbar-index)))))
-                                                    (* scale formbar-radius))))
-                                 {:x (if formbar-oversized
-                                       (- saved-formbar-box-width
-                                          (* formbar-radius
-                                             (inc constants/saved-formbar-spacing)))
-                                       (* formbar-radius 2 (dec (count formbar-forms))))
-                                  :y (* scale formbar-radius 2)}]
-                                color
-                                :program))
+                                        constants/settings-saved-formbars-box-width)
+                   draw-bar (fn [scale color layer]
+                              (doseq [i (if formbar-oversized
+                                          [0]
+                                          [0 (dec (count formbar-forms))])]
+                                (graphics/circle (-> formbar-zone-corner
+                                                     (assoc :radius (* scale formbar-radius))
+                                                     (update :x (partial +
+                                                                         (* formbar-radius
+                                                                            (inc (+ constants/saved-formbar-spacing
+                                                                                    (* 2 i))))))
+                                                     (update :y (partial +
+                                                                         (* formbar-radius
+                                                                            (inc (+ (* constants/saved-formbar-spacing
+                                                                                       (inc adjusted-formbar-index))
+                                                                                    (* 2 adjusted-formbar-index)))))))
+                                                 color
+                                                 layer))
+                              (graphics/rect [(-> formbar-zone-corner
+                                                  (update :x (partial +
+                                                                      (* formbar-radius
+                                                                         (inc constants/saved-formbar-spacing))))
+                                                  (update :y #(- (+ % (* formbar-radius
+                                                                         (inc (+ (* constants/saved-formbar-spacing
+                                                                                    (inc adjusted-formbar-index))
+                                                                                 (* 2 adjusted-formbar-index)))))
+                                                                 (* scale formbar-radius))))
+                                              {:x (if formbar-oversized
+                                                    (- saved-formbar-box-width
+                                                       (* formbar-radius
+                                                          (inc constants/saved-formbar-spacing)))
+                                                    (* formbar-radius 2 (dec (count formbar-forms))))
+                                               :y (* scale formbar-radius 2)}]
+                                             color
+                                             layer))]
+               (draw-bar 1
+                         (:foreground (storage/color-scheme))
+                         :program)
+               (draw-bar (- 1 constants/formbar-outline-thickness)
+                         (:background (storage/color-scheme))
+                         :program)
                (doseq [form-index (range (count formbar-forms))]
                  (when (< form-index constants/settings-saved-formbars-box-width)
                    (layout/render-sublayouts
@@ -599,7 +645,11 @@
                                                                    (inc (+ (* constants/saved-formbar-spacing
                                                                               (inc adjusted-formbar-index))
                                                                            (* 2 adjusted-formbar-index))))))))
-                    :program))))))
+                    :program)))
+               (when (= adjusted-formbar-index hovered-formbar-index)
+                 (draw-bar 1
+                           (:highlight (storage/color-scheme))
+                           :program-overlay)))))
 
          ; Saved Formbar Slider
          (when (> (count (formbar/saved-formbar-contents))
@@ -987,7 +1037,7 @@
                             :settings-overlay)))))
      (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
        (when (and (:down? mouse)
-                  (#{:formbar :formbar-discard}
+                  (#{:formbar :formbar-discard :saved-formbar}
                    (:down-zone mouse)))
          (graphics/render-discard-zone (= mouse-zone :discard) true)
          (when (and (not (= mouse-zone :discard))
