@@ -139,6 +139,8 @@
 (def settings-saved-formbars-box-height 4)
 (def settings-saved-formbars-scroll-radius 0.12)
 (def settings-saved-formbar-radius 0.125)
+(def settings-saved-formbar-insertion-bar-thickness 0.01)
+(def settings-saved-formbar-insertion-bar-width 0.8)
 
 (def settings-project-dropdown-y -0.4)
 (def settings-project-dropdown-height 0.3)

@@ -687,21 +687,44 @@
                                                                               (inc adjusted-formbar-index))
                                                                            (* 2 adjusted-formbar-index))))))))
                     :program)))
-               (when (= adjusted-formbar-index hovered-formbar-index)
+               (when (and (not (:down? mouse))
+                          (= adjusted-formbar-index hovered-formbar-index))
                  (draw-bar 1
                            (:highlight (storage/color-scheme))
-                           :program-overlay)))))
+                           :program-overlay))))
+           (when (and (:down? mouse)
+                      (= :formbar (:down-zone mouse)))
+             (let [insertion-index (min (saved-formbar-insertion-index-at mouse)
+                                        (count (formbar/saved-formbar-contents)))]
+              (when insertion-index
+                (let [y-offset (+ (* insertion-index
+                                     formbar-radius
+                                     2)
+                                  (* (+ 0.5 insertion-index)
+                                     formbar-radius
+                                     constants/saved-formbar-spacing))
+                      x-offset (* saved-formbar-box-width 0.5
+                                  (- 1 constants/settings-saved-formbar-insertion-bar-width))]
+                  (graphics/line (-> formbar-zone-corner
+                                     (update :x (partial + x-offset))
+                                     (update :y (partial + y-offset)))
+                                 (-> formbar-zone-corner
+                                     (update :x (partial + (- saved-formbar-box-width x-offset)))
+                                     (update :y (partial + y-offset)))
+                                 constants/settings-saved-formbar-insertion-bar-thickness
+                                 (:highlight (storage/color-scheme))
+                                 :program-overlay))))))
 
          ; Saved Formbar Slider
+         (graphics/rect (saved-formbar-scroll-rectangle)
+                        (:background (storage/color-scheme))
+                        :background)
+         (doseq [scroll-circle (saved-formbar-scroll-circles)]
+           (graphics/circle scroll-circle
+                            (:background (storage/color-scheme))
+                            :background))
          (when (> (count (formbar/saved-formbar-contents))
                   constants/settings-saved-formbars-box-height)
-           (graphics/rect (saved-formbar-scroll-rectangle)
-                          (:background (storage/color-scheme))
-                          :background)
-           (doseq [scroll-circle (saved-formbar-scroll-circles)]
-             (graphics/circle scroll-circle
-                              (:background (storage/color-scheme))
-                              :background))
            (graphics/circle (update (apply geom/tween-points
                                            (conj (saved-formbar-scroll-circles)
                                                  (/ @saved-formbar-scroll-pos
@@ -1130,6 +1153,11 @@
                    (formbar/formbar-path-at
                     (:down-pos mouse)))
          
-         :saved-formbar (formbar/delete-saved-formbar!
-                         (saved-formbar-index-at (:down-pos mouse)))
+         :saved-formbar (do (formbar/delete-saved-formbar!
+                             (saved-formbar-index-at (:down-pos mouse)))
+                            (swap! saved-formbar-scroll-pos
+                                   (fn [pos]
+                                     (u/clamp 0 (- (count (formbar/saved-formbar-contents))
+                                                   constants/settings-saved-formbars-box-height)
+                                              pos))))
          nil)))})
