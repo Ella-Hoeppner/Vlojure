@@ -132,11 +132,13 @@
 
 (def settings-saved-formbars-text-y -0.65)
 (def settings-saved-formbars-text-size 0.8)
-(def settings-saved-formbars-box-y -0.5)
-(def settings-saved-formbars-box-width 0.65)
-(def settings-saved-formbars-box-height 1.2)
-(def settings-saved-formbars-scroll-radius 0.08)
-(def settings-saved-formbars-scroll-spacing 0.05)
+(def settings-saved-formbars-box-x -0.125)
+(def settings-saved-formbars-box-y -0.525)
+(def settings-saved-formbars-scroll-x 0.685)
+(def settings-saved-formbars-box-width 5)
+(def settings-saved-formbars-box-height 4)
+(def settings-saved-formbars-scroll-radius 0.12)
+(def settings-saved-formbar-radius 0.125)
 
 (def settings-project-dropdown-y -0.4)
 (def settings-project-dropdown-height 0.3)
@@ -179,6 +181,9 @@
 (def settings-project-selector-page 2)
 (def settings-sliders-page 3)
 (def settings-color-scheme-page 4)
+
+(def saved-formbar-zone-corner-radius 0.04)
+(def saved-formbar-spacing 0.25)
 
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)

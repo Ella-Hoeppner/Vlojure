@@ -360,6 +360,19 @@
               path))
           circles)))
 
+(defn saved-formbar-contents []
+  ;; This is a placeholder. Needs to be replaced with a value pulled from storage
+  [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "/"} {:type :literal, :value "/"}]
+   [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
+    {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]
+   [{:type :literal, :value "+"}]
+   [{:type :literal, :value "+"}]
+   [{:type :literal, :value "+"}]
+   [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
+    {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]
+   [{:type :literal, :value "+"}]
+   [{:type :literal, :value "+"}]])
+
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)
         formbar-form-path (formbar-form-path-at mouse)]
