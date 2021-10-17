@@ -15,9 +15,6 @@
 
 (defonce app-state (atom {}))
 
-(defn landscape? []
-  true)
-
 (defn saved-state []
   (.getItem storage "state"))
 
@@ -229,13 +226,10 @@
                                       "*"
                                       "/"
                                       "mod"])}]]]
-       (merge {:bottom []
-               :right []
-               :left []
-               :top []}
-              (if landscape?
-                {:right primary :left secondary}
-                {:top primary :bottom secondary})))}))
+       {:right []
+        :left []
+        :top primary
+        :bottom secondary})}))
 
 (defn new-project []
   (update-attr! :projects
@@ -319,13 +313,10 @@
                                                  "*"
                                                  "/"
                                                  "mod"])}]]]
-                  (merge {:bottom []
-                          :right []
-                          :left []
-                          :top []}
-                         (if landscape?
-                           {:right primary :left secondary}
-                           {:top primary :bottom secondary})))}
+                  {:top primary
+                   :bottom secondary
+                   :right []
+                   :left []})}
                {:name "Fibonacci"
 
                 :form
@@ -357,10 +348,10 @@
                                                  "*"
                                                  "/"
                                                  "mod"])}]]]
-                  (merge {:bottom [] :right [] :left [] :top []}
-                         (if landscape?
-                           {:right primary :left secondary}
-                           {:bottom primary :top secondary})))}]}))
+                  {:bottom primary
+                   :top secondary
+                   :left []
+                   :right []})}]}))
 
 (defn init []
   (js/console.log "Initializing...")
