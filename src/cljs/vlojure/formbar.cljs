@@ -343,6 +343,13 @@
   (storage/update-attr! :saved-formbars
                         #(u/vector-remove % index)))
 
+(defn add-saved-formbar! [index formbar]
+  (storage/update-attr! :saved-formbars
+                        (fn [saved-formbars]
+                          (if (>= index (count saved-formbars))
+                            (conj saved-formbars formbar)
+                            (u/vector-insert saved-formbars index formbar)))))
+
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)
         formbar-form-path (formbar-form-path-at mouse)]

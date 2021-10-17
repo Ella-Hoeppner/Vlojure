@@ -251,6 +251,47 @@
                                        0.5
                                        constants/settings-saved-formbar-radius))))))))))
 
+(defn saved-formbar-insertion-index-at [pos]
+  (let [saved-formbar-circle (settings-circle constants/settings-saved-formbars-page)]
+    (when (geom/in-circle? saved-formbar-circle
+                           pos)
+      (let [center-radius (:radius saved-formbar-circle)
+            formbar-radius (* center-radius constants/settings-saved-formbar-radius)
+            saved-formbar-box-width (+ (* 2 formbar-radius
+                                          constants/settings-saved-formbars-box-width)
+                                       (* center-radius
+                                          constants/saved-formbar-spacing 2
+                                          constants/settings-saved-formbar-radius))
+            saved-formbar-box-height (+ (* 2 formbar-radius
+                                           constants/settings-saved-formbars-box-height)
+                                        (* center-radius
+                                           constants/saved-formbar-spacing
+                                           constants/settings-saved-formbar-radius
+                                           (inc constants/settings-saved-formbars-box-height)))
+            formbar-zone-corner (-> saved-formbar-circle
+                                    (select-keys [:x :y])
+                                    (update :x (partial + (- (* constants/settings-saved-formbars-box-x center-radius)
+                                                             (* 0.5 saved-formbar-box-width))))
+                                    (update :y (partial + (* center-radius constants/settings-saved-formbars-box-y))))]
+        (when (geom/in-rect? [formbar-zone-corner
+                              {:x saved-formbar-box-width
+                               :y saved-formbar-box-height}]
+                             pos)
+          (int
+           (u/clamp 0 constants/settings-saved-formbars-box-height
+                    (+ 0.5
+                       (u/map-range 0 saved-formbar-box-height
+                                    0 (- constants/settings-saved-formbars-box-height
+                                         (* center-radius
+                                            constants/saved-formbar-spacing
+                                            constants/settings-saved-formbar-radius))
+                                    (- (:y pos)
+                                       (:y formbar-zone-corner)
+                                       (* center-radius
+                                          constants/saved-formbar-spacing
+                                          0.5
+                                          constants/settings-saved-formbar-radius)))))))))))
+
 (def page
   {:init
    (fn []
@@ -1089,8 +1130,6 @@
                    (formbar/formbar-path-at
                     (:down-pos mouse)))
          
-         :saved-formbar (do (prn "pre")
-                            (prn (formbar/delete-saved-formbar!
-                                  (saved-formbar-index-at (:down-pos mouse))))
-                            (prn "post"))
+         :saved-formbar (formbar/delete-saved-formbar!
+                         (saved-formbar-index-at (:down-pos mouse)))
          nil)))})

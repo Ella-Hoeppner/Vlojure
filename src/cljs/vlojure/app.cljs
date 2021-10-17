@@ -266,11 +266,18 @@
                            :down? false
                            :drag-dist 0)))
     (if currently-dragging?
-      (when (and (= (attr :page) :settings))
+      (when (= (attr :page) :settings)
         (case (:down-zone mouse)
           :formbar
-          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
-            (when formbar-placement-path
+          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+                saved-formbar-insertion-index (settings-page/saved-formbar-insertion-index-at mouse)]
+            (when saved-formbar-insertion-index
+              (formbar/add-saved-formbar! saved-formbar-insertion-index
+                                          (:forms
+                                           (get-in (storage/project-attr :formbars)
+                                                   (formbar/formbar-path-at (:down-pos mouse))))))
+            (when (and (not saved-formbar-insertion-index)
+                       formbar-placement-path)
               (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
                 (when (not (or (= formbar-placement-path
                                   dragged-formbar-path)
