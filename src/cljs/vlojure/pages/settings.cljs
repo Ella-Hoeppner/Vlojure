@@ -427,7 +427,10 @@
              (color-scheme-index-at mouse)
              :color-scheme
 
-             (saved-formbar-index-at mouse)
+             (let [saved-index (saved-formbar-index-at mouse)]
+               (and saved-index
+                    (< (+ @saved-formbar-scroll-pos saved-index)
+                       (count (formbar/saved-formbar-contents)))))
              :saved-formbar
 
              (settings-circle-at mouse)

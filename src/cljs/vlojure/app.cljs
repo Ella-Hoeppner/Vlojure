@@ -266,34 +266,48 @@
                            :down? false
                            :drag-dist 0)))
     (if currently-dragging?
-      (when (and (= (attr :page) :settings)
-                 (#{:formbar} (:down-zone mouse)))
-        (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
-          (when formbar-placement-path
-            (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
-              (when (not (or (= formbar-placement-path
-                                dragged-formbar-path)
-                             (= formbar-placement-path
-                                (update dragged-formbar-path 2 inc))
-                             (graphics/in-discard-corner? mouse)))
-                (let [forms (:forms
-                             (get-in (storage/project-attr :formbars)
-                                     dragged-formbar-path))
-                      create-new! (fn []
-                                    (storage/add-project-formbar-at formbar-placement-path)
-                                    (doseq [index (range (count forms))]
-                                      (let [form (nth forms index)]
-                                        (storage/add-project-formbar-form-at form formbar-placement-path index))))
-                      delete-old! (fn []
-                                    (storage/delete-project-formbar-at dragged-formbar-path))]
-                  (if (and (= (take 2 formbar-placement-path)
-                              (take 2 dragged-formbar-path))
-                           (< (nth formbar-placement-path 2)
-                              (nth dragged-formbar-path 2)))
-                    (do (delete-old!)
-                        (create-new!))
-                    (do (create-new!)
-                        (delete-old!)))))))))
+      (when (and (= (attr :page) :settings))
+        (case (:down-zone mouse)
+          :formbar
+          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
+            (when formbar-placement-path
+              (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
+                (when (not (or (= formbar-placement-path
+                                  dragged-formbar-path)
+                               (= formbar-placement-path
+                                  (update dragged-formbar-path 2 inc))
+                               (graphics/in-discard-corner? mouse)))
+                  (let [forms (:forms
+                               (get-in (storage/project-attr :formbars)
+                                       dragged-formbar-path))
+                        create-new! (fn []
+                                      (storage/add-project-formbar-at formbar-placement-path)
+                                      (doseq [index (range (count forms))]
+                                        (let [form (nth forms index)]
+                                          (storage/add-project-formbar-form-at form formbar-placement-path index))))
+                        delete-old! (fn []
+                                      (storage/delete-project-formbar-at dragged-formbar-path))]
+                    (if (and (= (take 2 formbar-placement-path)
+                                (take 2 dragged-formbar-path))
+                             (< (nth formbar-placement-path 2)
+                                (nth dragged-formbar-path 2)))
+                      (do (delete-old!)
+                          (create-new!))
+                      (do (create-new!)
+                          (delete-old!))))))))
+          
+          :saved-formbar
+          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
+            (when formbar-placement-path
+              (let [selected-saved-formbar-index (+ @settings-page/saved-formbar-scroll-pos
+                                                    (settings-page/saved-formbar-index-at (:down-pos mouse)))
+                    saved-formbar (nth (formbar/saved-formbar-contents) selected-saved-formbar-index)]
+                (storage/add-project-formbar-at formbar-placement-path)
+                (doseq [index (range (count saved-formbar))]
+                  (let [form (nth saved-formbar index)]
+                    (storage/add-project-formbar-form-at form formbar-placement-path index))))))
+
+          nil))
       (case (:down-zone mouse)
         :settings-icon
         (enter-page (case (attr :page)
