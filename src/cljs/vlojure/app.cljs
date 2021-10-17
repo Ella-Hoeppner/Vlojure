@@ -267,7 +267,7 @@
                            :drag-dist 0)))
     (if currently-dragging?
       (when (and (= (attr :page) :settings)
-                 (#{:formbar :formbar-discard} (:down-zone mouse)))
+                 (#{:formbar} (:down-zone mouse)))
         (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
           (when formbar-placement-path
             (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]

@@ -391,7 +391,7 @@
                    (range (count button-circles))))
            (cond
              (and (:down? mouse)
-                  (#{:formbar :formbar-discard}
+                  (#{:formbar}
                    (:down-zone mouse))
                   (graphics/in-discard-corner? mouse))
              :discard
@@ -401,9 +401,6 @@
                                         mouse))
                  constants/upper-corner-zone-radius)
              :settings-icon
-
-             (formbar/formbar-discard-path-at mouse)
-             :formbar-discard
 
              (formbar/formbar-path-at mouse)
              :formbar
@@ -1037,7 +1034,7 @@
                             :settings-overlay)))))
      (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
        (when (and (:down? mouse)
-                  (#{:formbar :formbar-discard :saved-formbar}
+                  (#{:formbar :saved-formbar}
                    (:down-zone mouse)))
          (graphics/render-discard-zone (= mouse-zone :discard) true)
          (when (and (not (= mouse-zone :discard))
