@@ -264,7 +264,7 @@
     :color-scheme 0
     :scroll-direction {:x 1}
     :saved-formbars [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "mod"}]
-                     [{:type :literal, :value "Math/sin"} {:type :literal, :value "Math/cos"} {:type :literal, :value "Math/tan"} {:type :literal, :value "Math/pow"}]
+                     [{:type :literal, :value "conj"} {:type :literal, :value "first"} {:type :literal, :value "last"} {:type :literal, :value "concat"}]
                      [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
                       {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]]
     :projects [{:name "Calculator"
@@ -357,8 +357,20 @@
                    :left []
                    :right []})}]}))
 
+(defn ensure-saved-state-updated! []
+  (prn (keys @app-state)
+       (not
+        (some #{:saved-formbars}
+              (keys @app-state))))
+  (when (not
+         (some #{:saved-formbars}
+               (keys @app-state)))
+    (prn (set-attr! :saved-formbars
+                    (:saved-formbars (default-app-state))))))
+
 (defn init []
   (js/console.log "Initializing...")
   (if (> (count (saved-state)) 1)
-    (load-state!)
+    (do (load-state!)
+        (ensure-saved-state-updated!))
     (reset! app-state (default-app-state))))
