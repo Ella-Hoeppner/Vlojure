@@ -529,7 +529,7 @@
                           :background))))
 
      ;; Render formbar command page
-     (let [center-circle (settings-circle constants/settings-formbar-commands-page)
+     #_(let [center-circle (settings-circle constants/settings-formbar-commands-page)
            center-radius (:radius center-circle)]
        (graphics/text "Formbar Commands"
                       (-> center-circle
