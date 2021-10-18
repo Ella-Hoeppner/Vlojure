@@ -39,7 +39,7 @@
 
 (def screen-sides [:bottom :right :top :left])
 
-(def ui-layers [:background :program :drag-forms :formbar :menu :drag :settings-overlay])
+(def ui-layers [:background :program :program-overlay :formbar :menu :drag :settings-overlay])
 
 (def subform-shrink-factor 0.95)
 (def sole-subform-shrink-factor 0.75)
@@ -121,6 +121,27 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
+(def settings-formbar-command-types [:temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp])
+(def settings-formbar-commands-per-row 4)
+(def settings-formbar-command-text-y -0.575)
+(def settings-formbar-command-text-size 0.9)
+(def settings-formbar-command-y -0.3)
+(def settings-formbar-command-radius 0.15)
+(def settings-formbar-command-x-spacing 1.25)
+(def settings-formbar-command-y-spacing 1.25)
+
+(def settings-saved-formbars-text-y -0.65)
+(def settings-saved-formbars-text-size 0.8)
+(def settings-saved-formbars-box-x -0.125)
+(def settings-saved-formbars-box-y -0.525)
+(def settings-saved-formbars-scroll-x 0.685)
+(def settings-saved-formbars-box-width 5)
+(def settings-saved-formbars-box-height 4)
+(def settings-saved-formbars-scroll-radius 0.12)
+(def settings-saved-formbar-radius 0.125)
+(def settings-saved-formbar-insertion-bar-thickness 0.01)
+(def settings-saved-formbar-insertion-bar-width 0.8)
+
 (def settings-project-dropdown-y -0.4)
 (def settings-project-dropdown-height 0.3)
 (def settings-project-dropdown-width 0.9)
@@ -154,7 +175,17 @@
 (def settings-color-height 0.2)
 (def settings-color-height-factor 0.25)
 
-(def settings-pages 3)
+(def settings-pages 4)
+(def settings-default-scroll-pos 1)
+
+#_(def settings-formbar-commands-page 0)
+(def settings-saved-formbars-page 0)
+(def settings-project-selector-page 1)
+(def settings-sliders-page 2)
+(def settings-color-scheme-page 3)
+
+(def saved-formbar-zone-corner-radius 0.04)
+(def saved-formbar-spacing 0.25)
 
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)

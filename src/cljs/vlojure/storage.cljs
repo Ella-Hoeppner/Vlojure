@@ -15,9 +15,6 @@
 
 (defonce app-state (atom {}))
 
-(defn landscape? []
-  true)
-
 (defn saved-state []
   (.getItem storage "state"))
 
@@ -229,13 +226,10 @@
                                       "*"
                                       "/"
                                       "mod"])}]]]
-       (merge {:bottom []
-               :right []
-               :left []
-               :top []}
-              (if landscape?
-                {:right primary :left secondary}
-                {:top primary :bottom secondary})))}))
+       {:right []
+        :left []
+        :top primary
+        :bottom secondary})}))
 
 (defn new-project []
   (update-attr! :projects
@@ -269,6 +263,10 @@
    {:active-project 0
     :color-scheme 0
     :scroll-direction {:x 1}
+    :saved-formbars [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "mod"}]
+                     [{:type :literal, :value "conj"} {:type :literal, :value "first"} {:type :literal, :value "last"} {:type :literal, :value "concat"}]
+                     [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
+                      {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]]
     :projects [{:name "Calculator"
 
                 :form
@@ -319,13 +317,10 @@
                                                  "*"
                                                  "/"
                                                  "mod"])}]]]
-                  (merge {:bottom []
-                          :right []
-                          :left []
-                          :top []}
-                         (if landscape?
-                           {:right primary :left secondary}
-                           {:top primary :bottom secondary})))}
+                  {:top primary
+                   :bottom secondary
+                   :right []
+                   :left []})}
                {:name "Fibonacci"
 
                 :form
@@ -357,13 +352,25 @@
                                                  "*"
                                                  "/"
                                                  "mod"])}]]]
-                  (merge {:bottom [] :right [] :left [] :top []}
-                         (if landscape?
-                           {:right primary :left secondary}
-                           {:bottom primary :top secondary})))}]}))
+                  {:bottom primary
+                   :top secondary
+                   :left []
+                   :right []})}]}))
+
+(defn ensure-saved-state-updated! []
+  (prn (keys @app-state)
+       (not
+        (some #{:saved-formbars}
+              (keys @app-state))))
+  (when (not
+         (some #{:saved-formbars}
+               (keys @app-state)))
+    (prn (set-attr! :saved-formbars
+                    (:saved-formbars (default-app-state))))))
 
 (defn init []
   (js/console.log "Initializing...")
   (if (> (count (saved-state)) 1)
-    (load-state!)
+    (do (load-state!)
+        (ensure-saved-state-updated!))
     (reset! app-state (default-app-state))))

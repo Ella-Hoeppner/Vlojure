@@ -142,30 +142,6 @@
                     (range (count arrangement)))))
           constants/screen-sides)))
 
-(defn formbar-discard-path-at [pos]
-  (let [full-arrangement (formbar-arrangement)]
-    (some (fn [side]
-            (let [arrangement (get full-arrangement side)
-                  horizontal? (#{:top :bottom} side)]
-              (some (fn [stage-index]
-                      (let [stage (nth arrangement stage-index)]
-                        (some (fn [bar-index]
-                                (let [bar (nth stage bar-index)]
-                                  (when (<= (geom/point-magnitude
-                                             (geom/subtract-points pos
-                                                                   (geom/add-points bar
-                                                                                    (geom/scale-point
-                                                                                     (if horizontal?
-                                                                                       {:x (:width bar)}
-                                                                                       {:y (:height bar)})
-                                                                                     0.5))))
-                                            (* (- 1 constants/formbar-outline-thickness)
-                                               (storage/formbar-radius)))
-                                    [side stage-index bar-index])))
-                              (range (count stage)))))
-                    (range (count arrangement)))))
-          constants/screen-sides)))
-
 (defn formbar-insertion-path-at [pos]
   (let [arrangement (formbar-arrangement)
         layer-size (* 2
@@ -359,6 +335,20 @@
             (when (geom/in-circle? new-formbar-circle pos)
               path))
           circles)))
+
+(defn saved-formbar-contents []
+  (storage/attr :saved-formbars))
+
+(defn delete-saved-formbar! [index]
+  (storage/update-attr! :saved-formbars
+                        #(u/vector-remove % index)))
+
+(defn add-saved-formbar! [index formbar]
+  (storage/update-attr! :saved-formbars
+                        (fn [saved-formbars]
+                          (if (>= index (count saved-formbars))
+                            (conj saved-formbars formbar)
+                            (u/vector-insert saved-formbars index formbar)))))
 
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)

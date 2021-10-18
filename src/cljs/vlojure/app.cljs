@@ -160,7 +160,7 @@
     (let [{:keys [mouse page]} @app-state]
       (when (:down? mouse)
         (when (= (:down-zone mouse) :settings-slider)
-          (let [settings-circle (settings-page/settings-circle 1)
+          (let [settings-circle (settings-page/settings-circle constants/settings-sliders-page)
                 x-off (apply - (map :x [mouse settings-circle]))
                 adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))]
             (storage/set-attr! (second
@@ -175,7 +175,7 @@
                              (geom/angle-point
                               (let [raw-angle (mod (geom/point-angle
                                                     (geom/subtract-points mouse
-                                                                          (settings-page/settings-circle 1)))
+                                                                          (settings-page/settings-circle constants/settings-project-selector-page)))
                                                    geom/TAU)
                                     snap-angle (some (fn [angle]
                                                        (when (< (min (Math/abs (- angle raw-angle))
@@ -255,44 +255,82 @@
 (defn on-click-up [event]
   (update-mouse-pos event)
   (let [{:keys [mouse]} @app-state
-        currently-dragging? (mouse-dragging?)]
+        currently-dragging? (mouse-dragging?)
+        mouse-zone (get-mouse-zone)]
     (page-action (attr :page)
                  :click-up
                  (assoc mouse :dragging? (mouse-dragging?))
-                 (get-mouse-zone))
+                 mouse-zone)
     (update-attr! :mouse
                   (fn [state]
                     (assoc state
                            :down? false
                            :drag-dist 0)))
     (if currently-dragging?
-      (when (and (= (attr :page) :settings)
-                 (#{:formbar :formbar-discard} (:down-zone mouse)))
-        (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
-          (when formbar-placement-path
-            (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
-              (when (not (or (= formbar-placement-path
-                                dragged-formbar-path)
-                             (= formbar-placement-path
-                                (update dragged-formbar-path 2 inc))))
-                (let [forms (:forms
-                             (get-in (storage/project-attr :formbars)
-                                     dragged-formbar-path))
-                      create-new! (fn []
-                                    (storage/add-project-formbar-at formbar-placement-path)
-                                    (doseq [index (range (count forms))]
-                                      (let [form (nth forms index)]
-                                        (storage/add-project-formbar-form-at form formbar-placement-path index))))
-                      delete-old! (fn []
-                                    (storage/delete-project-formbar-at dragged-formbar-path))]
-                  (if (and (= (take 2 formbar-placement-path)
-                              (take 2 dragged-formbar-path))
-                           (< (nth formbar-placement-path 2)
-                              (nth dragged-formbar-path 2)))
-                    (do (delete-old!)
-                        (create-new!))
-                    (do (create-new!)
-                        (delete-old!)))))))))
+      (when (= (attr :page) :settings)
+        (cond 
+          (= (:down-zone mouse) :formbar)
+          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+                saved-formbar-insertion-index (settings-page/saved-formbar-insertion-index-at mouse)]
+            (when saved-formbar-insertion-index
+              (formbar/add-saved-formbar! saved-formbar-insertion-index
+                                          (:forms
+                                           (get-in (storage/project-attr :formbars)
+                                                   (formbar/formbar-path-at (:down-pos mouse))))))
+            (when (and (not saved-formbar-insertion-index)
+                       formbar-placement-path)
+              (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
+                (when (not (or (= formbar-placement-path
+                                  dragged-formbar-path)
+                               (= formbar-placement-path
+                                  (update dragged-formbar-path 2 inc))
+                               (graphics/in-discard-corner? mouse)))
+                  (let [forms (:forms
+                               (get-in (storage/project-attr :formbars)
+                                       dragged-formbar-path))
+                        create-new! (fn []
+                                      (storage/add-project-formbar-at formbar-placement-path)
+                                      (doseq [index (range (count forms))]
+                                        (let [form (nth forms index)]
+                                          (storage/add-project-formbar-form-at form formbar-placement-path index))))
+                        delete-old! (fn []
+                                      (storage/delete-project-formbar-at dragged-formbar-path))]
+                    (if (and (= (take 2 formbar-placement-path)
+                                (take 2 dragged-formbar-path))
+                             (< (nth formbar-placement-path 2)
+                                (nth dragged-formbar-path 2)))
+                      (do (delete-old!)
+                          (create-new!))
+                      (do (create-new!)
+                          (delete-old!))))))))
+          
+          (= (:down-zone mouse) :saved-formbar)
+          (if (= mouse-zone :saved-formbar)
+            (let [from-index (+ @settings-page/saved-formbar-scroll-pos
+                                (settings-page/saved-formbar-index-at (:down-pos mouse)))
+                  to-index (+ @settings-page/saved-formbar-scroll-pos
+                              (settings-page/saved-formbar-insertion-index-at mouse))
+                  saved-formbars (formbar/saved-formbar-contents)]
+              (when (and (< from-index (count saved-formbars))
+                         from-index to-index
+                         (not= from-index to-index))
+                (formbar/add-saved-formbar! to-index
+                                            (nth saved-formbars (min (dec (count saved-formbars))
+                                                                     from-index)))
+                (formbar/delete-saved-formbar! (if (> from-index to-index)
+                                                 (inc from-index)
+                                                 from-index))))
+            (when (not (graphics/in-discard-corner? mouse))
+              (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+                    saved-formbars (formbar/saved-formbar-contents)]
+                (when formbar-placement-path
+                  (let [selected-saved-formbar-index (+ @settings-page/saved-formbar-scroll-pos
+                                                        (settings-page/saved-formbar-index-at (:down-pos mouse)))
+                        saved-formbar (nth saved-formbars selected-saved-formbar-index)]
+                    (storage/add-project-formbar-at formbar-placement-path)
+                    (doseq [index (range (count saved-formbar))]
+                      (let [form (nth saved-formbar index)]
+                        (storage/add-project-formbar-form-at form formbar-placement-path index))))))))))
       (case (:down-zone mouse)
         :settings-icon
         (enter-page (case (attr :page)
@@ -309,11 +347,6 @@
 
         :text-icon
         (enter-page :text)
-
-        :formbar-discard
-        (storage/delete-project-formbar-at
-         (formbar/formbar-discard-path-at
-          (:down-pos mouse)))
 
         :new-formbar
         (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))

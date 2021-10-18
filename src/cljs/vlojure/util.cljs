@@ -27,6 +27,18 @@
             (- to-max to-min))
          to-min))))
 
+(defn clamp
+  ([minimum maximum]
+   (fn [x]
+     (max minimum
+          (min maximum
+               x))))
+  ([minimum maximum x]
+   ((clamp minimum maximum)
+    x))
+  ([x]
+   (clamp 0 1 x)))
+
 (defn prop-range [n & [open]]
   (map #(/ %
            (if open
