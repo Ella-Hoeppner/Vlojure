@@ -255,11 +255,12 @@
 (defn on-click-up [event]
   (update-mouse-pos event)
   (let [{:keys [mouse]} @app-state
-        currently-dragging? (mouse-dragging?)]
+        currently-dragging? (mouse-dragging?)
+        mouse-zone (get-mouse-zone)]
     (page-action (attr :page)
                  :click-up
                  (assoc mouse :dragging? (mouse-dragging?))
-                 (get-mouse-zone))
+                 mouse-zone)
     (update-attr! :mouse
                   (fn [state]
                     (assoc state
@@ -267,8 +268,8 @@
                            :drag-dist 0)))
     (if currently-dragging?
       (when (= (attr :page) :settings)
-        (case (:down-zone mouse)
-          :formbar
+        (cond 
+          (= (:down-zone mouse) :formbar)
           (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
                 saved-formbar-insertion-index (settings-page/saved-formbar-insertion-index-at mouse)]
             (when saved-formbar-insertion-index
@@ -303,20 +304,33 @@
                       (do (create-new!)
                           (delete-old!))))))))
           
-          :saved-formbar
-          (when (not (graphics/in-discard-corner? mouse))
-            (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+          (= (:down-zone mouse) :saved-formbar)
+          (if (= mouse-zone :saved-formbar)
+            (let [from-index (+ @settings-page/saved-formbar-scroll-pos
+                                (settings-page/saved-formbar-index-at (:down-pos mouse)))
+                  to-index (+ @settings-page/saved-formbar-scroll-pos
+                              (settings-page/saved-formbar-insertion-index-at mouse))
                   saved-formbars (formbar/saved-formbar-contents)]
-              (when formbar-placement-path
-                (let [selected-saved-formbar-index (+ @settings-page/saved-formbar-scroll-pos
-                                                      (settings-page/saved-formbar-index-at (:down-pos mouse)))
-                      saved-formbar (nth saved-formbars selected-saved-formbar-index)]
-                  (storage/add-project-formbar-at formbar-placement-path)
-                  (doseq [index (range (count saved-formbar))]
-                    (let [form (nth saved-formbar index)]
-                      (storage/add-project-formbar-form-at form formbar-placement-path index)))))))
-
-          nil))
+              (when (and (< from-index (count saved-formbars))
+                         from-index to-index
+                         (not= from-index to-index))
+                (formbar/add-saved-formbar! to-index
+                                            (nth saved-formbars (min (dec (count saved-formbars))
+                                                                     from-index)))
+                (formbar/delete-saved-formbar! (if (> from-index to-index)
+                                                 (inc from-index)
+                                                 from-index))))
+            (when (not (graphics/in-discard-corner? mouse))
+              (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+                    saved-formbars (formbar/saved-formbar-contents)]
+                (when formbar-placement-path
+                  (let [selected-saved-formbar-index (+ @settings-page/saved-formbar-scroll-pos
+                                                        (settings-page/saved-formbar-index-at (:down-pos mouse)))
+                        saved-formbar (nth saved-formbars selected-saved-formbar-index)]
+                    (storage/add-project-formbar-at formbar-placement-path)
+                    (doseq [index (range (count saved-formbar))]
+                      (let [form (nth saved-formbar index)]
+                        (storage/add-project-formbar-form-at form formbar-placement-path index))))))))))
       (case (:down-zone mouse)
         :settings-icon
         (enter-page (case (attr :page)

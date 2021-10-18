@@ -468,10 +468,7 @@
              (color-scheme-index-at mouse)
              :color-scheme
 
-             (let [saved-index (saved-formbar-index-at mouse)]
-               (and saved-index
-                    (< (+ @saved-formbar-scroll-pos saved-index)
-                       (count (formbar/saved-formbar-contents)))))
+             (saved-formbar-index-at mouse)
              :saved-formbar
 
              (settings-circle-at mouse)
@@ -693,7 +690,10 @@
                            (:highlight (storage/color-scheme))
                            :program-overlay))))
            (when (and (:down? mouse)
-                      (= :formbar (:down-zone mouse)))
+                      (or (= :formbar (:down-zone mouse))
+                          (and (= :saved-formbar (:down-zone mouse))
+                               (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
+                                  (count (formbar/saved-formbar-contents))))))
              (let [insertion-index (min (saved-formbar-insertion-index-at mouse)
                                         (count (formbar/saved-formbar-contents)))]
               (when insertion-index
@@ -1101,8 +1101,10 @@
                             :settings-overlay)))))
      (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
        (when (and (:down? mouse)
-                  (#{:formbar :saved-formbar}
-                   (:down-zone mouse)))
+                  (or (= :formbar (:down-zone mouse))
+                      (and (= :saved-formbar (:down-zone mouse))
+                           (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
+                              (count (formbar/saved-formbar-contents))))))
          (graphics/render-discard-zone (= mouse-zone :discard) true)
          (when (and (not (= mouse-zone :discard))
                     formbar-insertion-path)
@@ -1149,15 +1151,19 @@
      (cond
        (= mouse-zone :discard)
        (case (:down-zone mouse)
-         :formbar (storage/delete-project-formbar-at
-                   (formbar/formbar-path-at
-                    (:down-pos mouse)))
-         
-         :saved-formbar (do (formbar/delete-saved-formbar!
-                             (saved-formbar-index-at (:down-pos mouse)))
-                            (swap! saved-formbar-scroll-pos
-                                   (fn [pos]
-                                     (u/clamp 0 (- (count (formbar/saved-formbar-contents))
-                                                   constants/settings-saved-formbars-box-height)
-                                              pos))))
+         :formbar
+         (storage/delete-project-formbar-at
+          (formbar/formbar-path-at
+           (:down-pos mouse)))
+
+         :saved-formbar
+         (let [adjusted-formbar-index (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)]
+           (when (< adjusted-formbar-index
+                    (count (formbar/saved-formbar-contents)))
+             (formbar/delete-saved-formbar! adjusted-formbar-index)
+             (swap! saved-formbar-scroll-pos
+                    (fn [pos]
+                      (u/clamp 0 (- (count (formbar/saved-formbar-contents))
+                                    constants/settings-saved-formbars-box-height)
+                               pos)))))
          nil)))})
