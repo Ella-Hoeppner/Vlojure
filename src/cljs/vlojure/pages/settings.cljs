@@ -341,7 +341,11 @@
 
     :fn-enclose
     ()
+
     :let-enclose
+    ()
+    
+    :comment
     ()))
 
 (def page
@@ -583,7 +587,7 @@
      ;; Render formbar command page
      (let [center-circle (settings-circle constants/settings-formbar-commands-page)
            center-radius (:radius center-circle)]
-       (graphics/text "Formbar Commands"
+       (graphics/text "Commands"
                       (-> center-circle
                           (update :y (partial + (* center-radius constants/settings-formbar-command-text-y))))
                       (* center-radius constants/settings-formbar-command-text-size)

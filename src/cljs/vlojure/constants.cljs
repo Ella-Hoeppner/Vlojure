@@ -121,11 +121,11 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-command-types [[:enclose :vector-enclose :fn-enclose :let-enclose]
-                                     [:undo :redo :replace :literal-fn-replace]])
-(def settings-formbar-command-text-y -0.575)
-(def settings-formbar-command-text-size 0.9)
-(def settings-formbar-command-y -0.3)
+(def settings-formbar-command-types [[:undo :redo :replace :literal-fn-replace]
+                                     [:enclose :vector-enclose :fn-enclose :let-enclose :comment]])
+(def settings-formbar-command-text-y -0.7)
+(def settings-formbar-command-text-size 0.7)
+(def settings-formbar-command-y -0.4)
 (def settings-formbar-command-radius 0.15)
 (def settings-formbar-command-x-spacing 1.25)
 (def settings-formbar-command-y-spacing 1.25)
