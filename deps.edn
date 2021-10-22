@@ -6,6 +6,8 @@
         compojure/compojure {:mvn/version "1.6.2"}
         hiccup/hiccup {:mvn/version "2.0.0-alpha2"}
         optimus/optimus {:mvn/version "0.20.2"}
-        dali/dali {:mvn/version "1.0.2"}}
+        dali/dali {:mvn/version "1.0.2"
+                   :exclusions [xerces/xerces]}
+        xerces/xercesImpl {:mvn/version "2.12.1"}}
  :aliases {:server {:main-opts ["-m" "vlojure.server"]}
            :export {:main-opts ["-m" "vlojure.server" "export"]}}}
