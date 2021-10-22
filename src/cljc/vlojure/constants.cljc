@@ -1,5 +1,4 @@
-(ns vlojure.constants
-  (:require [vlojure.vedn :as vedn]))
+(ns vlojure.constants)
 
 (def char-escape-string {\newline "\\n" \tab "\\t" \return "\\r" \" "\\\"" \\ "\\\\" \formfeed "\\f" \backspace "\\b"})
 
