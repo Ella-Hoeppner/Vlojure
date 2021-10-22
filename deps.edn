@@ -5,6 +5,7 @@
         stasis/stasis {:mvn/version "2.5.1"}
         compojure/compojure {:mvn/version "1.6.2"}
         hiccup/hiccup {:mvn/version "2.0.0-alpha2"}
-        optimus/optimus {:mvn/version "0.20.2"}}
+        optimus/optimus {:mvn/version "0.20.2"}
+        dali/dali {:mvn/version "1.0.2"}}
  :aliases {:server {:main-opts ["-m" "vlojure.server"]}
            :export {:main-opts ["-m" "vlojure.server" "export"]}}}
