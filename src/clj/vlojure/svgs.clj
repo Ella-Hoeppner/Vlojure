@@ -15,6 +15,7 @@
 (def undo-arrow-width 0.8)
 (def undo-arrow-length (/ 0.8 (Math/sqrt 2)))
 (def foreground (rgb 0xff0000))
+(def highlight (rgb 0x00ff00))
 (def output-directory "./resources/public/svgs/")
 
 ; helper functions
@@ -59,8 +60,8 @@
          (concat [:dali/page
                   {:width 100 :height 100}]
                  doc-fragments))])
-     [["undo" [(path {:stroke foreground
-                      :class "foreground"
+     [["undo" [(path {:stroke highlight
+                      :class "highlight"
                       :stroke-width 12
                       :stroke-linecap "round"
                       :fill "none"}
@@ -69,8 +70,8 @@
                       {:r undo-radius
                        :large? true
                        :end-pos (circle-pos undo-radius (* 1.2 PI))}])
-               [:polygon {:fill foreground
-                          :class "foreground"}
+               [:polygon {:fill highlight
+                          :class "highlight"}
                 (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.25 PI))
                 (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.25 PI))
                 (mapv #(+ %1
@@ -78,8 +79,8 @@
                       (circle-pos undo-radius (* 1.25 PI))
                       [-1 1]
                       (repeat (* undo-radius undo-arrow-length)))]]]
-      ["redo" [(path {:stroke foreground
-                      :class "foreground"
+      ["redo" [(path {:stroke highlight
+                      :class "highlight"
                       :stroke-width 12
                       :stroke-linecap "round"
                       :fill "none"}
@@ -88,8 +89,8 @@
                       {:r undo-radius
                        :large? true
                        :end-pos (circle-pos undo-radius (* 0.5 PI))}])
-               [:polygon {:fill foreground
-                          :class "foreground"}
+               [:polygon {:fill highlight
+                          :class "highlight"}
                 (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.75 PI))
                 (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.75 PI))
                 (mapv +
