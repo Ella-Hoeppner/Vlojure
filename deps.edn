@@ -1,4 +1,4 @@
-{:paths ["src/clj" "src/cljs" "resources"]
+{:paths ["src/clj" "src/cljs" "src/cljc" "resources"]
  :deps {thheller/shadow-cljs {:mvn/version "2.11.7"}
         ring/ring {:mvn/version "1.9.4"}
         ring/ring-defaults {:mvn/version "0.3.3"}
