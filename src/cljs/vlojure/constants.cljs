@@ -121,8 +121,8 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-command-types [:temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp])
-(def settings-formbar-commands-per-row 4)
+(def settings-formbar-command-types [[:enclose :vector-enclose :fn-enclose :let-enclose]
+                                     [:undo :redo :replace :literal-fn-replace]])
 (def settings-formbar-command-text-y -0.575)
 (def settings-formbar-command-text-size 0.9)
 (def settings-formbar-command-y -0.3)
@@ -175,14 +175,14 @@
 (def settings-color-height 0.2)
 (def settings-color-height-factor 0.25)
 
-(def settings-pages 4)
-(def settings-default-scroll-pos 1)
+(def settings-pages 5)
+(def settings-default-scroll-pos 2)
 
-#_(def settings-formbar-commands-page 0)
-(def settings-saved-formbars-page 0)
-(def settings-project-selector-page 1)
-(def settings-sliders-page 2)
-(def settings-color-scheme-page 3)
+(def settings-formbar-commands-page 0)
+(def settings-saved-formbars-page 1)
+(def settings-project-selector-page 2)
+(def settings-sliders-page 3)
+(def settings-color-scheme-page 4)
 
 (def saved-formbar-zone-corner-radius 0.04)
 (def saved-formbar-spacing 0.25)
