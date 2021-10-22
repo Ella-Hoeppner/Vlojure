@@ -15,7 +15,7 @@
 (def undo-arrow-width 0.8)
 (def undo-arrow-length (/ 0.8 (Math/sqrt 2)))
 (def white (rgb 0xffffff))
-(def output-directory "./generated_svgs/")
+(def output-directory "./resources/public/svgs/")
 
 ; helper functions
 (defn path [attributes [start-x start-y] & segments]

@@ -8,7 +8,8 @@
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.strategies :refer [serve-live-assets]]
-            [optimus.export]))
+            [optimus.export]
+            [vlojure.svgs]))
 
 (defn get-assets []
   (concat (assets/load-assets "public/styles"
@@ -17,6 +18,8 @@
           (assets/load-assets "public/js"
                               ["/base.js"
                                "/manifest.edn"])
+          (assets/load-assets "public/svgs"
+                              [#".*.svg"])
           (assets/load-assets "public"
                               ["/favicon.png"
                                #"\/bootstrap\/.*"])))
@@ -52,6 +55,7 @@
 (defn export []
   (let [export-dir "out/vlojure"
         optimized-assets (optimizations/none (get-assets) {})]
+    (vlojure.svgs/export)
     (stasis/empty-directory! export-dir)
     (optimus.export/save-assets optimized-assets export-dir)
     (stasis/export-pages pages export-dir {:optimus-assets optimized-assets})))
