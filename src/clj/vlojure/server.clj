@@ -1,8 +1,8 @@
-(ns vlojure.core
+(ns vlojure.server
   (:require [stasis.core :as stasis]
             [ring.adapter.jetty :as ring]
             [hiccup.core :refer [html]]
-            [hiccup.page :refer [include-js include-css]]
+            [hiccup.page :refer [include-css]]
             [ring.middleware.content-type :refer [wrap-content-type]]
             [optimus.prime :as optimus]
             [optimus.assets :as assets]
@@ -29,8 +29,7 @@
                         [:title "Vlojure"]
                         [:link {:rel "icon" :href "/favicon.png"}]]
                        [:body
-                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]
-                        #_(include-js "base.js")])
+                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]])
    "/about/" (html {:lang "en"}
                    [:head]
                    [:body
