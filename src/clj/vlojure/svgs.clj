@@ -14,7 +14,7 @@
 (def undo-radius 30)
 (def undo-arrow-width 0.8)
 (def undo-arrow-length (/ 0.8 (Math/sqrt 2)))
-(def white (rgb 0xffffff))
+(def foreground (rgb 0xff0000))
 (def output-directory "./resources/public/svgs/")
 
 ; helper functions
@@ -57,20 +57,20 @@
        [name
         (vec
          (concat [:dali/page
-                  {:width 100 :height 100}
-                  [:rect {:fill (rgb 0)}
-                   [0 0]
-                   [100 100]]]
+                  {:width 100 :height 100}]
                  doc-fragments))])
-     [["undo" [(path {:stroke white
+     [["undo" [(path {:stroke foreground
+                      :class "foreground"
                       :stroke-width 12
-                      :stroke-linecap "round"}
+                      :stroke-linecap "round"
+                      :fill "none"}
                      (circle-pos undo-radius (* 0.5 PI))
                      [:arc
                       {:r undo-radius
                        :large? true
                        :end-pos (circle-pos undo-radius (* 1.2 PI))}])
-               [:polygon {:fill white}
+               [:polygon {:fill foreground
+                          :class "foreground"}
                 (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.25 PI))
                 (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.25 PI))
                 (mapv #(+ %1
@@ -78,15 +78,18 @@
                       (circle-pos undo-radius (* 1.25 PI))
                       [-1 1]
                       (repeat (* undo-radius undo-arrow-length)))]]]
-      ["redo" [(path {:stroke white
+      ["redo" [(path {:stroke foreground
+                      :class "foreground"
                       :stroke-width 12
-                      :stroke-linecap "round"}
+                      :stroke-linecap "round"
+                      :fill "none"}
                      (circle-pos undo-radius (* 1.8 PI))
                      [:arc
                       {:r undo-radius
                        :large? true
                        :end-pos (circle-pos undo-radius (* 0.5 PI))}])
-               [:polygon {:fill white}
+               [:polygon {:fill foreground
+                          :class "foreground"}
                 (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.75 PI))
                 (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.75 PI))
                 (mapv +
