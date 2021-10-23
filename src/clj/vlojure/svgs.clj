@@ -67,10 +67,24 @@
           :font-size font-size}
    text])
 
+(defn vector-octagon [center radius]
+  [:polyline {:stroke foreground-color
+              :class "foreground"
+              :fill "none"
+              :stroke-width (* radius 2 c/bubble-thickness)
+              :stroke-linecap "round"}
+   (map (fn [index]
+          (mapv +
+                center
+                [-50 -50]
+                (circle-pos radius
+                            (* 0.25 PI
+                               (+ 0.5 index)))))
+        (range 9))])
+
 
 ; "documents" defines all SVGs that will be exported when "export" is run
 (def documents
-  ; TODO: fn-enclose let-enclose comment
   (let []
     (mapv
      (fn [[name doc-fragments]]
@@ -137,13 +151,11 @@
         [:circle {:fill foreground-color
                   :class "foreground"}
          [20 50]
-         15
-         c/bubble-thickness]
+         15]
         [:circle {:fill foreground-color
                   :class "foreground"}
          [80 50]
-         15
-         c/bubble-thickness]
+         15]
         (text [20 50]
               20
               "x")
@@ -171,8 +183,7 @@
           [:circle {:fill foreground-color
                     :class "foreground"}
            [20 50]
-           11
-           c/bubble-thickness]
+           11]
           (outline-circle {:stroke foreground-color
                            :class "foreground"}
                           [80 50]
@@ -181,8 +192,7 @@
           [:circle {:fill foreground-color
                     :class "foreground"}
            [80 50]
-           11
-           c/bubble-thickness]
+           11]
           (text [20 50]
                 17
                 "x")
@@ -231,8 +241,7 @@
         [:circle {:fill foreground-color
                   :class "foreground"}
          [15 50]
-         10
-         c/bubble-thickness]
+         10]
         (outline-circle {:stroke foreground-color
                          :class "foreground"}
                         [75 50]
@@ -241,8 +250,7 @@
         [:circle {:fill foreground-color
                   :class "foreground"}
          [75 50]
-         15
-         c/bubble-thickness]
+         15]
         (text [15 50]
               16
               "x")
@@ -263,23 +271,8 @@
         [:circle {:fill foreground-color
                   :class "foreground"}
          [15 50]
-         10
-         c/bubble-thickness]
-        (let [circle-center [75 50]
-              radius 21]
-          [:polyline {:stroke foreground-color
-                      :class "foreground"
-                      :fill "none"
-                      :stroke-width (* radius 2 c/bubble-thickness)
-                      :stroke-linecap "round"}
-           (map (fn [index]
-                  (mapv +
-                        circle-center
-                        [-50 -50]
-                        (circle-pos radius
-                                    (* 0.25 PI
-                                       (+ 0.5 index)))))
-                (range 9))])
+         10]
+        (vector-octagon [75 50] 21)
         [:circle {:fill foreground-color
                   :class "foreground"}
          [75 50]
@@ -307,13 +300,11 @@
           [:circle {:fill foreground-color
                     :class "foreground"}
            [15 50]
-           10
-           c/bubble-thickness]
+           10]
           [:circle {:fill foreground-color
                     :class "foreground"}
            [75 50]
-           15
-           c/bubble-thickness]
+           15]
           (text [15 50]
                 16
                 "x")
@@ -337,7 +328,85 @@
                                   (circle-pos (* radius radius-factor) angle)))
                           [1
                            (- 1 c/comment-length-factor)])]))
-                (range divs)))))]])))
+                (range divs)))))]
+      ["let-enclose"
+       [[:polyline {:stroke highlight-color
+                    :class "highlight"
+                    :stroke-width 4
+                    :stroke-linecap "round"}
+         (list [30 50] [45 50])]
+        [:polygon {:fill highlight-color
+                   :class "highlight"}
+         [42.5 40]
+         [42.5 60]
+         [52.5 50]]
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [15 50]
+         10]
+        (outline-circle {:stroke foreground-color
+                         :class "foreground"}
+                        [75 50]
+                        21
+                        (- 1 c/bubble-thickness))
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [75 40]
+         7.5]
+        (vector-octagon [66 55] 7.5)
+
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [84 55]
+         7.5]
+        (text [15 50]
+              16
+              "x")
+        (text [84 55]
+              13
+              "x")
+        (text [74.5 40.5]
+              5
+              "let")]]
+      ["fn-enclose"
+       [[:polyline {:stroke highlight-color
+                    :class "highlight"
+                    :stroke-width 4
+                    :stroke-linecap "round"}
+         (list [30 50] [45 50])]
+        [:polygon {:fill highlight-color
+                   :class "highlight"}
+         [42.5 40]
+         [42.5 60]
+         [52.5 50]]
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [15 50]
+         10]
+        (outline-circle {:stroke foreground-color
+                         :class "foreground"}
+                        [75 50]
+                        21
+                        (- 1 c/bubble-thickness))
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [75 40]
+         7.5]
+        (vector-octagon [66 55] 7.5)
+
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [84 55]
+         7.5]
+        (text [15 50]
+              16
+              "x")
+        (text [84 55]
+              13
+              "x")
+        (text [74.5 40.5]
+              7
+              "fn")]]])))
 
 (defn render-document
   "Takes in a dali `document` and a `filename`, and saves the document as an
