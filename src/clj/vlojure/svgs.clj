@@ -60,7 +60,7 @@
 
 (defn text [[x y] font-size text]
   [:text {:x x :y y
-          :font-color text-color
+          :fill text-color
           :font-family "monoid-bold"
           :dominant-baseline "middle"
           :text-anchor "middle"
@@ -70,7 +70,7 @@
 
 ; "documents" defines all SVGs that will be exported when "export" is run
 (def documents
-  ; TODO: literal-fn-replace enclose vector-enclose fn-enclose let-enclose comment
+  ; TODO: enclose vector-enclose fn-enclose let-enclose comment
   (let []
     (mapv
      (fn [[name doc-fragments]]
@@ -85,68 +85,138 @@
                                   src: url('../styles/monoid-bold.ttf');
                                 }"]]]
                  doc-fragments))])
-     [["undo" [(path {:stroke highlight-color
+     [["undo"
+       [(path {:stroke highlight-color
+               :class "highlight"
+               :stroke-width 12
+               :stroke-linecap "round"
+               :fill "none"}
+              (circle-pos undo-radius (* 0.5 PI))
+              [:arc
+               {:r undo-radius
+                :large? true
+                :end-pos (circle-pos undo-radius (* 1.2 PI))}])
+        [:polygon {:fill highlight-color
+                   :class "highlight"}
+         (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.25 PI))
+         (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.25 PI))
+         (mapv #(+ %1
+                   (* %2 %3))
+               (circle-pos undo-radius (* 1.25 PI))
+               [-1 1]
+               (repeat (* undo-radius undo-arrow-length)))]]]
+      ["redo"
+       [(path {:stroke highlight-color
+               :class "highlight"
+               :stroke-width 12
+               :stroke-linecap "round"
+               :fill "none"}
+              (circle-pos undo-radius (* 1.8 PI))
+              [:arc
+               {:r undo-radius
+                :large? true
+                :end-pos (circle-pos undo-radius (* 0.5 PI))}])
+        [:polygon {:fill highlight-color
+                   :class "highlight"}
+         (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.75 PI))
+         (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.75 PI))
+         (mapv +
+               (circle-pos undo-radius (* 1.75 PI))
+               (repeat (* undo-radius undo-arrow-length)))]]]
+      ["replace"
+       [[:polyline {:stroke highlight-color
+                    :class "highlight"
+                    :stroke-width 4
+                    :stroke-linecap "round"}
+         (list [40 50] [55 50])]
+        [:polygon {:fill highlight-color
+                   :class "highlight"}
+         [52.5 40]
+         [52.5 60]
+         [62.5 50]]
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [20 50]
+         15
+         c/bubble-thickness]
+        [:circle {:fill foreground-color
+                  :class "foreground"}
+         [80 50]
+         15
+         c/bubble-thickness]
+        (text [20 50]
+              20
+              "x")
+        (text [80 50]
+              20
+              "y")]]
+      ["literal-fn-replaced"
+       (vec
+        (concat
+         [[:polyline {:stroke highlight-color
                       :class "highlight"
-                      :stroke-width 12
-                      :stroke-linecap "round"
-                      :fill "none"}
-                     (circle-pos undo-radius (* 0.5 PI))
-                     [:arc
-                      {:r undo-radius
-                       :large? true
-                       :end-pos (circle-pos undo-radius (* 1.2 PI))}])
-               [:polygon {:fill highlight-color
-                          :class "highlight"}
-                (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.25 PI))
-                (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.25 PI))
-                (mapv #(+ %1
-                          (* %2 %3))
-                      (circle-pos undo-radius (* 1.25 PI))
-                      [-1 1]
-                      (repeat (* undo-radius undo-arrow-length)))]]]
-      ["redo" [(path {:stroke highlight-color
-                      :class "highlight"
-                      :stroke-width 12
-                      :stroke-linecap "round"
-                      :fill "none"}
-                     (circle-pos undo-radius (* 1.8 PI))
-                     [:arc
-                      {:r undo-radius
-                       :large? true
-                       :end-pos (circle-pos undo-radius (* 0.5 PI))}])
-               [:polygon {:fill highlight-color
-                          :class "highlight"}
-                (circle-pos (* (inc undo-arrow-width) undo-radius) (* 1.75 PI))
-                (circle-pos (* (- 1 undo-arrow-width) undo-radius) (* 1.75 PI))
-                (mapv +
-                      (circle-pos undo-radius (* 1.75 PI))
-                      (repeat (* undo-radius undo-arrow-length)))]]]
-      ["replace" [[:polyline {:stroke highlight-color
-                              :class "highlight"
-                              :stroke-width 4
-                              :stroke-linecap "round"}
-                   (list [40 50] [55 50])]
-                  [:polygon {:fill highlight-color
-                             :class "highlight"}
-                   [52.5 40]
-                   [52.5 60]
-                   [62.5 50]]
-                  [:circle {:fill foreground-color
-                            :class "foreground"}
-                   [20 50]
-                   15
-                   c/bubble-thickness]
-                  [:circle {:fill foreground-color
-                            :class "foreground"}
-                   [80 50]
-                   15
-                   c/bubble-thickness]
-                  (text [20 50]
-                        20
-                        "x")
-                  (text [80 50]
-                        20
-                        "y")]]])))
+                      :stroke-width 4
+                      :stroke-linecap "round"}
+           (list [40 50] [55 50])]
+          [:polygon {:fill highlight-color
+                     :class "highlight"}
+           [52.5 40]
+           [52.5 60]
+           [62.5 50]]
+          (outline-circle {:stroke foreground-color
+                           :class "foreground"}
+                          [20 50]
+                          15
+                          (- 1 c/bubble-thickness))
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [20 50]
+           11
+           c/bubble-thickness]
+          (outline-circle {:stroke foreground-color
+                           :class "foreground"}
+                          [80 50]
+                          15
+                          (- 1 c/bubble-thickness))
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [80 50]
+           11
+           c/bubble-thickness]
+          (text [20 50]
+                17
+                "x")
+          (text [80 50]
+                17
+                "y")]
+         (let [circle-center [80 50]
+               radius 15
+               width (* 2 radius c/bubble-thickness)]
+           (mapcat (fn [side]
+                     (mapcat (fn [direction]
+                               [(vec
+                                 (concat [:polyline
+                                          {:stroke foreground-color
+                                           :class "highlight"
+                                           :stroke-width width}]
+                                         (map (fn [pos]
+                                                (mapv +
+                                                      pos
+                                                      circle-center
+                                                      (mapv *
+                                                            (reverse side)
+                                                            (repeat (* direction radius c/set-line-offset)))))
+                                              [(mapv (partial * 0.9)
+                                                     side
+                                                     (repeat radius))
+                                               (mapv (partial * (inc c/set-line-length))
+                                                     side
+                                                     (repeat radius))])))])
+                             [1 -1]))
+                   [[-1 0]
+                    [1 0]
+                    [0 -1]
+                    [0 1]]))))]])))
 
 (defn render-document
   "Takes in a dali `document` and a `filename`, and saves the document as an
