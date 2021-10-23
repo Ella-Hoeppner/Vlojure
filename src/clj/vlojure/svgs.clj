@@ -70,7 +70,7 @@
 
 ; "documents" defines all SVGs that will be exported when "export" is run
 (def documents
-  ; TODO: enclose vector-enclose fn-enclose let-enclose comment
+  ; TODO: fn-enclose let-enclose comment
   (let []
     (mapv
      (fn [[name doc-fragments]]
@@ -216,7 +216,85 @@
                    [[-1 0]
                     [1 0]
                     [0 -1]
-                    [0 1]]))))]])))
+                    [0 1]]))))]
+      ["enclose"
+       (vec
+        (concat
+         [[:polyline {:stroke highlight-color
+                      :class "highlight"
+                      :stroke-width 4
+                      :stroke-linecap "round"}
+           (list [30 50] [45 50])]
+          [:polygon {:fill highlight-color
+                     :class "highlight"}
+           [42.5 40]
+           [42.5 60]
+           [52.5 50]]
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [15 50]
+           10
+           c/bubble-thickness]
+          (outline-circle {:stroke foreground-color
+                           :class "foreground"}
+                          [75 50]
+                          21
+                          (- 1 c/bubble-thickness))
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [75 50]
+           15
+           c/bubble-thickness]
+          (text [15 50]
+                16
+                "x")
+          (text [75 50]
+                23
+                "x")]))]
+      ["vector-enclose"
+       (vec
+        (concat
+         [[:polyline {:stroke highlight-color
+                      :class "highlight"
+                      :stroke-width 4
+                      :stroke-linecap "round"}
+           (list [30 50] [45 50])]
+          [:polygon {:fill highlight-color
+                     :class "highlight"}
+           [42.5 40]
+           [42.5 60]
+           [52.5 50]]
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [15 50]
+           10
+           c/bubble-thickness]
+          (let [circle-center [75 50]
+                radius 21]
+            [:polyline {:stroke foreground-color
+                        :class "foreground"
+                        :fill "none"
+                        :stroke-width (* radius 2 c/bubble-thickness)
+                        :stroke-linecap "round"}
+             (map (fn [index]
+                    (mapv +
+                          circle-center
+                          [-50 -50]
+                          (circle-pos radius
+                                      (* 0.25 Math/PI
+                                         (+ 0.5 index)))))
+                  (range 9))])
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [75 50]
+           15
+           c/bubble-thickness]
+          (text [15 50]
+                16
+                "x")
+          (text [75 50]
+                23
+                "x")]))]])))
 
 (defn render-document
   "Takes in a dali `document` and a `filename`, and saves the document as an
