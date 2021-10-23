@@ -46,6 +46,7 @@
       wrap-content-type))
 
 (defn start-server [& [port]]
+  (vlojure.svgs/export)
   (ring/run-jetty app
                   {:port (if port
                            (Integer/parseInt port)
@@ -53,9 +54,9 @@
                    :join? false}))
 
 (defn export []
+  (vlojure.svgs/export)
   (let [export-dir "out/vlojure"
         optimized-assets (optimizations/none (get-assets) {})]
-    (vlojure.svgs/export)
     (stasis/empty-directory! export-dir)
     (optimus.export/save-assets optimized-assets export-dir)
     (stasis/export-pages pages export-dir {:optimus-assets optimized-assets})))
