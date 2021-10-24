@@ -61,6 +61,7 @@
 (defn text [[x y] font-size text]
   [:text {:x x :y y
           :fill text-color
+          :class "text"
           :font-family "monoid-bold"
           :dominant-baseline "middle"
           :text-anchor "middle"
@@ -91,13 +92,10 @@
        [name
         (vec
          (concat [:dali/page
-                  {:width 100 :height 100}
+                  {:id name :width 100 :height 100}
                   [:defs
                    [:style {:type "text/css"}
-                    "@font-face {
-                                  font-family: monoid-bold;
-                                  src: url('../styles/monoid-bold.ttf');
-                                }"]]]
+                    "@font-face {font-family: monoid-bold; src: url('../styles/monoid-bold.ttf');}"]]]
                  doc-fragments))])
      [["undo"
        [(path {:stroke highlight-color

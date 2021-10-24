@@ -8,6 +8,7 @@
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.strategies :refer [serve-live-assets]]
+            [clojure.string :refer [index-of]]
             [optimus.export]
             [vlojure.svgs]))
 
@@ -18,11 +19,19 @@
           (assets/load-assets "public/js"
                               ["/base.js"
                                "/manifest.edn"])
-          (assets/load-assets "public/svgs"
-                              [#".*.svg"])
           (assets/load-assets "public"
                               ["/favicon.png"
                                #"\/bootstrap\/.*"])))
+
+(defn inlined-svgs []
+  (let [urls (mapv :resource
+                   (assets/load-assets "public/svgs"
+                                       [#".*.svg"]))
+        svg-strings (mapv (comp #(subs %
+                                       (index-of % "\n"))
+                                slurp)
+                          urls)]
+    (apply str svg-strings)))
 
 (def pages
   {"/index.html" (html {:lang "en"}
@@ -32,7 +41,8 @@
                         [:title "Vlojure"]
                         [:link {:rel "icon" :href "/favicon.png"}]]
                        [:body
-                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]])
+                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]]
+                       (inlined-svgs))
    "/about/" (html {:lang "en"}
                    [:head]
                    [:body
