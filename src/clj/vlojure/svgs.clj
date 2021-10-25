@@ -92,7 +92,7 @@
        [name
         (vec
          (concat [:dali/page
-                  {:id name :width 100 :height 100}
+                  {:id name :class "base-svg" :width 100 :height 100}
                   [:defs
                    [:style {:type "text/css"}
                     "@font-face {font-family: monoid-bold; src: url('../styles/monoid-bold.ttf');}"]]]

@@ -166,49 +166,54 @@
 (defn get-delta []
   (/ (.-elapsedMS (.-ticker (attr :app))) 1000))
 
-(defonce current-svg-color-scheme-atom (atom nil))
 (defn update-svg-color-scheme [color-scheme]
-  (when (not= @current-svg-color-scheme-atom color-scheme)
-    (doseq [class [:background :foreground :highlight :text]]
-      (let [elements (.getElementsByClassName js/document (subs (str class) 1))
-            color (color-scheme class)
-            rgb-string (str "#"
-                            (apply str
-                                   (map #(.toString (mod (quot color
-                                                               (Math/pow 256 %))
-                                                         256)
-                                                    16)
-                                        (reverse (range 3)))))]
-        (doseq [i (range (.-length elements))]
-          (let [element (.item elements i)]
-            (doseq [attribute ["fill" "stroke"]]
-              (let [current-value (.getAttribute element attribute)]
-                (when (and current-value
-                           (not= current-value "none"))
-                  (.setAttribute element attribute rgb-string)))))))))
-  (reset! current-svg-color-scheme-atom color-scheme))
+  (doseq [class [:background :foreground :highlight :text]]
+    (let [elements (.getElementsByClassName js/document (subs (str class) 1))
+          color (color-scheme class)
+          rgb-string (str "#"
+                          (apply str
+                                 (map #(.toString (mod (quot color
+                                                             (Math/pow 256 %))
+                                                       256)
+                                                  16)
+                                      (reverse (range 3)))))]
+      (doseq [i (range (.-length elements))]
+        (let [element (.item elements i)]
+          (doseq [attribute ["fill" "stroke"]]
+            (let [current-value (.getAttribute element attribute)]
+              (when (and current-value
+                         (not= current-value "none"))
+                (.setAttribute element attribute rgb-string)))))))))
 
-(defonce svg-texture-map-atom (atom {}))
-(defn render-svg [name]
-  (let [color-scheme (storage/color-scheme)
-        name-str (cond
+(defn render-svg [name [x y] radius]
+  (update-svg-color-scheme (storage/color-scheme))
+  (let [name-str (cond
                    (keyword? name) (subs (str name) 1)
-                   :else (str name))]
-    (update-svg-color-scheme color-scheme)
-    (swap! svg-texture-map-atom
-           (fn [svg-texture-map]
-             (update svg-texture-map
-                     [name-str color-scheme]
-                     (fn [texture]
-                       (if texture
-                         texture
-                         (new pixi/Sprite
-                              (pixi/Texture.from
-                               (new pixi/SVGResource
-                                    (.-outerHTML (js/document.getElementById name-str))))))))))
-    (let [svg-sprite (@svg-texture-map-atom [name color-scheme])]
-      (.addChild (.-stage (attr :app))
-                 svg-sprite))))
+                   :else (str name))
+        element (.cloneNode (js/document.getElementById name-str) true)]
+    (js/document.body.appendChild element)
+    (let [svg-rect (.item (.getClientRects element) 0)
+          current-size (app-size)
+          width (.-width svg-rect)
+          height (.-height svg-rect)
+          svg-size (max width height)
+          pixel-x (- (screen-x x) (* width 0.5))
+          pixel-y (- (screen-y y) (* height 0.5))]
+      (prn pixel-x pixel-y)
+      (.remove (.-classList element) "base-svg")
+      (.add (.-classList element) "copy-svg")
+      (set! (.-id element) (str (.-id element) 1))
+      (set! (.-left (.-style element)) (str pixel-x "px"))
+      (set! (.-top (.-style element)) (str pixel-y "px"))
+      (.setAttribute element
+                     "transform"
+                     (str "scale("
+                          (/ (* radius current-size)
+                             svg-size)
+                          ")")
+                     "scale()")
+
+      element)))
 
 (defn update-graphics []
   (let [app (attr :app)]

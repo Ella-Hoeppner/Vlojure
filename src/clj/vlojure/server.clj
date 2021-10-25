@@ -33,7 +33,7 @@
                           urls)]
     (apply str svg-strings)))
 
-(def pages
+(defn pages []
   {"/index.html" (html {:lang "en"}
                        [:head
                         [:meta {:charset "utf-8"}]
@@ -56,7 +56,6 @@
       wrap-content-type))
 
 (defn start-server [& [port]]
-  (vlojure.svgs/export)
   (ring/run-jetty app
                   {:port (if port
                            (Integer/parseInt port)
@@ -64,7 +63,6 @@
                    :join? false}))
 
 (defn export []
-  (vlojure.svgs/export)
   (let [export-dir "out/vlojure"
         optimized-assets (optimizations/none (get-assets) {})]
     (stasis/empty-directory! export-dir)
@@ -72,6 +70,7 @@
     (stasis/export-pages pages export-dir {:optimus-assets optimized-assets})))
 
 (defn -main [& [mode]]
+  (vlojure.svgs/export)
   (case mode
     "export" (export)
     (start-server)))

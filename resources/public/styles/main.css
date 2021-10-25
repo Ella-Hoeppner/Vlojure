@@ -7,3 +7,19 @@ body {
   margin: 0;
   overflow: hidden; 
 }
+
+.text {
+  pointer-events: none;
+  user-select: none;
+}
+
+.copy-svg {
+  visibility: visible;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+.base-svg {
+  visibility: hidden;
+}
