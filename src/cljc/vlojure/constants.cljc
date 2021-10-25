@@ -120,8 +120,8 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-command-types [[:undo :redo :replace :literal-fn-replace]
-                                     [:enclose :vector-enclose :fn-enclose :let-enclose :comment]])
+(def settings-formbar-command-types [[:undo :redo :replace :comment]
+                                     [:enclose :vector-enclose :literal-fn-replace :fn-enclose :let-enclose]])
 (def settings-formbar-command-text-y -0.7)
 (def settings-formbar-command-text-size 0.7)
 (def settings-formbar-command-y -0.4)

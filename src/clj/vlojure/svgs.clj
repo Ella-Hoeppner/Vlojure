@@ -11,7 +11,7 @@
 
 ; Constants used to define SVGs
 (def PI Math/PI)
-(def undo-radius 30)
+(def undo-radius 25)
 (def undo-arrow-width 0.8)
 (def undo-arrow-length (/ 0.8 (Math/sqrt 2)))
 (def foreground-color (rgb 0xff0000))
@@ -136,69 +136,59 @@
                (circle-pos undo-radius (* 1.75 PI))
                (repeat (* undo-radius undo-arrow-length)))]]]
       ["replace"
-       [[:polyline {:stroke highlight-color
-                    :class "highlight"
-                    :stroke-width 4
-                    :stroke-linecap "round"}
-         (list [40 50] [55 50])]
-        [:polygon {:fill highlight-color
+       [[:polygon {:fill highlight-color
                    :class "highlight"}
-         [52.5 40]
-         [52.5 60]
-         [62.5 50]]
+         [45 40]
+         [45 60]
+         [55 50]]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [20 50]
-         15]
+         [23 50]
+         20]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [80 50]
-         15]
-        (text [20 50]
-              20
+         [77 50]
+         20]
+        (text [23 50]
+              30
               "x")
-        (text [80 50]
-              20
+        (text [77 50]
+              30
               "y")]]
-      ["literal-fn-replaced"
+      ["literal-fn-replace"
        (vec
         (concat
-         [[:polyline {:stroke highlight-color
-                      :class "highlight"
-                      :stroke-width 4
-                      :stroke-linecap "round"}
-           (list [40 50] [55 50])]
-          [:polygon {:fill highlight-color
+         [[:polygon {:fill highlight-color
                      :class "highlight"}
-           [52.5 40]
-           [52.5 60]
-           [62.5 50]]
+           [45 40]
+           [45 60]
+           [55 50]]
           (outline-circle {:stroke foreground-color
                            :class "foreground"}
-                          [20 50]
-                          15
+                          [23 50]
+                          20
                           (- 1 c/bubble-thickness))
           [:circle {:fill foreground-color
                     :class "foreground"}
-           [20 50]
-           11]
+           [23 50]
+           16]
           (outline-circle {:stroke foreground-color
                            :class "foreground"}
-                          [80 50]
-                          15
+                          [77 50]
+                          20
                           (- 1 c/bubble-thickness))
           [:circle {:fill foreground-color
                     :class "foreground"}
-           [80 50]
-           11]
-          (text [20 50]
-                17
+           [77 50]
+           16]
+          (text [23 50]
+                24
                 "x")
-          (text [80 50]
-                17
-                "y")]
-         (let [circle-center [80 50]
-               radius 15
+          (text [77 50]
+                24
+                "x")]
+         (let [circle-center [77 50]
+               radius 20
                width (* 2 radius c/bubble-thickness)]
            (mapcat (fn [side]
                      (mapcat (fn [direction]
@@ -226,97 +216,81 @@
                     [0 -1]
                     [0 1]]))))]
       ["enclose"
-       [[:polyline {:stroke highlight-color
-                    :class "highlight"
-                    :stroke-width 4
-                    :stroke-linecap "round"}
-         (list [30 50] [45 50])]
-        [:polygon {:fill highlight-color
+       [[:polygon {:fill highlight-color
                    :class "highlight"}
-         [42.5 40]
-         [42.5 60]
-         [52.5 50]]
+         [35 40]
+         [35 60]
+         [45 50]]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [15 50]
-         10]
+         [18 50]
+         15]
         (outline-circle {:stroke foreground-color
                          :class "foreground"}
-                        [75 50]
-                        21
+                        [71 50]
+                        24
                         (- 1 c/bubble-thickness))
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [75 50]
-         15]
-        (text [15 50]
-              16
+         [71 50]
+         18]
+        (text [18 50]
+              20
               "x")
-        (text [75 50]
-              23
+        (text [71 50]
+              28
               "x")]]
       ["vector-enclose"
-       [[:polyline {:stroke highlight-color
-                    :class "highlight"
-                    :stroke-width 4
-                    :stroke-linecap "round"}
-         (list [30 50] [45 50])]
-        [:polygon {:fill highlight-color
+       [[:polygon {:fill highlight-color
                    :class "highlight"}
-         [42.5 40]
-         [42.5 60]
-         [52.5 50]]
+         [35 40]
+         [35 60]
+         [45 50]]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [15 50]
-         10]
-        (vector-octagon [75 50] 21)
+         [18 50]
+         15]
+        (vector-octagon [71 50] 24)
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [75 50]
-         15
-         c/bubble-thickness]
-        (text [15 50]
-              16
+         [71 50]
+         18]
+        (text [18 50]
+              20
               "x")
-        (text [75 50]
-              23
+        (text [71 50]
+              28
               "x")]]
       ["comment"
        (vec
         (concat
-         [[:polyline {:stroke highlight-color
-                      :class "highlight"
-                      :stroke-width 4
-                      :stroke-linecap "round"}
-           (list [30 50] [45 50])]
-          [:polygon {:fill highlight-color
+         [[:polygon {:fill highlight-color
                      :class "highlight"}
-           [42.5 40]
-           [42.5 60]
-           [52.5 50]]
+           [35 40]
+           [35 60]
+           [45 50]]
           [:circle {:fill foreground-color
                     :class "foreground"}
-           [15 50]
-           10]
-          [:circle {:fill foreground-color
-                    :class "foreground"}
-           [75 50]
+           [18 50]
            15]
-          (text [15 50]
-                16
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [71 50]
+           18]
+          (text [18 50]
+                20
                 "x")
-          (text [75 50]
-                23
+          (text [71 50]
+                28
                 "x")]
          (let [divs 16
-               radius 21
-               circle-center [75 50]]
+               radius 25
+               circle-center [71 50]]
            (map (fn [index]
                   (let [angle (/ (* index 2 PI)
                                  divs)]
                     [:polyline {:stroke foreground-color
-                                :stroke-width (* radius c/bubble-thickness)
+                                :stroke-width (* radius c/bubble-thickness 1.75)
                                 :class "foreground"
                                 :fill "none"}
                      (map (fn [radius-factor]
@@ -325,85 +299,75 @@
                                   [-50 -50]
                                   (circle-pos (* radius radius-factor) angle)))
                           [1
-                           (- 1 c/comment-length-factor)])]))
+                           (- 1 (* 1.25 c/comment-length-factor))])]))
                 (range divs)))))]
       ["let-enclose"
-       [[:polyline {:stroke highlight-color
-                    :class "highlight"
-                    :stroke-width 4
-                    :stroke-linecap "round"}
-         (list [30 50] [45 50])]
-        [:polygon {:fill highlight-color
+       [[:polygon {:fill highlight-color
                    :class "highlight"}
-         [42.5 40]
-         [42.5 60]
-         [52.5 50]]
+         [31 40]
+         [31 60]
+         [41 50]]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [15 50]
-         10]
+         [16 50]
+         13]
         (outline-circle {:stroke foreground-color
                          :class "foreground"}
-                        [75 50]
-                        21
+                        [70 50]
+                        28
                         (- 1 c/bubble-thickness))
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [75 40]
-         7.5]
-        (vector-octagon [66 55] 7.5)
+         [70 42]
+         16]
+        (vector-octagon [61 64.5] 7.5)
 
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [84 55]
+         [79 64.5]
          7.5]
-        (text [15 50]
-              16
+        (text [16 50]
+              20
               "x")
-        (text [84 55]
+        (text [79 64.5]
+              12
+              "x")
+        (text [70 43]
               13
-              "x")
-        (text [74.5 40.5]
-              5
               "let")]]
       ["fn-enclose"
-       [[:polyline {:stroke highlight-color
-                    :class "highlight"
-                    :stroke-width 4
-                    :stroke-linecap "round"}
-         (list [30 50] [45 50])]
-        [:polygon {:fill highlight-color
+       [[:polygon {:fill highlight-color
                    :class "highlight"}
-         [42.5 40]
-         [42.5 60]
-         [52.5 50]]
+         [31 40]
+         [31 60]
+         [41 50]]
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [15 50]
-         10]
+         [16 50]
+         13]
         (outline-circle {:stroke foreground-color
                          :class "foreground"}
-                        [75 50]
-                        21
+                        [70 50]
+                        28
                         (- 1 c/bubble-thickness))
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [75 40]
-         7.5]
-        (vector-octagon [66 55] 7.5)
+         [70 42]
+         16]
+        (vector-octagon [61 64.5] 7.5)
 
         [:circle {:fill foreground-color
                   :class "foreground"}
-         [84 55]
+         [79 64.5]
          7.5]
-        (text [15 50]
-              16
+        (text [16 50]
+              20
               "x")
-        (text [84 55]
-              13
+        (text [79 64.5]
+              12
               "x")
-        (text [74.5 40.5]
-              7
+        (text [70 43]
+              20
               "fn")]]])))
 
 (defn render-document
