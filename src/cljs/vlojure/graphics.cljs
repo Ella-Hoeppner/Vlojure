@@ -272,7 +272,6 @@
                                (if (< index (count required-svgs))
                                  (do (set! (.-visibility (.-style svg))
                                            "visible")
-                                     (prn (.-visibility (.-style svg)))
                                      (let [[{:keys [x y]} radius] (required-svgs index)
                                            width (int (.getAttribute svg "width"))
                                            height (int (.getAttribute svg "height"))
