@@ -598,9 +598,9 @@
            (graphics/circle circle
                             (:background (storage/color-scheme))
                             :background)
-           (render-formbar-command (:type circle)
-                                   circle
-                                   :program))))
+           (graphics/render-svg (:type circle)
+                                circle
+                                (:radius circle)))))
      
      ;; Render saved formbar page
      (let [center-circle (settings-circle constants/settings-saved-formbars-page)

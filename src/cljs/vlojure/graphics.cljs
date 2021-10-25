@@ -4,7 +4,9 @@
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as constants]
-            [vlojure.storage :as storage]))
+            [vlojure.storage :as storage]
+            [clojure.string :refer [index-of]]
+            [clojure.set :refer [union]]))
 
 (defonce graphics-state (atom {}))
 
@@ -167,53 +169,44 @@
   (/ (.-elapsedMS (.-ticker (attr :app))) 1000))
 
 (defn update-svg-color-scheme [color-scheme]
-  (doseq [class [:background :foreground :highlight :text]]
-    (let [elements (.getElementsByClassName js/document (subs (str class) 1))
-          color (color-scheme class)
-          rgb-string (str "#"
-                          (apply str
-                                 (map #(.toString (mod (quot color
-                                                             (Math/pow 256 %))
-                                                       256)
-                                                  16)
-                                      (reverse (range 3)))))]
-      (doseq [i (range (.-length elements))]
-        (let [element (.item elements i)]
-          (doseq [attribute ["fill" "stroke"]]
-            (let [current-value (.getAttribute element attribute)]
-              (when (and current-value
-                         (not= current-value "none"))
-                (.setAttribute element attribute rgb-string)))))))))
+  (let [current-svg-color-scheme (attr :svg-color-scheme)]
+    (when (not= color-scheme current-svg-color-scheme)
+      (doseq [class [:background :foreground :highlight :text]]
+        (let [elements (.getElementsByClassName js/document (subs (str class) 1))
+              color (color-scheme class)
+              rgb-string (str "#"
+                              (apply str
+                                     (map #(.toString (mod (quot color
+                                                                 (Math/pow 256 %))
+                                                           256)
+                                                      16)
+                                          (reverse (range 3)))))]
+          (doseq [i (range (.-length elements))]
+            (let [element (.item elements i)]
+              (doseq [attribute ["fill" "stroke"]]
+                (let [current-value (.getAttribute element attribute)]
+                  (when (and current-value
+                             (not= current-value "none"))
+                    (.setAttribute element attribute rgb-string))))))))
+      (set-attr! :svg-color-scheme color-scheme))))
 
-(defn render-svg [name [x y] radius]
-  (update-svg-color-scheme (storage/color-scheme))
+(defn clear-svg-queue []
+  (set-attr! :svgs-to-render nil))
+
+(defn render-svg [name pos radius]
+  (update-attr! :svgs-to-render #(conj % [name pos radius]))
+  (update-svg-color-scheme (storage/color-scheme)))
+
+(defn new-svg-copy [name]
   (let [name-str (cond
                    (keyword? name) (subs (str name) 1)
                    :else (str name))
         element (.cloneNode (js/document.getElementById name-str) true)]
     (js/document.body.appendChild element)
-    (let [svg-rect (.item (.getClientRects element) 0)
-          current-size (app-size)
-          width (.-width svg-rect)
-          height (.-height svg-rect)
-          svg-size (max width height)
-          pixel-x (- (screen-x x) (* width 0.5))
-          pixel-y (- (screen-y y) (* height 0.5))]
-      (prn pixel-x pixel-y)
-      (.remove (.-classList element) "base-svg")
-      (.add (.-classList element) "copy-svg")
-      (set! (.-id element) (str (.-id element) 1))
-      (set! (.-left (.-style element)) (str pixel-x "px"))
-      (set! (.-top (.-style element)) (str pixel-y "px"))
-      (.setAttribute element
-                     "transform"
-                     (str "scale("
-                          (/ (* radius current-size)
-                             svg-size)
-                          ")")
-                     "scale()")
-
-      element)))
+    (.remove (.-classList element) "base-svg")
+    (.add (.-classList element) "copy-svg")
+    (set! (.-id element) (str (.-id element) "_"))
+    element))
 
 (defn update-graphics []
   (let [app (attr :app)]
@@ -231,7 +224,75 @@
           (update-attr! :texts
                         #(assoc % layer container))
           (set! (.-zIndex container) (+ 0.5 z))
-          (.addChild stage container))))))
+          (.addChild stage container)))))
+  (let [required-svgs-by-name (reduce (fn [element-map svg-args]
+                                        (let [[name pos radius] svg-args]
+                                          (update element-map
+                                                  name
+                                                  #(conj % [pos radius]))))
+                                      {}
+                                      (attr :svgs-to-render))
+        copy-svgs (js/document.getElementsByClassName "copy-svg")
+        existing-svgs-by-name (reduce (fn [element-map svg]
+                                        (let [id (.-id svg)
+                                              name (keyword (subs id
+                                                                  0
+                                                                  (or (index-of id "_")
+                                                                      (count id))))]
+                                          (update element-map
+                                                  name
+                                                  #(conj % svg))))
+                                      {}
+                                      (mapv #(.item copy-svgs %)
+                                            (range (.-length copy-svgs))))
+        names (union (set (keys required-svgs-by-name))
+                     (set (keys existing-svgs-by-name)))]
+    (doseq [name names]
+      (let [required-svgs (vec (name required-svgs-by-name))
+            existing-svgs (vec (name existing-svgs-by-name))
+            max-svg-count (max (count required-svgs)
+                               (count existing-svgs))]
+        (loop [current-svgs existing-svgs
+               index 0]
+          (when (< index max-svg-count)
+            (let [expanded-svgs (if (< index
+                                       (count current-svgs))
+                                  current-svgs
+                                  (conj current-svgs
+                                        (new-svg-copy name)))]
+              (recur (update expanded-svgs
+                             index
+                             (fn [svg]
+                               (set! (.-id svg)
+                                     (str (subs
+                                           (str name)
+                                           1)
+                                          "_"
+                                          index))
+                               (if (< index (count required-svgs))
+                                 (do (set! (.-visibility (.-style svg))
+                                           "visible")
+                                     (prn (.-visibility (.-style svg)))
+                                     (let [[{:keys [x y]} radius] (required-svgs index)
+                                           width (int (.getAttribute svg "width"))
+                                           height (int (.getAttribute svg "height"))
+                                           pixel-x (- (screen-x x) (* width 0.5))
+                                           pixel-y (- (screen-y y) (* height 0.5))]
+                                       (set! (.-left (.-style svg)) (str pixel-x "px"))
+                                       (set! (.-top (.-style svg)) (str pixel-y "px"))
+                                       (.setAttribute svg
+                                                      "transform"
+                                                      (str "scale("
+                                                           (/ (* 2 radius (app-size))
+                                                              (max width height))
+                                                           ")")
+                                                      "scale()")))
+                                 (set! (.-visibility (.-style svg))
+                                       "hidden"))
+
+                               svg))
+                     (inc index))))))))
+  (clear-svg-queue))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (let [app (set-attr! :app
@@ -263,7 +324,7 @@
                       (clj->js
                        {:chars pixi/BitmapFont.ASCII}))
                (u/log "Font loaded."))))
-    
+
     (resize)))
 
 (defn in-discard-corner? [pos]
@@ -279,10 +340,10 @@
     (circle (assoc (geom/add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius constants/lower-corner-zone-radius)
-                     (if highlighted?
-                       (:highlight (storage/color-scheme))
-                       (:foreground (storage/color-scheme)))
-                     :menu)
+            (if highlighted?
+              (:highlight (storage/color-scheme))
+              (:foreground (storage/color-scheme)))
+            :menu)
     (circle (assoc (geom/add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius (* (- 1 constants/corner-zone-bar-thickness)
