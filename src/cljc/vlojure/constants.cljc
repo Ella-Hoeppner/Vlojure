@@ -120,15 +120,15 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-command-types [[:undo :redo]
+(def settings-formbar-tool-types [[:undo :redo]
                                      [:replace :comment :enclose :vector-enclose]
                                      [:literal-fn-replace :fn-enclose :let-enclose]])
-(def settings-formbar-command-text-y -0.7)
-(def settings-formbar-command-text-size 0.7)
-(def settings-formbar-command-y -0.3)
-(def settings-formbar-command-radius 0.2)
-(def settings-formbar-command-x-spacing 1.1)
-(def settings-formbar-command-y-spacing 1.1)
+(def settings-formbar-tool-text-y -0.675)
+(def settings-formbar-tool-text-size 0.55)
+(def settings-formbar-tool-y -0.3)
+(def settings-formbar-tool-radius 0.2)
+(def settings-formbar-tool-x-spacing 1.1)
+(def settings-formbar-tool-y-spacing 1.1)
 
 (def settings-saved-formbars-text-y -0.65)
 (def settings-saved-formbars-text-size 0.8)
@@ -178,7 +178,7 @@
 (def settings-pages 5)
 (def settings-default-scroll-pos 2)
 
-(def settings-formbar-commands-page 0)
+(def settings-formbar-tools-page 0)
 (def settings-saved-formbars-page 1)
 (def settings-project-selector-page 2)
 (def settings-sliders-page 3)

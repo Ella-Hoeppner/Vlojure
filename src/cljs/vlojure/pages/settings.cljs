@@ -292,32 +292,32 @@
                                           0.5
                                           constants/settings-saved-formbar-radius)))))))))))
 
-(defn formbar-command-circles []
-  (let [center-circle (settings-circle constants/settings-formbar-commands-page)
+(defn formbar-tool-circles []
+  (let [center-circle (settings-circle constants/settings-formbar-tools-page)
         center-radius (:radius center-circle)]
     (mapv (fn [y]
-            (let [row (constants/settings-formbar-command-types y)
+            (let [row (constants/settings-formbar-tool-types y)
                   row-count (count row)]
               (mapv (fn [x]
                       (-> (select-keys center-circle [:x :y :radius])
                           (update :x (partial + (* center-radius
-                                                   constants/settings-formbar-command-radius
+                                                   constants/settings-formbar-tool-radius
                                                    2
-                                                   constants/settings-formbar-command-x-spacing
+                                                   constants/settings-formbar-tool-x-spacing
                                                    (- x
                                                       (* 0.5 (dec row-count))))))
                           (update :y (partial +
                                               (* center-radius
-                                                 constants/settings-formbar-command-y)
+                                                 constants/settings-formbar-tool-y)
                                               (* y
                                                  center-radius
-                                                 constants/settings-formbar-command-radius
+                                                 constants/settings-formbar-tool-radius
                                                  2
-                                                 constants/settings-formbar-command-y-spacing)))
-                          (assoc :radius (* center-radius constants/settings-formbar-command-radius))
+                                                 constants/settings-formbar-tool-y-spacing)))
+                          (assoc :radius (* center-radius constants/settings-formbar-tool-radius))
                           (assoc :type (row x))))
                     (range row-count))))
-          (range (count constants/settings-formbar-command-types)))))
+          (range (count constants/settings-formbar-tool-types)))))
 
 (defn render-formbar-command [type circle layer]
   (case type
@@ -585,15 +585,15 @@
                           :background))))
 
      ;; Render formbar command page
-     (let [center-circle (settings-circle constants/settings-formbar-commands-page)
+     (let [center-circle (settings-circle constants/settings-formbar-tools-page)
            center-radius (:radius center-circle)]
-       (graphics/text "Commands"
+       (graphics/text "Tools"
                       (-> center-circle
-                          (update :y (partial + (* center-radius constants/settings-formbar-command-text-y))))
-                      (* center-radius constants/settings-formbar-command-text-size)
+                          (update :y (partial + (* center-radius constants/settings-formbar-tool-text-y))))
+                      (* center-radius constants/settings-formbar-tool-text-size)
                       (:text (storage/color-scheme))
                       :background)
-       (doseq [row (formbar-command-circles)]
+       (doseq [row (formbar-tool-circles)]
          (doseq [circle row]
            (graphics/circle circle
                             (:background (storage/color-scheme))
