@@ -319,35 +319,6 @@
                     (range row-count))))
           (range (count constants/settings-formbar-tool-types)))))
 
-(defn render-formbar-command [type circle layer]
-  (case type
-    :undo
-    ()
-
-    :redo
-    ()
-
-    :replace
-    ()
-
-    :literal-fn-replace
-    ()
-
-    :enclose
-    ()
-    
-    :vector-enclose
-    ()
-
-    :fn-enclose
-    ()
-
-    :let-enclose
-    ()
-    
-    :comment
-    ()))
-
 (def page
   {:init
    (fn []
