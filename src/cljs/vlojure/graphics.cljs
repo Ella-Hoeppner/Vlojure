@@ -208,23 +208,7 @@
     (set! (.-id element) (str (.-id element) "_"))
     element))
 
-(defn update-graphics []
-  (let [app (attr :app)]
-    (resize)
-    (doseq [layer constants/ui-layers]
-      (.clear (get-graphics layer)))
-    (let [stage (.-stage app)
-          texts (:texts @graphics-state)]
-      (when texts
-        (doseq [text-container (vals texts)]
-          (.removeChild stage text-container)
-          (.destroy text-container (clj->js {:children true :texture true :baseTexture true}))))
-      (doseq [[layer z] (mapv vector constants/ui-layers (range))]
-        (let [container (pixi/Container.)]
-          (update-attr! :texts
-                        #(assoc % layer container))
-          (set! (.-zIndex container) (+ 0.5 z))
-          (.addChild stage container)))))
+(defn update-svgs []
   (let [required-svgs-by-name (reduce (fn [element-map svg-args]
                                         (let [[name pos radius] svg-args]
                                           (update element-map
@@ -292,6 +276,24 @@
                                svg))
                      (inc index))))))))
   (clear-svg-queue))
+
+(defn update-graphics []
+  (let [app (attr :app)]
+    (resize)
+    (doseq [layer constants/ui-layers]
+      (.clear (get-graphics layer)))
+    (let [stage (.-stage app)
+          texts (:texts @graphics-state)]
+      (when texts
+        (doseq [text-container (vals texts)]
+          (.removeChild stage text-container)
+          (.destroy text-container (clj->js {:children true :texture true :baseTexture true}))))
+      (doseq [[layer z] (mapv vector constants/ui-layers (range))]
+        (let [container (pixi/Container.)]
+          (update-attr! :texts
+                        #(assoc % layer container))
+          (set! (.-zIndex container) (+ 0.5 z))
+          (.addChild stage container))))))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (let [app (set-attr! :app

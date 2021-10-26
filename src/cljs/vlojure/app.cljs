@@ -75,6 +75,8 @@
                  (assoc (attr :mouse)
                         :dragging? (mouse-dragging?))
                  mouse-zone)
+    
+    (graphics/update-svgs)
 
     ;; Draw "settings" circle and icon, or "back" icon
     (let [radius (/ (* (- 1 constants/corner-zone-bar-thickness)
