@@ -193,9 +193,23 @@
 (defn clear-svg-queue []
   (set-attr! :svgs-to-render nil))
 
-(defn render-svg [name pos radius]
-  (update-attr! :svgs-to-render #(conj % [name pos radius]))
+(defn render-svg [tool-name pos radius]
+  (update-attr! :svgs-to-render #(conj % [tool-name pos radius]))
   (update-svg-color-scheme (storage/color-scheme)))
+
+(defn render-tool [tool-name tool-circle & [outline?]]
+  (render-svg tool-name
+              tool-circle
+              (:radius tool-circle))
+  (when outline?
+    (circle (update tool-circle
+                    :radius
+                    (partial * (inc constants/formbar-outline-thickness)))
+            (:foreground (storage/color-scheme))
+            :drag)
+    (circle tool-circle
+            (:background (storage/color-scheme))
+            :drag)))
 
 (defn new-svg-copy [name]
   (let [name-str (cond

@@ -319,6 +319,12 @@
                     (range row-count))))
           (range (count constants/settings-formbar-tool-types)))))
 
+(defn tool-circle-at [pos]
+  (some #(when (geom/in-circle? % pos)
+           (:type %))
+        (apply concat
+               (formbar-tool-circles))))
+
 (def page
   {:init
    (fn []
@@ -498,6 +504,9 @@
              (saved-formbar-index-at mouse)
              :saved-formbar
 
+             (tool-circle-at mouse)
+             :tool-circle
+
              (settings-circle-at mouse)
              :settings-circle
 
@@ -569,10 +578,9 @@
            (graphics/circle circle
                             (:background (storage/color-scheme))
                             :background)
-           (graphics/render-svg (:type circle)
-                                circle
-                                (:radius circle)))))
-     
+           (graphics/render-tool (:type circle)
+                                 circle))))
+
      ;; Render saved formbar page
      (let [center-circle (settings-circle constants/settings-saved-formbars-page)
            center-radius (:radius center-circle)]
@@ -709,24 +717,24 @@
                                   (count (formbar/saved-formbar-contents))))))
              (let [insertion-index (min (saved-formbar-insertion-index-at mouse)
                                         (count (formbar/saved-formbar-contents)))]
-              (when insertion-index
-                (let [y-offset (+ (* insertion-index
-                                     formbar-radius
-                                     2)
-                                  (* (+ 0.5 insertion-index)
-                                     formbar-radius
-                                     constants/saved-formbar-spacing))
-                      x-offset (* saved-formbar-box-width 0.5
-                                  (- 1 constants/settings-saved-formbar-insertion-bar-width))]
-                  (graphics/line (-> formbar-zone-corner
-                                     (update :x (partial + x-offset))
-                                     (update :y (partial + y-offset)))
-                                 (-> formbar-zone-corner
-                                     (update :x (partial + (- saved-formbar-box-width x-offset)))
-                                     (update :y (partial + y-offset)))
-                                 constants/settings-saved-formbar-insertion-bar-thickness
-                                 (:highlight (storage/color-scheme))
-                                 :program-overlay))))))
+               (when insertion-index
+                 (let [y-offset (+ (* insertion-index
+                                      formbar-radius
+                                      2)
+                                   (* (+ 0.5 insertion-index)
+                                      formbar-radius
+                                      constants/saved-formbar-spacing))
+                       x-offset (* saved-formbar-box-width 0.5
+                                   (- 1 constants/settings-saved-formbar-insertion-bar-width))]
+                   (graphics/line (-> formbar-zone-corner
+                                      (update :x (partial + x-offset))
+                                      (update :y (partial + y-offset)))
+                                  (-> formbar-zone-corner
+                                      (update :x (partial + (- saved-formbar-box-width x-offset)))
+                                      (update :y (partial + y-offset)))
+                                  constants/settings-saved-formbar-insertion-bar-thickness
+                                  (:highlight (storage/color-scheme))
+                                  :program-overlay))))))
 
          ; Saved Formbar Slider
          (graphics/rect (saved-formbar-scroll-rectangle)
@@ -1056,6 +1064,13 @@
                           (:text color-scheme)
                           :background))))
 
+     ;; Render dragged tools
+     (when (and (:dragging? mouse)
+                (= (:down-zone mouse) :tool-circle))
+       (graphics/render-tool (tool-circle-at (:down-pos mouse))
+                             (assoc mouse
+                                    :radius constants/settings-formbar-drag-tool-radius)
+                             true))
 
      ;; Render new formbar circles
      (doseq [[new-formbar-circle] (formbar/new-formbar-circles)]
@@ -1142,7 +1157,6 @@
                         %
                         (Math/pow (:move (storage/camera-speed 0))
                                   delta))))
-     
      (when (and (:down? mouse)
                 (= (:down-zone mouse)
                    :saved-formbar-scroll))

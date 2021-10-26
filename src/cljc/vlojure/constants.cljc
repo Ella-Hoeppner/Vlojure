@@ -127,6 +127,7 @@
 (def settings-formbar-tool-text-size 0.55)
 (def settings-formbar-tool-y -0.3)
 (def settings-formbar-tool-radius 0.2)
+(def settings-formbar-drag-tool-radius 0.07)
 (def settings-formbar-tool-x-spacing 1.1)
 (def settings-formbar-tool-y-spacing 1.1)
 

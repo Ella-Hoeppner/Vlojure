@@ -8,6 +8,10 @@ body {
   overflow: hidden; 
 }
 
+svg {
+  pointer-events: none;
+}
+
 .text {
   pointer-events: none;
   user-select: none;
