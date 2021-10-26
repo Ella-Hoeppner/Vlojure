@@ -358,15 +358,11 @@
                    :right []})}]}))
 
 (defn ensure-saved-state-updated! []
-  (prn (keys @app-state)
-       (not
-        (some #{:saved-formbars}
-              (keys @app-state))))
   (when (not
          (some #{:saved-formbars}
                (keys @app-state)))
-    (prn (set-attr! :saved-formbars
-                    (:saved-formbars (default-app-state))))))
+    (set-attr! :saved-formbars
+               (:saved-formbars (default-app-state)))))
 
 (defn init []
   (js/console.log "Initializing...")
