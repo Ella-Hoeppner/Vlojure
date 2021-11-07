@@ -693,7 +693,9 @@
 
              :formbar
              (let [{:keys [down-formbar-form-path]} mouse]
-               (when down-formbar-form-path
+               (when (and down-formbar-form-path
+                          (not (:type (get-in (storage/project-attr :formbars)
+                                              (formbar/formbar-path-at (:down-pos mouse))))))
                  (let [arrangement (formbar/formbar-arrangement)]
                    (storage/track-discard
                     (get-in arrangement down-formbar-form-path))
