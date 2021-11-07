@@ -504,7 +504,8 @@
              (saved-formbar-index-at mouse)
              :saved-formbar
 
-             (tool-circle-at mouse)
+             (and (on-stage? constants/settings-formbar-tools-page)
+                  (tool-circle-at mouse))
              :tool-circle
 
              (settings-circle-at mouse)
@@ -578,8 +579,9 @@
            (graphics/circle circle
                             (:background (storage/color-scheme))
                             :background)
-           (graphics/render-tool (:type circle)
-                                 circle))))
+          (when (on-stage? constants/settings-formbar-tools-page)
+            (graphics/render-tool (:type circle)
+                                  circle)))))
 
      ;; Render saved formbar page
      (let [center-circle (settings-circle constants/settings-saved-formbars-page)
@@ -1067,10 +1069,13 @@
      ;; Render dragged tools
      (when (and (:dragging? mouse)
                 (= (:down-zone mouse) :tool-circle))
-       (graphics/render-tool (tool-circle-at (:down-pos mouse))
-                             (assoc mouse
-                                    :radius constants/settings-formbar-drag-tool-radius)
-                             true))
+       (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
+         (graphics/render-tool (tool-circle-at (:down-pos mouse))
+                               (if formbar-insertion-path
+                                 (formbar/formbar-insertion-circle formbar-insertion-path)
+                                 (assoc mouse
+                                        :radius constants/settings-formbar-drag-tool-radius))
+                               true)))
 
      ;; Render new formbar circles
      (doseq [[new-formbar-circle] (formbar/new-formbar-circles)]

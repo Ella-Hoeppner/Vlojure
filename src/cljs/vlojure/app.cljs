@@ -270,15 +270,18 @@
                            :drag-dist 0)))
     (if currently-dragging?
       (when (= (attr :page) :settings)
-        (cond 
+        (cond
           (= (:down-zone mouse) :formbar)
           (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
                 saved-formbar-insertion-index (settings-page/saved-formbar-insertion-index-at mouse)]
             (when saved-formbar-insertion-index
-              (formbar/add-saved-formbar! saved-formbar-insertion-index
-                                          (:forms
-                                           (get-in (storage/project-attr :formbars)
-                                                   (formbar/formbar-path-at (:down-pos mouse))))))
+              (let [dragged-formbar (get-in (storage/project-attr :formbars)
+                                            (formbar/formbar-path-at (:down-pos mouse)))]
+                (when (not (:type dragged-formbar))
+                  (formbar/add-saved-formbar! saved-formbar-insertion-index
+                                              (:forms
+                                               (get-in (storage/project-attr :formbars)
+                                                       (formbar/formbar-path-at (:down-pos mouse))))))))
             (when (and (not saved-formbar-insertion-index)
                        formbar-placement-path)
               (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
@@ -290,11 +293,11 @@
                   (let [forms (:forms
                                (get-in (storage/project-attr :formbars)
                                        dragged-formbar-path))
+                        dragged-formbar (get-in (storage/project-attr :formbars)
+                                                dragged-formbar-path)
                         create-new! (fn []
-                                      (storage/add-project-formbar-at formbar-placement-path)
-                                      (doseq [index (range (count forms))]
-                                        (let [form (nth forms index)]
-                                          (storage/add-project-formbar-form-at form formbar-placement-path index))))
+                                      (storage/add-project-formbar-at formbar-placement-path
+                                                                      dragged-formbar))
                         delete-old! (fn []
                                       (storage/delete-project-formbar-at dragged-formbar-path))]
                     (if (and (= (take 2 formbar-placement-path)
@@ -305,7 +308,15 @@
                           (create-new!))
                       (do (create-new!)
                           (delete-old!))))))))
-          
+
+          (= (:down-zone mouse) :tool-circle)
+          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
+            (when formbar-placement-path
+              (storage/add-project-formbar-at formbar-placement-path
+                                              {:type :tool
+                                               :tool-type (settings-page/tool-circle-at
+                                                           (:down-pos mouse))})))
+
           (= (:down-zone mouse) :saved-formbar)
           (if (= mouse-zone :saved-formbar)
             (let [from-index (+ @settings-page/saved-formbar-scroll-pos

@@ -104,18 +104,20 @@
                                       (first path)
                                       #(u/vector-remove % (second path))))))))
 
-(defn add-project-formbar-at [path]
+(defn add-project-formbar-at [path & [starting-value]]
   (update-project-attr! :formbars
                         (fn [formbars]
-                          (let [[side stage-index formbar-index] path]
+                          (let [new-formbar (merge {:forms []}
+                                                   starting-value)
+                                [side stage-index formbar-index] path]
                             (update formbars
                                     side
                                     (fn [side-formbars]
                                       (if (>= stage-index (count side-formbars))
-                                        (conj side-formbars [{:forms []}])
+                                        (conj side-formbars [new-formbar])
                                         (update side-formbars
                                                 stage-index
-                                                #(u/vector-insert % formbar-index {:forms []})))))))))
+                                                #(u/vector-insert % formbar-index new-formbar)))))))))
 
 (defn camera-speed [diff]
   (let [speed-param (attr :camera-speed)
@@ -226,10 +228,10 @@
                                       "*"
                                       "/"
                                       "mod"])}]]]
-       {:right []
-        :left []
-        :top primary
-        :bottom secondary})}))
+       {:top primary
+        :bottom secondary
+        :right []
+        :left []})}))
 
 (defn new-project []
   (update-attr! :projects
