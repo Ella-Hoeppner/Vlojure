@@ -121,7 +121,7 @@
 (def settings-slider-text-size 0.06)
 
 (def settings-formbar-tool-types [[:undo :redo]
-                                     [:replace :comment :enclose :vector-enclose]
+                                     [:comment :enclose :vector-enclose]
                                      [:literal-fn-replace :fn-enclose :let-enclose]])
 (def settings-formbar-tool-text-y -0.675)
 (def settings-formbar-tool-text-size 0.55)
