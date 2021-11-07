@@ -568,7 +568,9 @@
 
        (when (and (= mouse-zone :formbar) current-placement-form)
          (let [formbar-path (formbar/formbar-path-at mouse)]
-           (when formbar-path
+           (when (and formbar-path
+                      (not (:type (get-in (storage/project-attr :formbars)
+                                          formbar-path))))
              (let [arrangement (formbar/formbar-arrangement)
                    screen-side (first formbar-path)
                    bar-arrangement (get-in arrangement formbar-path)
@@ -709,9 +711,13 @@
            :formbar
            (let [current-placement-form (placement-form mouse)]
              (when (placement-form mouse)
-               (storage/add-project-formbar-form-at current-placement-form
-                                                    (formbar/formbar-path-at mouse)
-                                                    (get-formbar-insertion-index mouse))))
+               (let [formbar-path (formbar/formbar-path-at mouse)
+                     formbar (get-in (storage/project-attr :formbars)
+                                     formbar-path)]
+                 (when (not (:type formbar))
+                   (storage/add-project-formbar-form-at current-placement-form
+                                                        formbar-path
+                                                        (get-formbar-insertion-index mouse))))))
 
            :empty
            (let [current-placement-form (placement-form mouse)
