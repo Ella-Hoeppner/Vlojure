@@ -155,6 +155,39 @@
             down-formbar-form-path
             (get-in (formbar/formbar-arrangement) down-formbar-form-path)))))
 
+(defn dragged-tool [mouse]
+  (let [{:keys [down? down-zone down-pos]} mouse]
+    (when (and down?
+               (= down-zone :formbar))
+      (let [{:keys [tool-type]} (get-in (storage/project-attr :formbars)
+                                        (formbar/formbar-path-at down-pos))]
+        (when (constants/draggable-tools tool-type)
+          tool-type)))))
+
+(defn apply-dragged-tool [tool path]
+   (storage/update-project-attr!
+    :form
+    (fn [form]
+      (let [child-form (vedn/get-child form path)]
+        (if (or (#{:comment :enclose :vector-enclose :fn-enclose :let-enclose} tool)
+                  (and (#{:literal-fn-replace} tool)
+                       (= :list (:type child-form))))
+          (vedn/replace-child form
+                              path
+                              (case tool
+                                :comment {:type :comment :children [child-form]}
+                                :enclose {:type :list :children [child-form]}
+                                :vector-enclose {:type :vector :children [child-form]}
+                                :literal-fn-replace {:type :lit-fn
+                                                     :children (:children child-form)}
+                                :fn-enclose {:type :list :children [{:type :literal :value "fn"}
+                                                                    {:type :vector :children []}
+                                                                    child-form]}
+                                :let-enclose {:type :list :children [{:type :literal :value "let"}
+                                                                     {:type :vector :children []}
+                                                                     child-form]}))
+          form)))))
+
 (defn get-formbar-insertion-index [mouse]
   (let [formbar-path (formbar/formbar-path-at mouse)]
     (when formbar-path
@@ -341,10 +374,13 @@
      (let [{:keys [dragging?]} mouse
            [app-pos app-size] (graphics/app-rect)
            current-outer-form-insertion-index (outer-form-insertion-index mouse mouse-zone)
-           current-placement-form (placement-form mouse)]
+           current-placement-form (placement-form mouse)
+           current-dragged-tool (dragged-tool mouse)]
        (layout/render-sublayouts (adjusted-form-layouts)
                                  :program)
-       (when (and dragging? current-placement-form)
+       (when (and dragging?
+                  (or current-dragged-tool
+                      current-placement-form))
          (graphics/circle (assoc mouse
                                  :radius constants/drag-cursor-radius)
                           (:highlight (storage/color-scheme))
@@ -655,7 +691,8 @@
          (case mouse-zone
            :program
            (let [insertion-path (layout/layout-insertion-path-at layout mouse)
-                 current-placement-form (placement-form mouse)]
+                 current-placement-form (placement-form mouse)
+                 current-dragged-tool (dragged-tool mouse)]
              (when current-placement-form
                (storage/update-project-attr! :form
                                              (fn [form]
@@ -674,7 +711,10 @@
                                                                         current-placement-form))
                                                    (vedn/insert-child form
                                                                       (vec insertion-path)
-                                                                      current-placement-form)))))))
+                                                                      current-placement-form))))))
+             (when current-dragged-tool
+               (apply-dragged-tool current-dragged-tool
+                                   (layout-path-at layout mouse))))
 
            :discard
            (case down-zone
