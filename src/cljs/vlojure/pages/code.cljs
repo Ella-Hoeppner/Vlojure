@@ -169,13 +169,14 @@
     :form
     (fn [form]
       (let [child-form (vedn/get-child form path)]
-        (if (or (#{:comment :enclose :vector-enclose :fn-enclose :let-enclose} tool)
+        (if (or (#{:comment :quote-enclose :enclose :vector-enclose :fn-enclose :let-enclose} tool)
                   (and (#{:literal-fn-replace} tool)
                        (= :list (:type child-form))))
           (vedn/replace-child form
                               path
                               (case tool
                                 :comment {:type :comment :children [child-form]}
+                                :quote-enclose {:type :quote :children [child-form]}
                                 :enclose {:type :list :children [child-form]}
                                 :vector-enclose {:type :vector :children [child-form]}
                                 :literal-fn-replace {:type :lit-fn

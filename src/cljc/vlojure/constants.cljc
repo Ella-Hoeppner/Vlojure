@@ -121,7 +121,7 @@
 (def settings-slider-text-size 0.06)
 
 (def settings-formbar-tool-types [[:undo :redo]
-                                  [:comment :enclose :vector-enclose]
+                                  [:comment :quote-enclose :enclose :vector-enclose]
                                   [:literal-fn-replace :fn-enclose :let-enclose]])
 (def settings-formbar-tool-text-y -0.675)
 (def settings-formbar-tool-text-size 0.55)
@@ -131,7 +131,7 @@
 (def settings-formbar-tool-x-spacing 1.1)
 (def settings-formbar-tool-y-spacing 1.1)
 
-(def draggable-tools #{:comment :enclose :vector-enclose :literal-fn-replace :fn-enclose :let-enclose})
+(def draggable-tools #{:comment :quote-enclose :enclose :vector-enclose :literal-fn-replace :fn-enclose :let-enclose})
 
 (def settings-saved-formbars-text-y -0.65)
 (def settings-saved-formbars-text-size 0.8)

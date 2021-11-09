@@ -11,6 +11,7 @@
 
 ; Constants used to define SVGs
 (def PI Math/PI)
+(def TAU (* 2 PI))
 (def undo-radius 25)
 (def undo-arrow-width 0.8)
 (def undo-arrow-length (/ 0.8 (Math/sqrt 2)))
@@ -261,6 +262,52 @@
         (text [71 50]
               28
               "x")]]
+      ["quote-enclose"
+       (vec
+        (concat
+         [[:polygon {:fill highlight-color
+                     :class "highlight"}
+           [35 40]
+           [35 60]
+           [45 50]]
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [18 50]
+           15]
+          [:circle {:fill foreground-color
+                    :class "foreground"}
+           [71 50]
+           18]
+          (text [18 50]
+                20
+                "x")
+          (text [71 50]
+                28
+                "x")]
+         (let [radius 25
+               circle-center [71 50]]
+           (map (fn [index]
+                  (let [angle (/ (* index 2 PI)
+                                 c/quote-divs)]
+                    (path {:stroke foreground-color
+                           :class "foreground"
+                           :stroke-width 2
+                           :fill "none"}
+                          (mapv +
+                                circle-center
+                                [-50 -50]
+                                (circle-pos radius angle))
+                          [:arc
+                           {:r radius
+                            :large? false
+                            :end-pos (mapv +
+                                           circle-center
+                                           [-50 -50]
+                                           (circle-pos radius
+                                                       (+ angle
+                                                          (/ PI
+                                                             c/quote-divs))))}])))
+                (range c/quote-divs)))))]
       ["comment"
        (vec
         (concat
@@ -287,7 +334,7 @@
                radius 25
                circle-center [71 50]]
            (map (fn [index]
-                  (let [angle (/ (* index 2 PI)
+                  (let [angle (/ (* index TAU)
                                  divs)]
                     [:polyline {:stroke foreground-color
                                 :stroke-width (* radius c/bubble-thickness 1.75)
