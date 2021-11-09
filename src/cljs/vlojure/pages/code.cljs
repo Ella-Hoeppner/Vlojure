@@ -165,29 +165,29 @@
           tool-type)))))
 
 (defn apply-dragged-tool [tool path]
-   (storage/update-project-attr!
-    :form
-    (fn [form]
-      (let [child-form (vedn/get-child form path)]
-        (if (or (#{:comment :quote-enclose :enclose :vector-enclose :fn-enclose :let-enclose} tool)
-                  (and (#{:literal-fn-replace} tool)
-                       (= :list (:type child-form))))
-          (vedn/replace-child form
-                              path
-                              (case tool
-                                :comment {:type :comment :children [child-form]}
-                                :quote-enclose {:type :quote :children [child-form]}
-                                :enclose {:type :list :children [child-form]}
-                                :vector-enclose {:type :vector :children [child-form]}
-                                :literal-fn-replace {:type :lit-fn
-                                                     :children (:children child-form)}
-                                :fn-enclose {:type :list :children [{:type :literal :value "fn"}
+  (storage/update-project-attr!
+   :form
+   (fn [form]
+     (let [child-form (vedn/get-child form path)]
+       (if (or (#{:comment :quote-enclose :enclose :vector-enclose :fn-enclose :let-enclose} tool)
+               (and (#{:literal-fn-replace} tool)
+                    (= :list (:type child-form))))
+         (vedn/replace-child form
+                             path
+                             (case tool
+                               :comment {:type :comment :children [child-form]}
+                               :quote-enclose {:type :quote :children [child-form]}
+                               :enclose {:type :list :children [child-form]}
+                               :vector-enclose {:type :vector :children [child-form]}
+                               :literal-fn-replace {:type :lit-fn
+                                                    :children (:children child-form)}
+                               :fn-enclose {:type :list :children [{:type :literal :value "fn"}
+                                                                   {:type :vector :children []}
+                                                                   child-form]}
+                               :let-enclose {:type :list :children [{:type :literal :value "let"}
                                                                     {:type :vector :children []}
-                                                                    child-form]}
-                                :let-enclose {:type :list :children [{:type :literal :value "let"}
-                                                                     {:type :vector :children []}
-                                                                     child-form]}))
-          form)))))
+                                                                    child-form]}))
+         form)))))
 
 (defn get-formbar-insertion-index [mouse]
   (let [formbar-path (formbar/formbar-path-at mouse)]
