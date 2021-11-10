@@ -71,7 +71,9 @@
   (project-attr key))
 
 (defn modify-code! [mutator]
-  (update-project-attr! :form mutator))
+  (update-project-attr! :form
+                        (comp vedn/fill-empty-encapsulators
+                              mutator)))
 
 (defn track-discard [form]
   (update-project-attr! :discard-history

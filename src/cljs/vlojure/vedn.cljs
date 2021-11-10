@@ -328,3 +328,19 @@
       (type->encapsulator type)
       (str (type->encapsulator type)
            (vedn->clj (first children))))))
+
+(defn fill-empty-encapsulators [form]
+  (let [form-type (:type form)
+        children-filled-form (if (:children form)
+                               (update form
+                                       :children
+                                       (partial mapv
+                                                fill-empty-encapsulators))
+                               form)]
+    (if (and (u/in? encapsulator-types form-type)
+             (empty? (:children children-filled-form)))
+      (update children-filled-form
+              :children
+              conj
+              {:type :literal :value "nil"})
+      children-filled-form))) 
