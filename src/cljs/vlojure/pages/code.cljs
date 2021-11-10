@@ -46,20 +46,20 @@
 
 (defn hide-literal-text-input []
   (when @literal-text-input-path
-    (storage/update-project-attr! :form
-                                  (fn [form]
-                                    (let [text-value (.-value @literal-text-input)
-                                          value (if (pos? (count text-value))
-                                                  text-value
-                                                  "nil")
-                                          new-forms (:children (vedn/clj->vedn value))]
-                                      (reduce #(vedn/insert-child %1
-                                                                  @literal-text-input-path
-                                                                  %2)
-                                              (vedn/replace-child form
-                                                                  @literal-text-input-path
-                                                                  (first new-forms))
-                                              (reverse (rest new-forms))))))
+    (storage/modify-code!
+     (fn [form]
+       (let [text-value (.-value @literal-text-input)
+             value (if (pos? (count text-value))
+                     text-value
+                     "nil")
+             new-forms (:children (vedn/clj->vedn value))]
+         (reduce #(vedn/insert-child %1
+                                     @literal-text-input-path
+                                     %2)
+                 (vedn/replace-child form
+                                     @literal-text-input-path
+                                     (first new-forms))
+                 (reverse (rest new-forms))))))
     (let [text-input @literal-text-input]
       (set! (.-display (.-style text-input)) "none")
       (reset! literal-text-input-path nil))))
@@ -165,8 +165,7 @@
           tool-type)))))
 
 (defn apply-dragged-tool [tool path]
-  (storage/update-project-attr!
-   :form
+  (storage/modify-code!
    (fn [form]
      (let [child-form (vedn/get-child form path)]
        (if (or (#{:comment :quote-enclose :enclose :vector-enclose :fn-enclose :let-enclose} tool)
@@ -257,8 +256,7 @@
                                        :error)))
 
 (defn remove-form [path]
-  (storage/update-project-attr! :form
-                                #(vedn/remove-child % path))
+  (storage/modify-code! #(vedn/remove-child % path))
   (storage/fill-empty-project))
 
 (def page
@@ -695,24 +693,24 @@
                  current-placement-form (placement-form mouse)
                  current-dragged-tool (dragged-tool mouse)]
              (when current-placement-form
-               (storage/update-project-attr! :form
-                                             (fn [form]
-                                               (if (u/in? vedn/encapsulator-types
-                                                          (:type (vedn/get-child form layout-path)))
-                                                 (vedn/replace-child form
-                                                                     (vec (concat layout-path '(0)))
-                                                                     current-placement-form)
-                                                 (if (= (count layout-path) (count insertion-path))
-                                                   (if (= :literal (:type (vedn/get-child form (vec insertion-path))))
-                                                     (vedn/replace-child form
-                                                                         (vec layout-path)
-                                                                         current-placement-form)
-                                                     (vedn/insert-child form
-                                                                        (vec (concat layout-path '(0)))
-                                                                        current-placement-form))
-                                                   (vedn/insert-child form
-                                                                      (vec insertion-path)
-                                                                      current-placement-form))))))
+               (storage/modify-code!
+                (fn [form]
+                  (if (u/in? vedn/encapsulator-types
+                             (:type (vedn/get-child form layout-path)))
+                    (vedn/replace-child form
+                                        (vec (concat layout-path '(0)))
+                                        current-placement-form)
+                    (if (= (count layout-path) (count insertion-path))
+                      (if (= :literal (:type (vedn/get-child form (vec insertion-path))))
+                        (vedn/replace-child form
+                                            (vec layout-path)
+                                            current-placement-form)
+                        (vedn/insert-child form
+                                           (vec (concat layout-path '(0)))
+                                           current-placement-form))
+                      (vedn/insert-child form
+                                         (vec insertion-path)
+                                         current-placement-form))))))
              (when current-dragged-tool
                (apply-dragged-tool current-dragged-tool
                                    (layout-path-at layout mouse))))
@@ -767,10 +765,10 @@
                  insertion-index (outer-form-insertion-index mouse mouse-zone)]
              (when (and current-placement-form
                         insertion-index)
-               (storage/update-project-attr! :form
-                                             #(vedn/insert-child %
-                                                                 [insertion-index]
-                                                                 current-placement-form))))
+               (storage/modify-code!
+                #(vedn/insert-child %
+                                    [insertion-index]
+                                    current-placement-form))))
 
            nil)
          (case (:down-zone mouse)

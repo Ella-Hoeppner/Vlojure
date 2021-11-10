@@ -70,6 +70,9 @@
   (save-state!)
   (project-attr key))
 
+(defn modify-code! [mutator]
+  (update-project-attr! :form mutator))
+
 (defn track-discard [form]
   (update-project-attr! :discard-history
                         #(conj % form))
