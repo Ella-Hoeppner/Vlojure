@@ -179,13 +179,14 @@
 (def settings-color-height-factor 0.25)
 
 (def settings-pages 5)
-(def settings-default-scroll-pos 2)
 
 (def settings-formbar-tools-page 0)
 (def settings-saved-formbars-page 1)
 (def settings-project-selector-page 2)
 (def settings-sliders-page 3)
 (def settings-color-scheme-page 4)
+
+(def settings-default-scroll-pos settings-project-selector-page)
 
 (def saved-formbar-zone-corner-radius 0.04)
 (def saved-formbar-spacing 0.25)

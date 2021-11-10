@@ -565,7 +565,7 @@
                           (:text (storage/color-scheme))
                           :background))))
 
-     ;; Render formbar command page
+     ;; Render formbar tools page
      (let [center-circle (settings-circle constants/settings-formbar-tools-page)
            center-radius (:radius center-circle)]
        (graphics/text "Tools"
@@ -579,10 +579,10 @@
            (graphics/circle circle
                             (:background (storage/color-scheme))
                             :background)
-          (when (on-stage? constants/settings-formbar-tools-page)
-            (graphics/render-tool (:type circle)
-                                  circle)))))
-
+           (when (on-stage? constants/settings-formbar-tools-page)
+             (graphics/render-tool (:type circle)
+                                   circle)))))
+     
      ;; Render saved formbar page
      (let [center-circle (settings-circle constants/settings-saved-formbars-page)
            center-radius (:radius center-circle)]
@@ -1133,22 +1133,27 @@
                             (:highlight (storage/color-scheme))
                             :settings-overlay)))))
      (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
-       (when (and (:down? mouse)
-                  (or (= :formbar (:down-zone mouse))
-                      (and (= :saved-formbar (:down-zone mouse))
-                           (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
-                              (count (formbar/saved-formbar-contents))))))
-         (graphics/render-discard-zone (= mouse-zone :discard) true)
-         (when (and (not (= mouse-zone :discard))
-                    formbar-insertion-path)
-           (let [formbar-insertion-circle (formbar/formbar-insertion-circle formbar-insertion-path)]
-             (graphics/circle formbar-insertion-circle
-                              (:foreground (storage/color-scheme))
-                              :settings-overlay)
-             (graphics/circle (update formbar-insertion-circle
-                                      :radius (partial * 0.9))
-                              (:background (storage/color-scheme))
-                              :settings-overlay))))))
+       (when (:down? mouse)
+         (let [{:keys [down-zone]} mouse]
+           (when (or (= :formbar down-zone)
+                     (and (= :saved-formbar down-zone)
+                          (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
+                             (count (formbar/saved-formbar-contents)))))
+             (when (not= :bindings
+                         (:type
+                          (get-in (storage/project-attr :formbars)
+                                  (formbar/formbar-path-at (:down-pos mouse)))))
+               (graphics/render-discard-zone (= mouse-zone :discard) true))
+             (when (and (not (= mouse-zone :discard))
+                        formbar-insertion-path)
+               (let [formbar-insertion-circle (formbar/formbar-insertion-circle formbar-insertion-path)]
+                 (graphics/circle formbar-insertion-circle
+                                  (:foreground (storage/color-scheme))
+                                  :settings-overlay)
+                 (graphics/circle (update formbar-insertion-circle
+                                          :radius (partial * 0.9))
+                                  (:background (storage/color-scheme))
+                                  :settings-overlay))))))))
 
    :update
    (fn [delta mouse]
@@ -1184,9 +1189,13 @@
        (= mouse-zone :discard)
        (case (:down-zone mouse)
          :formbar
-         (storage/delete-project-formbar-at
-          (formbar/formbar-path-at
-           (:down-pos mouse)))
+         (let [dragged-formbar-path (formbar/formbar-path-at
+                                     (:down-pos mouse))]
+           (when-not (= :bindings
+                        (:type
+                         (get-in (storage/project-attr :formbars)
+                                 dragged-formbar-path)))
+             (storage/delete-project-formbar-at dragged-formbar-path)))
 
          :saved-formbar
          (let [adjusted-formbar-index (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)]
