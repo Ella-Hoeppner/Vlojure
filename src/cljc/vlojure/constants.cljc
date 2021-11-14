@@ -234,3 +234,5 @@
 
 (def scroll-angle-snap-positions 4)
 (def scroll-angle-snap-distance 0.1)
+
+(def max-undo-history 100)

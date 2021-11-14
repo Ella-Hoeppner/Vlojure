@@ -70,10 +70,37 @@
   (save-state!)
   (project-attr key))
 
+(defn add-code-history-entry! [code]
+  (update-project-attr! :code-history
+                        #(take constants/max-undo-history
+                               (conj % code))))
+
 (defn modify-code! [mutator]
-  (update-project-attr! :form
-                        (comp vedn/fill-empty-encapsulators
-                              mutator)))
+  (let [old-code (project-attr :form)
+        new-code (vedn/fill-empty-encapsulators (mutator old-code))]
+    (add-code-history-entry! old-code)
+    (set-project-attr! :code-future nil)
+    (set-project-attr! :form new-code)))
+
+(defn undo! []
+  (let [code-history (project-attr :code-history)
+        last-code (first code-history)]
+    (when last-code
+      (update-project-attr! :code-history
+                            rest)
+      (update-project-attr! :code-future
+                            #(conj % (project-attr :form)))
+      (set-project-attr! :form last-code))))
+
+(defn redo! []
+  (let [code-future (project-attr :code-future)
+        next-code (first code-future)]
+    (when next-code
+      (update-project-attr! :code-future
+                            rest)
+      (update-project-attr! :code-history
+                            #(conj % (project-attr :form)))
+      (set-project-attr! :form next-code))))
 
 (defn track-discard [form]
   (update-project-attr! :discard-history

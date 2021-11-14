@@ -350,6 +350,14 @@
                       :code :settings
                       :code))
 
+        :formbar
+        (let [form-path (take 3 (formbar/formbar-form-path-at (:down-pos mouse)))
+              {:keys [tool-type]} (get-in (storage/project-attr :formbars) form-path)]
+          (case tool-type
+            :undo (storage/undo!)
+            :redo (storage/redo!)
+            nil))
+
         :back-icon
         (when (text-page/text-valid?)
           (enter-page :code))
