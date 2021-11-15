@@ -399,7 +399,7 @@
                (:saved-formbars (default-app-state)))))
 
 (defn init []
-  (js/console.log "Initializing...")
+  (u/log "Storage Initializing...")
   (if (> (count (saved-state)) 1)
     (do (load-state!)
         (ensure-saved-state-updated!))

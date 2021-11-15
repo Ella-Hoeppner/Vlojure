@@ -1,18 +1,24 @@
 (ns vlojure.core
-  (:require [vlojure.graphics :as graphics]
+  (:require [vlojure.util :as u]
+            [vlojure.graphics :as graphics]
             [vlojure.app :as app]
             [vlojure.storage :as storage]
-            [vlojure.evaluation :as evaluation]))
+            [vlojure.evaluation :as evaluation]
+            [vlojure.pages.code :as code-page]
+            [vlojure.pages.settings :as settings-page]
+            [vlojure.pages.text :as text-page]))
 
 (defn init []
-  (js/console.log "Initializing...")
+  (u/log "Initializing...")
   (storage/init)
   (app/init)
-  (graphics/init
-   (fn []
-     (graphics/update-graphics)
-     (app/update-app))
-   app/on-click-down
-   app/on-click-up
-   app/update-mouse-pos)
+  (code-page/init)
+  (settings-page/init)
+  (text-page/init)
+  (graphics/init (fn []
+                   (graphics/update-graphics)
+                   (app/update-app))
+                 app/on-click-down
+                 app/on-click-up
+                 app/update-mouse-pos)
   (evaluation/init))
