@@ -67,7 +67,7 @@
         optimized-assets (optimizations/none (get-assets) {})]
     (stasis/empty-directory! export-dir)
     (optimus.export/save-assets optimized-assets export-dir)
-    (stasis/export-pages pages export-dir {:optimus-assets optimized-assets})))
+    (stasis/export-pages (pages) export-dir {:optimus-assets optimized-assets})))
 
 (defn -main [& [mode]]
   (vlojure.svgs/export)
