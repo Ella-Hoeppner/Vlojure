@@ -1,14 +1,16 @@
-(ns vlojure.core
+(ns vlojure.server
   (:require [stasis.core :as stasis]
             [ring.adapter.jetty :as ring]
             [hiccup.core :refer [html]]
-            [hiccup.page :refer [include-js include-css]]
+            [hiccup.page :refer [include-css]]
             [ring.middleware.content-type :refer [wrap-content-type]]
             [optimus.prime :as optimus]
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.strategies :refer [serve-live-assets]]
-            [optimus.export]))
+            [clojure.string :refer [index-of]]
+            [optimus.export]
+            [vlojure.svgs]))
 
 (defn get-assets []
   (concat (assets/load-assets "public/styles"
@@ -21,7 +23,17 @@
                               ["/favicon.png"
                                #"\/bootstrap\/.*"])))
 
-(def pages
+(defn inlined-svgs []
+  (let [urls (mapv :resource
+                   (assets/load-assets "public/svgs"
+                                       [#".*.svg"]))
+        svg-strings (mapv (comp #(subs %
+                                       (index-of % "\n"))
+                                slurp)
+                          urls)]
+    (apply str svg-strings)))
+
+(defn pages []
   {"/index.html" (html {:lang "en"}
                        [:head
                         [:meta {:charset "utf-8"}]
@@ -29,8 +41,8 @@
                         [:title "Vlojure"]
                         [:link {:rel "icon" :href "/favicon.png"}]]
                        [:body
-                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]
-                        #_(include-js "base.js")])
+                        [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]]
+                       (inlined-svgs))
    "/about/" (html {:lang "en"}
                    [:head]
                    [:body
@@ -55,9 +67,10 @@
         optimized-assets (optimizations/none (get-assets) {})]
     (stasis/empty-directory! export-dir)
     (optimus.export/save-assets optimized-assets export-dir)
-    (stasis/export-pages pages export-dir {:optimus-assets optimized-assets})))
+    (stasis/export-pages (pages) export-dir {:optimus-assets optimized-assets})))
 
 (defn -main [& [mode]]
+  (vlojure.svgs/export)
   (case mode
     "export" (export)
     (start-server)))

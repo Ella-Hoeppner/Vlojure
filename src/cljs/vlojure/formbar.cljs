@@ -34,12 +34,22 @@
                 bar-stages (get formbars side)]
             (mapv (fn [stage stage-index]
                     (let [sizes (mapv (fn [bar]
-                                        (max 0
-                                             (let [size (count (:forms bar))]
-                                               (* (dec size)
-                                                  2
-                                                  (storage/formbar-radius)
-                                                  (- 1 constants/formbar-outline-thickness)))))
+                                        (case (:type bar)
+                                          :tool 0
+                                          :bindings (* (dec (:max-size bar))
+                                                       2
+                                                       (storage/formbar-radius)
+                                                       (- 1 constants/formbar-outline-thickness))
+
+                                          (max 0
+                                               (let [bar-type (:type bar)
+                                                     size (case bar-type
+                                                            :tool 0
+                                                            (count (:forms bar)))]
+                                                 (* (dec size)
+                                                    2
+                                                    (storage/formbar-radius)
+                                                    (- 1 constants/formbar-outline-thickness))))))
                                       stage)
                           total-size (+ (apply + sizes)
                                         (* (inc constants/formbar-spacing)
@@ -55,7 +65,8 @@
                                           [(* -0.5 total-size)]
                                           sizes)]
                       (mapv (fn [bar size bar-offset]
-                              (let [bar-pos (case side
+                              (let [bar-type (:type bar)
+                                    bar-pos (case side
                                               :bottom {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
                                                        :y (- (+ (:y app-pos) (:y app-size)) edge-offset)}
                                               :top {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
@@ -63,25 +74,44 @@
                                               :left {:x (+ (:x app-pos) edge-offset)
                                                      :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)}
                                               :right {:x (- (+ (:x app-pos) (:x app-size)) edge-offset)
-                                                      :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)})]
+                                                      :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)})
+                                    radius (* (storage/formbar-radius)
+                                              (- 1 constants/formbar-outline-thickness)
+                                              constants/formbar-form-size)]
                                 (merge bar-pos
                                        {:width (if horizontal? size 0)
                                         :height (if horizontal? 0 size)
+                                        :type bar-type
                                         :circles
-                                        (mapv (fn [form form-index]
-                                                (assoc (geom/add-points bar-pos
-                                                                        (geom/scale-point
-                                                                         {(if horizontal? :x :y)
-                                                                          (* 2
-                                                                             (- 1 constants/formbar-outline-thickness)
-                                                                             (storage/formbar-radius))}
-                                                                         form-index))
-                                                       :radius (* (storage/formbar-radius)
-                                                                  (- 1 constants/formbar-outline-thickness)
-                                                                  constants/formbar-form-size)
-                                                       :form form))
-                                              (:forms bar)
-                                              (range))})))
+                                        (case bar-type
+                                          :tool [(assoc bar-pos
+                                                        :radius radius)]
+                                          :bindings (mapv (fn [name form-index]
+                                                            (assoc (geom/add-points bar-pos
+                                                                                    (geom/scale-point
+                                                                                     {(if horizontal? :x :y)
+                                                                                      (* 2
+                                                                                         (- 1 constants/formbar-outline-thickness)
+                                                                                         (storage/formbar-radius))}
+                                                                                     form-index))
+                                                                   :radius radius
+                                                                   :form {:type :literal :value name}))
+                                                          []
+                                                          (range))
+                                          (mapv (fn [form form-index]
+                                                  (assoc (geom/add-points bar-pos
+                                                                          (geom/scale-point
+                                                                           {(if horizontal? :x :y)
+                                                                            (* 2
+                                                                               (- 1 constants/formbar-outline-thickness)
+                                                                               (storage/formbar-radius))}
+                                                                           form-index))
+                                                         :radius radius
+                                                         :form form))
+                                                (:forms bar)
+                                                (range)))}
+                                       (when (= bar-type :tool)
+                                         {:tool-type (:tool-type bar)}))))
                             stage
                             sizes
                             offsets)))
@@ -358,33 +388,35 @@
             side-arrangement (get arrangement side)]
         (doseq [stage side-arrangement]
           (doseq [bar stage]
-            (doseq [[color radius-factor]
-                    [[(:foreground (storage/color-scheme)) 1]
-                     [(:background (storage/color-scheme)) (- 1 constants/formbar-outline-thickness)]]]
-              (graphics/circle (assoc bar :radius (* (storage/formbar-radius) radius-factor))
-                               color
-                               :formbar)
-              (if horizontal?
-                (do (graphics/circle (assoc (geom/add-points bar
-                                                             {:x (:width bar)})
-                                            :radius (* (storage/formbar-radius) radius-factor))
-                                     color
-                                     :formbar)
-                    (graphics/rect [(geom/subtract-points bar {:y (* (storage/formbar-radius) radius-factor)})
-                                    {:x (:width bar)
-                                     :y (* 2 (storage/formbar-radius) radius-factor)}]
-                                   color
-                                   :formbar))
-                (do (graphics/circle (assoc (geom/add-points bar
-                                                             {:y (:height bar)})
-                                            :radius (* (storage/formbar-radius) radius-factor))
-                                     color
-                                     :formbar)
-                    (graphics/rect [(geom/subtract-points bar {:x (* (storage/formbar-radius) radius-factor)})
-                                    {:x (* 2 (storage/formbar-radius) radius-factor)
-                                     :y (:height bar)}]
-                                   color
-                                   :formbar))))))
+            (let [bar-type (:type bar)]
+              (doseq [[color radius-factor]
+                      [[(:foreground (storage/color-scheme)) 1]
+                       [(:background (storage/color-scheme)) (- 1 constants/formbar-outline-thickness)]]]
+                (let [[primary-dim secondary-dim size-key]
+                      (if horizontal?
+                        [:x :y :width]
+                        [:y :x :height])]
+                  (when (not= bar-type :bindings)
+                    (doseq [center [bar
+                                    (geom/add-points bar
+                                                     {primary-dim (size-key bar)})]]
+                      (graphics/circle (assoc center
+                                              :radius (* (storage/formbar-radius) radius-factor))
+                                       color
+                                       :formbar)))
+                  (graphics/rect (if (= bar-type :bindings)
+                                   [(geom/subtract-points bar
+                                                          {primary-dim (* (storage/formbar-radius) radius-factor)
+                                                           secondary-dim (* (storage/formbar-radius) radius-factor)})
+                                    {primary-dim (+ (size-key bar)
+                                                    (* 2 (storage/formbar-radius) radius-factor))
+                                     secondary-dim (* 2 (storage/formbar-radius) radius-factor)}]
+                                   [(geom/subtract-points bar
+                                                          {secondary-dim (* (storage/formbar-radius) radius-factor)})
+                                    {primary-dim (size-key bar)
+                                     secondary-dim (* 2 (storage/formbar-radius) radius-factor)}])
+                                 color
+                                 :formbar))))))
         (when (and formbar-form-path
                    (= (first formbar-form-path) side))
           (graphics/circle (update (get-in arrangement
@@ -394,7 +426,13 @@
                            :formbar))
         (doseq [stage side-arrangement]
           (doseq [bar stage]
-            (doseq [bar-circle (:circles bar)]
-              (layout/render-sublayouts (layout/form-layout (:form bar-circle)
-                                                            bar-circle)
-                                        :formbar))))))))
+            (if (= (:type bar) :tool)
+              (do (graphics/circle (first (:circles bar))
+                                   (:background (storage/color-scheme))
+                                   :settings-overlay)
+                  (graphics/render-tool (:tool-type bar)
+                                        (first (:circles bar))))
+              (doseq [bar-circle (:circles bar)]
+                (layout/render-sublayouts (layout/form-layout (:form bar-circle)
+                                                              bar-circle)
+                                          :formbar)))))))))

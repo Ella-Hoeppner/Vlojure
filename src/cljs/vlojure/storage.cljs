@@ -70,6 +70,38 @@
   (save-state!)
   (project-attr key))
 
+(defn add-code-history-entry! [code]
+  (update-project-attr! :code-history
+                        #(take constants/max-undo-history
+                               (conj % code))))
+
+(defn modify-code! [mutator]
+  (let [old-code (project-attr :form)
+        new-code (vedn/fill-empty-encapsulators (mutator old-code))]
+    (add-code-history-entry! old-code)
+    (set-project-attr! :code-future nil)
+    (set-project-attr! :form new-code)))
+
+(defn undo! []
+  (let [code-history (project-attr :code-history)
+        last-code (first code-history)]
+    (when last-code
+      (update-project-attr! :code-history
+                            rest)
+      (update-project-attr! :code-future
+                            #(conj % (project-attr :form)))
+      (set-project-attr! :form last-code))))
+
+(defn redo! []
+  (let [code-future (project-attr :code-future)
+        next-code (first code-future)]
+    (when next-code
+      (update-project-attr! :code-future
+                            rest)
+      (update-project-attr! :code-history
+                            #(conj % (project-attr :form)))
+      (set-project-attr! :form next-code))))
+
 (defn track-discard [form]
   (update-project-attr! :discard-history
                         #(conj % form))
@@ -104,18 +136,20 @@
                                       (first path)
                                       #(u/vector-remove % (second path))))))))
 
-(defn add-project-formbar-at [path]
+(defn add-project-formbar-at [path & [starting-value]]
   (update-project-attr! :formbars
                         (fn [formbars]
-                          (let [[side stage-index formbar-index] path]
+                          (let [new-formbar (merge {:forms []}
+                                                   starting-value)
+                                [side stage-index formbar-index] path]
                             (update formbars
                                     side
                                     (fn [side-formbars]
                                       (if (>= stage-index (count side-formbars))
-                                        (conj side-formbars [{:forms []}])
+                                        (conj side-formbars [new-formbar])
                                         (update side-formbars
                                                 stage-index
-                                                #(u/vector-insert % formbar-index {:forms []})))))))))
+                                                #(u/vector-insert % formbar-index new-formbar)))))))))
 
 (defn camera-speed [diff]
   (let [speed-param (attr :camera-speed)
@@ -226,10 +260,10 @@
                                       "*"
                                       "/"
                                       "mod"])}]]]
-       {:right []
-        :left []
-        :top primary
-        :bottom secondary})}))
+       {:top primary
+        :bottom secondary
+        :right []
+        :left []})}))
 
 (defn new-project []
   (update-attr! :projects
@@ -358,15 +392,11 @@
                    :right []})}]}))
 
 (defn ensure-saved-state-updated! []
-  (prn (keys @app-state)
-       (not
-        (some #{:saved-formbars}
-              (keys @app-state))))
   (when (not
          (some #{:saved-formbars}
                (keys @app-state)))
-    (prn (set-attr! :saved-formbars
-                    (:saved-formbars (default-app-state))))))
+    (set-attr! :saved-formbars
+               (:saved-formbars (default-app-state)))))
 
 (defn init []
   (js/console.log "Initializing...")

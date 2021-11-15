@@ -1,5 +1,4 @@
-(ns vlojure.constants
-  (:require [vlojure.vedn :as vedn]))
+(ns vlojure.constants)
 
 (def char-escape-string {\newline "\\n" \tab "\\t" \return "\\r" \" "\\\"" \\ "\\\\" \formfeed "\\f" \backspace "\\b"})
 
@@ -121,14 +120,18 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-command-types [:temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp :temp])
-(def settings-formbar-commands-per-row 4)
-(def settings-formbar-command-text-y -0.575)
-(def settings-formbar-command-text-size 0.9)
-(def settings-formbar-command-y -0.3)
-(def settings-formbar-command-radius 0.15)
-(def settings-formbar-command-x-spacing 1.25)
-(def settings-formbar-command-y-spacing 1.25)
+(def settings-formbar-tool-types [[:undo :redo]
+                                  [:comment :quote-enclose :enclose :vector-enclose]
+                                  [:literal-fn-replace :fn-enclose :let-enclose]])
+(def settings-formbar-tool-text-y -0.675)
+(def settings-formbar-tool-text-size 0.55)
+(def settings-formbar-tool-y -0.3)
+(def settings-formbar-tool-radius 0.2)
+(def settings-formbar-drag-tool-radius 0.07)
+(def settings-formbar-tool-x-spacing 1.1)
+(def settings-formbar-tool-y-spacing 1.1)
+
+(def draggable-tools #{:comment :quote-enclose :enclose :vector-enclose :literal-fn-replace :fn-enclose :let-enclose})
 
 (def settings-saved-formbars-text-y -0.65)
 (def settings-saved-formbars-text-size 0.8)
@@ -175,14 +178,15 @@
 (def settings-color-height 0.2)
 (def settings-color-height-factor 0.25)
 
-(def settings-pages 4)
-(def settings-default-scroll-pos 1)
+(def settings-pages 5)
 
-#_(def settings-formbar-commands-page 0)
-(def settings-saved-formbars-page 0)
-(def settings-project-selector-page 1)
-(def settings-sliders-page 2)
-(def settings-color-scheme-page 3)
+(def settings-formbar-tools-page 0)
+(def settings-saved-formbars-page 1)
+(def settings-project-selector-page 2)
+(def settings-sliders-page 3)
+(def settings-color-scheme-page 4)
+
+(def settings-default-scroll-pos settings-project-selector-page)
 
 (def saved-formbar-zone-corner-radius 0.04)
 (def saved-formbar-spacing 0.25)
@@ -230,3 +234,5 @@
 
 (def scroll-angle-snap-positions 4)
 (def scroll-angle-snap-distance 0.1)
+
+(def max-undo-history 100)
