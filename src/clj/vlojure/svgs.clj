@@ -421,6 +421,7 @@
   "Takes in a dali `document` and a `filename`, and saves the document as an
    SVG with the given filename"
   [filename document]
+  (.mkdir (java-io/file output-directory))
   (.delete (java-io/file (str output-directory filename ".svg")))
   (io/render-svg document (str output-directory filename ".svg")))
 
