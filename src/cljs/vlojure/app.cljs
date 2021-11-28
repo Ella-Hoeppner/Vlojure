@@ -190,6 +190,7 @@
                          (* (storage/base-zoom)
                             constants/outer-form-spacing)))
                      (assoc mouse :dragging? (mouse-dragging?)))))
+    (prn (get-mouse-zone))
     (all-pages-action :update delta (attr :mouse) (get-mouse-zone))
     (update-attr! :mouse
                   #(assoc %
@@ -227,7 +228,7 @@
                            :down? true
                            :down-zone zone
                            :down-formbar-form-path (formbar/formbar-form-path-at mouse))))
-    (page-action :click-down mouse zone)))
+    (page-action (attr :page) :click-down mouse zone)))
 
 (defn refresh-html-colors []
   (all-pages-action :refresh-html-colors)
@@ -245,7 +246,8 @@
         mouse-zone (get-mouse-zone)]
     (page-action (attr :page)
                  :click-up
-                 (assoc mouse :dragging? (mouse-dragging?))
+                 (assoc mouse
+                        :dragging? (mouse-dragging?))
                  mouse-zone)
     (update-attr! :mouse
                   (fn [state]

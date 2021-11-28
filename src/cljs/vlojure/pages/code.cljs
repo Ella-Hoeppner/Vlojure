@@ -26,6 +26,7 @@
 (defonce camera-zoom (atom 1))
 (defonce camera-move-diff (atom nil))
 (defonce selected-layout-path (atom nil))
+(defonce down-path (atom nil))
 
 (defn adjusted-form-circle []
   (geom/circle-within
@@ -139,11 +140,11 @@
     (storage/base-zoom)))
 
 (defn placement-form [mouse]
-  (let [{:keys [down? down-path down-zone down-formbar-form-path]} mouse]
+  (let [{:keys [down? down-zone down-formbar-form-path]} mouse]
     (when down?
       (cond (= down-zone :program)
             (vedn/get-child (storage/project-attr :form)
-                            down-path)
+                            @down-path)
 
             (= down-zone :eval)
             (let [last-result (first (storage/project-attr :eval-results))]
@@ -683,6 +684,8 @@
 
     :click-down
     (fn [mouse mouse-zone]
+      (reset! down-path
+              (layout-path-at (adjusted-form-layouts) mouse))
       (when (not= (layout-path-at (adjusted-form-layouts)
                                   mouse)
                   (vec @literal-text-input-path))
@@ -692,7 +695,7 @@
     (fn [mouse mouse-zone]
       (let [layout (adjusted-form-layouts)
             layout-path (layout-path-at layout mouse)
-            {:keys [down-zone down-path]} mouse]
+            {:keys [down-zone]} mouse]
         (if (:dragging? mouse)
           (case mouse-zone
             :program
@@ -725,17 +728,17 @@
             :discard
             (case down-zone
               :program
-              (when down-path
-                (if (empty? down-path)
+              (when @down-path
+                (if (empty? @down-path)
                   (do (storage/track-discard (first (:children (storage/project-attr :form))))
                       (storage/set-project-attr! :form {:type :vector :children [{:type :list :children []}]})
                       (reset! selected-layout-path nil))
                   (do (when (and (pos? (count @selected-layout-path))
-                                 (= @selected-layout-path down-path))
+                                 (= @selected-layout-path @down-path))
                         (swap! selected-layout-path pop))
                       (storage/track-discard (vedn/get-child (storage/project-attr :form)
-                                                             down-path))
-                      (remove-form down-path))))
+                                                             @down-path))
+                      (remove-form @down-path))))
 
               :formbar
               (let [{:keys [down-formbar-form-path]} mouse]
@@ -780,14 +783,13 @@
             nil)
           (case (:down-zone mouse)
             :program
-            (let [zoomed-form (vedn/get-child (storage/project-attr :form) down-path)
-                  {:keys [type value]} zoomed-form]
-              (if (= type :literal)
-                (activate-literal-text-input down-path)
+            (let [zoomed-form (vedn/get-child (storage/project-attr :form) @down-path)]
+              (if (= (:type zoomed-form) :literal)
+                (activate-literal-text-input @down-path)
                 (do
-                  (reset! ideal-scroll-pos (first down-path))
-                  (reset! selected-layout-path down-path)))
-              (when (not= down-path @literal-text-input-path)
+                  (reset! ideal-scroll-pos (first @down-path))
+                  (reset! selected-layout-path @down-path)))
+              (when (not= @down-path @literal-text-input-path)
                 (hide-literal-text-input)))
 
             :empty
