@@ -35,7 +35,11 @@
                                      render-formbars
                                      formbar-insertion-path-at
                                      formbar-insertion-circle
-                                     new-formbar-circles]]
+                                     new-formbar-circles
+                                     formbar-path-at
+                                     formbar-arrangement
+                                     delete-saved-formbar!
+                                     add-saved-formbar!]]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
             [vlojure.app :as app]))
