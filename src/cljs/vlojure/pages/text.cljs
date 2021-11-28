@@ -15,7 +15,11 @@
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       point-magnitude]]
-            [vlojure.app :as app]))
+            [vlojure.app :refer [register-page!
+                                 enter-page
+                                 render-top-left-button-background
+                                 render-top-left-back-button
+                                 render-top-left-invalid-button]]))
 
 ;;; This file contains the logic for the "text" page. This page shows the user
 ;;; the code for their current project in text form, rather than the visual
@@ -57,7 +61,7 @@
     (set! (.-outline style) "none")
     (set! (.-display style) "none"))
 
-  (app/register-page!
+  (register-page!
    :text
    {:enter
     (fn []
@@ -131,16 +135,16 @@
                           :background)
 
 
-      (app/render-top-left-button-background (= mouse-zone :back-icon))
+      (render-top-left-button-background (= mouse-zone :back-icon))
       (if (text-valid?)
-        (app/render-top-left-back-button)
-        (app/render-top-left-invalid-button)))
+        (render-top-left-back-button)
+        (render-top-left-invalid-button)))
 
     :click-up
     (fn [mouse mouse-zone]
       (case mouse-zone
         :back-icon
         (when (text-valid?)
-          (app/enter-page :code))
+          (enter-page :code))
 
         nil))}))

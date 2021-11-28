@@ -54,7 +54,10 @@
                                       circle-within
                                       point-magnitude]]
             [vlojure.constants :as c]
-            [vlojure.app :as app]))
+            [vlojure.app :refer [enter-page
+                                 register-page!
+                                 render-top-left-button-background
+                                 render-top-left-back-button]]))
 
 ;;; This file contains the logic for the "settings" page. This page lets the
 ;;; user create and delete projects as well as renaming and switching between
@@ -407,7 +410,7 @@
     (set! (.-outline style) "none")
     (reset! rename-element project-rename-input)
     (hide-rename))
-  (app/register-page!
+  (register-page!
    :settings
    {:enter
     (fn []
@@ -1206,8 +1209,8 @@
                                    (:background (color-scheme))
                                    :settings-overlay)))))))
 
-      (app/render-top-left-button-background (= mouse-zone :back-icon))
-      (app/render-top-left-back-button))
+      (render-top-left-button-background (= mouse-zone :back-icon))
+      (render-top-left-back-button))
 
     :update
     (fn [delta mouse]
@@ -1376,7 +1379,7 @@
                         (add-project-formbar-form-at form formbar-placement-path index)))))))))
         (case (:down-zone mouse)
           :back-icon
-          (app/enter-page :code)
+          (enter-page :code)
 
           :color-scheme
           (set-global-attr! :color-scheme (color-scheme-index-at mouse))

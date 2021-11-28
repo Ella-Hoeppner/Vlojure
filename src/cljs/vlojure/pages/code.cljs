@@ -58,7 +58,10 @@
                                       scalar-point-rejection
                                       point-magnitude]]
             [vlojure.evaluation :refer [eval-clj]]
-            [vlojure.app :as app]
+            [vlojure.app :refer [register-page!
+                                 render-top-left-button-background
+                                 render-top-left-settings-button
+                                 enter-page]]
             [clojure.string :as string]
             [vlojure.util :as u]
             [vlojure.constants :as c]))
@@ -329,7 +332,7 @@
     (set! (.-outline style) "none")
     (set! (.-display style) "none"))
   
-  (app/register-page!
+  (register-page!
    :code
    {:enter
     (fn []
@@ -688,8 +691,8 @@
                                          c/formbar-form-placement-offset))))))]
                 (render-sublayouts (form-layout (placement-form mouse) placement-circle)
                                           :formbar)))))
-        (app/render-top-left-button-background (= mouse-zone :settings-icon))
-        (app/render-top-left-settings-button)))
+        (render-top-left-button-background (= mouse-zone :settings-icon))
+        (render-top-left-settings-button)))
 
     :update
     (fn [delta mouse mouse-zone]
@@ -849,7 +852,7 @@
                 (reset! selected-layout-path nil))
             
             :settings-icon
-            (app/enter-page :settings)
+            (enter-page :settings)
 
             nil))
         (set-camera-move-diff (- (count layout-path)
