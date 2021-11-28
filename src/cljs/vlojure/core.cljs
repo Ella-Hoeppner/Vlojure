@@ -21,4 +21,5 @@
                  app/on-click-down
                  app/on-click-up
                  app/update-mouse-pos)
+  (app/refresh-html-colors)
   (evaluation/init))

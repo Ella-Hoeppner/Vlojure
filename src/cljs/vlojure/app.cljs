@@ -281,7 +281,5 @@
   (doseq [action [:refresh-html-colors :resize-html]]
     (all-pages-action action))
 
-  (refresh-html-colors)
-
   (enter-page :code)
   (resize-html-elements))
