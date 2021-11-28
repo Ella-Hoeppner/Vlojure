@@ -18,6 +18,7 @@
 (defonce ideal-scroll-pos (atom constants/settings-default-scroll-pos))
 (defonce scroll-pos (atom nil))
 (defonce saved-formbar-scroll-pos (atom 0))
+(defonce down-settings-slider (atom nil))
 
 
 
@@ -1166,27 +1167,15 @@
         (when (= (:down-zone mouse) :settings-slider)
           (let [settings-circle (settings-circle constants/settings-sliders-page)
                 x-off (apply - (map :x [mouse settings-circle]))
-                adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))
-                down-settings-slider (settings-slider-at (:down-zone mouse))]
-            (storage/set-attr! (second
-                                (nth constants/settings-sliders
-                                     down-settings-slider))
-                               (min 1
-                                    (max 0
-                                         (* 0.5
-                                            (inc adjusted-x-off)))))))
-        (when (= (:down-zone mouse) :settings-slider)
-          (let [settings-circle (settings-circle constants/settings-sliders-page)
-                x-off (apply - (map :x [mouse settings-circle]))
-                adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))
-                down-settings-slider (settings-slider-at (:down-zone mouse))]
-            (storage/set-attr! (second
-                                (nth constants/settings-sliders
-                                     down-settings-slider))
-                               (min 1
-                                    (max 0
-                                         (* 0.5
-                                            (inc adjusted-x-off)))))))
+                adjusted-x-off (/ x-off (* (:radius settings-circle) constants/settings-slider-width))]
+            (when @down-settings-slider
+              (storage/set-attr! (second
+                                  (nth constants/settings-sliders
+                                       @down-settings-slider))
+                                 (min 1
+                                      (max 0
+                                           (* 0.5
+                                              (inc adjusted-x-off))))))))
         (when (= (:down-zone mouse) :scroll-circle)
           (storage/set-attr! :scroll-direction
                              (geom/angle-point
@@ -1232,6 +1221,8 @@
 
     :click-down
     (fn [mouse mouse-zone]
+      (reset! down-settings-slider
+              (settings-slider-at mouse))
       (when (= mouse-zone :settings-circle)
         (set-ideal-scroll-pos! (settings-circle-at mouse))))
 
