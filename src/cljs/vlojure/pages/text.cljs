@@ -128,7 +128,7 @@
 
     :click-up
     (fn [mouse mouse-zone]
-      (case :mouse-zone
+      (case mouse-zone
         :back-icon
         (when (text-valid?)
           (app/enter-page :code))
