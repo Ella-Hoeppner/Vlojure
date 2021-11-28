@@ -85,7 +85,7 @@
         current-height (app-height)]
     (.resize (.-renderer (:app @graphics-state)) current-width current-height)))
 
-(defn rect [[pos size] fill & [layer]]
+(defn draw-rect [[pos size] fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawRect graphics
@@ -95,7 +95,7 @@
                (* (:y size) (app-size)))
     (.endFill graphics)))
 
-(defn circle [{:keys [x y radius]} fill & [layer]]
+(defn draw-circle [{:keys [x y radius]} fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawCircle graphics
@@ -104,7 +104,7 @@
                  (* radius (app-size)))
     (.endFill graphics)))
 
-(defn polygon [points fill & [layer]]
+(defn draw-polygon [points fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawPolygon graphics
@@ -113,7 +113,7 @@
                                  points)))
     (.endFill graphics)))
 
-(defn line [start end width color & [layer]]
+(defn draw-line [start end width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
                 (* width (app-size))
@@ -126,7 +126,7 @@
              (screen-y (:y end)))
     (.lineStyle graphics 0)))
 
-(defn polyline [points width color & [layer]]
+(defn draw-polyline [points width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
                 (* width (app-size))
@@ -141,7 +141,7 @@
                (screen-y (:y point))))
     (.lineStyle graphics 0)))
 
-(defn text [s pos size color & [layer]]
+(defn draw-text [s pos size color & [layer]]
   (when (:font-loaded? @graphics-state)
     (let [t (pixi/BitmapText.
              (str s)
@@ -202,12 +202,12 @@
               tool-circle
               (:radius tool-circle))
   (when outline?
-    (circle (update tool-circle
+    (draw-circle (update tool-circle
                     :radius
                     (partial * (inc constants/formbar-outline-thickness)))
             (:foreground (storage/color-scheme))
             :drag)
-    (circle tool-circle
+    (draw-circle tool-circle
             (:background (storage/color-scheme))
             :drag)))
 
@@ -352,14 +352,14 @@
 
 (defn render-discard-zone [& [highlighted? blank-symbol?]]
   (let [[app-pos app-size] (app-rect)]
-    (circle (assoc (geom/add-points app-pos
+    (draw-circle (assoc (geom/add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius constants/lower-corner-zone-radius)
             (if highlighted?
               (:highlight (storage/color-scheme))
               (:foreground (storage/color-scheme)))
             :menu)
-    (circle (assoc (geom/add-points app-pos
+    (draw-circle (assoc (geom/add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius (* (- 1 constants/corner-zone-bar-thickness)
                               constants/lower-corner-zone-radius))
@@ -375,18 +375,18 @@
             angle-offset (geom/scale-point (geom/angle-point (* 0.25 geom/PI))
                                            (* radius
                                               constants/discard-zone-icon-radius-factor))]
-        (circle (assoc base-circle-pos
+        (draw-circle (assoc base-circle-pos
                        :radius (* radius
                                   constants/discard-zone-icon-radius-factor))
                 (:foreground (storage/color-scheme))
                 :menu)
-        (circle (assoc base-circle-pos
+        (draw-circle (assoc base-circle-pos
                        :radius (* radius
                                   constants/discard-zone-icon-radius-factor
                                   (- 1 constants/discard-zone-icon-thickness)))
                 (:background (storage/color-scheme))
                 :menu)
-        (line (geom/add-points base-circle-pos
+        (draw-line (geom/add-points base-circle-pos
                                angle-offset)
               (geom/subtract-points base-circle-pos
                                     angle-offset)

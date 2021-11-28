@@ -1,6 +1,16 @@
 (ns vlojure.app
   (:require [clojure.string :as string]
-            [vlojure.graphics :as graphics]
+            [vlojure.graphics :refer [app-rect
+                                      draw-circle
+                                      draw-rect
+                                      draw-line
+                                      draw-polyline
+                                      update-svgs
+                                      get-delta
+                                      html-color
+                                      app-width
+                                      app-height
+                                      app-size]]
             [vlojure.storage :as storage]
             [vlojure.formbar :as formbar]
             [vlojure.layout :as layout]
@@ -62,18 +72,18 @@
   (> (:drag-dist (attr :mouse)) constants/min-drag-dist))
 
 (defn render-top-left-button-background [& [highlighted-background?]]
-  (let [current-app-rect (graphics/app-rect)
+  (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
         background-color (if highlighted-background?
                            (:highlight (storage/color-scheme))
                            (:foreground (storage/color-scheme)))]
-    (graphics/circle (assoc app-pos
-                            :radius constants/upper-corner-zone-radius)
-                     background-color
-                     :menu)))
+    (draw-circle (assoc app-pos
+                        :radius constants/upper-corner-zone-radius)
+                 background-color
+                 :menu)))
 
 (defn render-top-left-settings-button [& [highlighted-background?]]
-  (let [current-app-rect (graphics/app-rect)
+  (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
         radius (/ (* (- 1 constants/corner-zone-bar-thickness)
                      constants/upper-corner-zone-radius)
@@ -85,21 +95,21 @@
                            (:foreground (storage/color-scheme)))]
     (doseq [angle (map (partial * geom/TAU)
                        (u/prop-range constants/settings-zone-icon-spokes true))]
-      (graphics/line base-circle-pos
-                     (geom/add-points base-circle-pos
-                                      (geom/scale-point (geom/angle-point angle)
-                                                        (* radius
-                                                           constants/settings-zone-icon-spoke-length-factor)))
-                     (* radius
-                        constants/settings-zone-icon-spoke-width-factor)
-                     (:text (storage/color-scheme))
-                     :menu))
-    (graphics/circle (assoc base-circle-pos
+      (draw-line base-circle-pos
+                 (geom/add-points base-circle-pos
+                                  (geom/scale-point (geom/angle-point angle)
+                                                    (* radius
+                                                       constants/settings-zone-icon-spoke-length-factor)))
+                 (* radius
+                    constants/settings-zone-icon-spoke-width-factor)
+                 (:text (storage/color-scheme))
+                 :menu))
+    (draw-circle (assoc base-circle-pos
                             :radius (* radius
                                        constants/settings-zone-icon-radius-factor))
                      (:text (storage/color-scheme))
                      :menu)
-    (graphics/circle (assoc base-circle-pos
+    (draw-circle (assoc base-circle-pos
                             :radius (* radius
                                        constants/settings-zone-icon-radius-factor
                                        constants/settings-zone-icon-inner-radius-factor))
@@ -107,7 +117,7 @@
                      :menu)))
 
 (defn render-top-left-back-button []
-  (let [current-app-rect (graphics/app-rect)
+  (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
         radius (/ (* (- 1 constants/corner-zone-bar-thickness)
                      constants/upper-corner-zone-radius)
@@ -119,14 +129,14 @@
                                        constants/back-icon-left-length-factor))})
         width (* radius constants/back-icon-width-factor)
         arrow-size (* radius constants/back-icon-tip-length-factor)]
-    (graphics/line tip
+    (draw-line tip
                    (geom/add-points base-circle-pos
                                     {:x (* radius
                                            constants/back-icon-right-length-factor)})
                    width
                    (:text (storage/color-scheme))
                    :menu)
-    (graphics/polyline [(geom/add-points tip
+    (draw-polyline [(geom/add-points tip
                                          {:x arrow-size
                                           :y (- arrow-size)})
                         tip
@@ -138,7 +148,7 @@
                        :menu)))
 
 (defn render-top-left-invalid-button []
-  (let [current-app-rect (graphics/app-rect)
+  (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
         radius (/ (* (- 1 constants/corner-zone-bar-thickness)
                      constants/upper-corner-zone-radius)
@@ -150,7 +160,7 @@
                                          constants/new-icon-size
                                          radius))]
     (doseq [offset [base-offset (update base-offset :x -)]]
-      (graphics/line (geom/add-points base-circle-pos
+      (draw-line (geom/add-points base-circle-pos
                                       (geom/scale-point offset -1))
                      (geom/add-points base-circle-pos
                                       offset)
@@ -159,20 +169,20 @@
                      :menu))))
 
 (defn render-app-state []
-  (let [current-app-rect (graphics/app-rect)
+  (let [current-app-rect (app-rect)
         mouse-zone (get-mouse-zone)]
-    (graphics/rect current-app-rect
-                   (:background (storage/color-scheme))
-                   :background)
+    (draw-rect current-app-rect
+                        (:background (storage/color-scheme))
+                        :background)
     (page-action (attr :page)
                  :render
                  (assoc (attr :mouse)
                         :dragging? (mouse-dragging?))
                  mouse-zone)
-    (graphics/update-svgs)))
+    (update-svgs)))
 
 (defn update-app []
-  (let [delta (graphics/get-delta)]
+  (let [delta (get-delta)]
     (when-not (zero? constants/scroll-speed)
       (storage/update-attr! :scroll-direction
                             #(geom/angle-point
@@ -202,9 +212,9 @@
   (let [screen-pos (.-global (.-data event))
         x (.-x screen-pos)
         y (.-y screen-pos)
-        width (graphics/app-width)
-        height (graphics/app-height)
-        size (graphics/app-size)
+        width (app-width)
+        height (app-height)
+        size (app-size)
         current-pos {:x (/ (- x (* 0.5 (- width size))) size)
                      :y (/ (- y (* 0.5 (- height size))) size)}]
     (update-attr! :mouse
@@ -235,7 +245,7 @@
     (when ss
       (.insertRule ss
                    (str "::selection { background: "
-                        (graphics/html-color (:background (storage/color-scheme)))
+                        (html-color (:background (storage/color-scheme)))
                         "}")))))
 
 (defn on-click-up [event]

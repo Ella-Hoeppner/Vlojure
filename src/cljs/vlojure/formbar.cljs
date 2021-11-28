@@ -1,5 +1,8 @@
 (ns vlojure.formbar
-  (:require [vlojure.graphics :as graphics]
+  (:require [vlojure.graphics :refer [app-rect
+                                      draw-circle
+                                      draw-rect
+                                      render-tool]]
             [vlojure.storage :as storage]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
@@ -28,7 +31,7 @@
   (zipmap
    constants/screen-sides
    (map (fn [side]
-          (let [[app-pos app-size] (graphics/app-rect)
+          (let [[app-pos app-size] (app-rect)
                 formbars (storage/project-attr :formbars)
                 horizontal? (#{:top :bottom} side)
                 bar-stages (get formbars side)]
@@ -180,7 +183,7 @@
         potential-paths
         (filter identity
                 (mapv (fn [side]
-                        (let [[app-pos app-size] (graphics/app-rect)
+                        (let [[app-pos app-size] (app-rect)
                               side-offset (case side
                                             :left (- (:x pos)
                                                      (:x app-pos))
@@ -257,7 +260,7 @@
           potential-paths)))
 
 (defn formbar-insertion-circle [path]
-  (let [[app-pos app-size] (graphics/app-rect)
+  (let [[app-pos app-size] (app-rect)
         arrangement (formbar-arrangement)
         layer-path (take 2 path)
         [bar-side layer-index bar-index] path
@@ -301,7 +304,7 @@
            :radius constants/formbar-placement-circle-radius)))
 
 (defn new-formbar-circles []
-  (let [[app-pos app-size] (graphics/app-rect)
+  (let [[app-pos app-size] (app-rect)
         arrangement (formbar-arrangement)]
     (apply hash-map
            (mapcat (fn [side]
@@ -400,38 +403,38 @@
                     (doseq [center [bar
                                     (geom/add-points bar
                                                      {primary-dim (size-key bar)})]]
-                      (graphics/circle (assoc center
-                                              :radius (* (storage/formbar-radius) radius-factor))
-                                       color
-                                       :formbar)))
-                  (graphics/rect (if (= bar-type :bindings)
-                                   [(geom/subtract-points bar
-                                                          {primary-dim (* (storage/formbar-radius) radius-factor)
-                                                           secondary-dim (* (storage/formbar-radius) radius-factor)})
-                                    {primary-dim (+ (size-key bar)
-                                                    (* 2 (storage/formbar-radius) radius-factor))
-                                     secondary-dim (* 2 (storage/formbar-radius) radius-factor)}]
-                                   [(geom/subtract-points bar
-                                                          {secondary-dim (* (storage/formbar-radius) radius-factor)})
-                                    {primary-dim (size-key bar)
-                                     secondary-dim (* 2 (storage/formbar-radius) radius-factor)}])
-                                 color
-                                 :formbar))))))
+                      (draw-circle (assoc center
+                                          :radius (* (storage/formbar-radius) radius-factor))
+                                   color
+                                   :formbar)))
+                  (draw-rect (if (= bar-type :bindings)
+                               [(geom/subtract-points bar
+                                                      {primary-dim (* (storage/formbar-radius) radius-factor)
+                                                       secondary-dim (* (storage/formbar-radius) radius-factor)})
+                                {primary-dim (+ (size-key bar)
+                                                (* 2 (storage/formbar-radius) radius-factor))
+                                 secondary-dim (* 2 (storage/formbar-radius) radius-factor)}]
+                               [(geom/subtract-points bar
+                                                      {secondary-dim (* (storage/formbar-radius) radius-factor)})
+                                {primary-dim (size-key bar)
+                                 secondary-dim (* 2 (storage/formbar-radius) radius-factor)}])
+                             color
+                             :formbar))))))
         (when (and formbar-form-path
                    (= (first formbar-form-path) side))
-          (graphics/circle (update (get-in arrangement
-                                           (butlast (formbar-form-path-at mouse)))
-                                   :radius (partial * (/ constants/formbar-form-size)))
-                           (:highlight (storage/color-scheme))
-                           :formbar))
+          (draw-circle (update (get-in arrangement
+                                       (butlast (formbar-form-path-at mouse)))
+                               :radius (partial * (/ constants/formbar-form-size)))
+                       (:highlight (storage/color-scheme))
+                       :formbar))
         (doseq [stage side-arrangement]
           (doseq [bar stage]
             (if (= (:type bar) :tool)
-              (do (graphics/circle (first (:circles bar))
-                                   (:background (storage/color-scheme))
-                                   :settings-overlay)
-                  (graphics/render-tool (:tool-type bar)
-                                        (first (:circles bar))))
+              (do (draw-circle (first (:circles bar))
+                               (:background (storage/color-scheme))
+                               :settings-overlay)
+                  (render-tool (:tool-type bar)
+                               (first (:circles bar))))
               (doseq [bar-circle (:circles bar)]
                 (layout/render-sublayouts (layout/form-layout (:form bar-circle)
                                                               bar-circle)

@@ -1,6 +1,10 @@
 (ns vlojure.pages.text
   (:require [vlojure.util :as u]
-            [vlojure.graphics :as graphics]
+            [vlojure.graphics :refer [app-rect
+                                      draw-rect
+                                      screen-x
+                                      screen-y
+                                      html-color]]
             [vlojure.storage :as storage]
             [vlojure.constants :as constants]
             [vlojure.geometry :as geom]
@@ -71,15 +75,15 @@
     :resize-html
     (fn []
       (let [input @input-element
-            left-x (graphics/screen-x (+ (:x (first (graphics/app-rect)))
+            left-x (screen-x (+ (:x (first (app-rect)))
                                          constants/text-page-border))
-            top-y (graphics/screen-y (+ (:y (first (graphics/app-rect)))
+            top-y (screen-y (+ (:y (first (app-rect)))
                                         constants/text-page-border))]
         (set! (.-left (.-style input))
               (str left-x
                    "px"))
         (set! (.-width (.-style input))
-              (str (- (graphics/screen-x (- (:x (apply geom/add-points (graphics/app-rect)))
+              (str (- (screen-x (- (:x (apply geom/add-points (app-rect)))
                                             constants/text-page-border))
                       top-y)
                    "px"))
@@ -87,7 +91,7 @@
               (str top-y
                    "px"))
         (set! (.-height (.-style input))
-              (str (- (graphics/screen-y (- (:y (apply geom/add-points (graphics/app-rect)))
+              (str (- (screen-y (- (:y (apply geom/add-points (app-rect)))
                                             constants/text-page-border))
                       top-y)
                    "px"))))
@@ -95,13 +99,13 @@
     :refresh-html-colors
     (fn []
       (set! (.-color (.-style @input-element))
-            (graphics/html-color (:text (storage/color-scheme)))))
+            (html-color (:text (storage/color-scheme)))))
 
     :mouse-zone
     (fn [mouse]
       (cond
         (<= (geom/point-magnitude
-             (geom/subtract-points (first (graphics/app-rect))
+             (geom/subtract-points (first (app-rect))
                                    mouse))
             constants/upper-corner-zone-radius)
         :back-icon
@@ -110,15 +114,15 @@
 
     :render
     (fn [mouse mouse-zone]
-      (graphics/rect (let [[app-pos app-size] (graphics/app-rect)]
-                       [(reduce #(update %1 %2 (partial + constants/text-page-border))
-                                app-pos
-                                [:x :y])
-                        (reduce #(update %1 %2 (fn [v] (- v (* 2 constants/text-page-border))))
-                                app-size
-                                [:x :y])])
-                     (:foreground (storage/color-scheme))
-                     :background)
+      (draw-rect (let [[app-pos app-size] (app-rect)]
+                            [(reduce #(update %1 %2 (partial + constants/text-page-border))
+                                     app-pos
+                                     [:x :y])
+                             (reduce #(update %1 %2 (fn [v] (- v (* 2 constants/text-page-border))))
+                                     app-size
+                                     [:x :y])])
+                          (:foreground (storage/color-scheme))
+                          :background)
 
 
       (app/render-top-left-button-background (= mouse-zone :back-icon))
