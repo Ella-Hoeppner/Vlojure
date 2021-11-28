@@ -6,7 +6,7 @@
             [vlojure.storage :as storage]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.layout :as layout]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -17,8 +17,8 @@
 
 (defn formbar-offset [index]
   (+ (* (storage/formbar-radius)
-        (inc constants/formbar-pos))
-     (* index (* 2 (storage/formbar-radius) constants/formbar-spacing))))
+        (inc c/formbar-pos))
+     (* index (* 2 (storage/formbar-radius) c/formbar-spacing))))
 
 (defn formbar-zone-size [side]
   (let [side-stage-count (count (get (storage/project-attr :formbars) side))]
@@ -29,7 +29,7 @@
 
 (defn formbar-arrangement []
   (zipmap
-   constants/screen-sides
+   c/screen-sides
    (map (fn [side]
           (let [[app-pos app-size] (app-rect)
                 formbars (storage/project-attr :formbars)
@@ -42,7 +42,7 @@
                                           :bindings (* (dec (:max-size bar))
                                                        2
                                                        (storage/formbar-radius)
-                                                       (- 1 constants/formbar-outline-thickness))
+                                                       (- 1 c/formbar-outline-thickness))
 
                                           (max 0
                                                (let [bar-type (:type bar)
@@ -52,10 +52,10 @@
                                                  (* (dec size)
                                                     2
                                                     (storage/formbar-radius)
-                                                    (- 1 constants/formbar-outline-thickness))))))
+                                                    (- 1 c/formbar-outline-thickness))))))
                                       stage)
                           total-size (+ (apply + sizes)
-                                        (* (inc constants/formbar-spacing)
+                                        (* (inc c/formbar-spacing)
                                            (storage/formbar-radius)
                                            (dec (count stage))))
                           edge-offset (formbar-offset stage-index)
@@ -63,7 +63,7 @@
                                             (conj offsets
                                                   (+ (last offsets)
                                                      size
-                                                     (* (inc constants/formbar-spacing)
+                                                     (* (inc c/formbar-spacing)
                                                         (storage/formbar-radius)))))
                                           [(* -0.5 total-size)]
                                           sizes)]
@@ -79,8 +79,8 @@
                                               :right {:x (- (+ (:x app-pos) (:x app-size)) edge-offset)
                                                       :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)})
                                     radius (* (storage/formbar-radius)
-                                              (- 1 constants/formbar-outline-thickness)
-                                              constants/formbar-form-size)]
+                                              (- 1 c/formbar-outline-thickness)
+                                              c/formbar-form-size)]
                                 (merge bar-pos
                                        {:width (if horizontal? size 0)
                                         :height (if horizontal? 0 size)
@@ -94,7 +94,7 @@
                                                                                     (geom/scale-point
                                                                                      {(if horizontal? :x :y)
                                                                                       (* 2
-                                                                                         (- 1 constants/formbar-outline-thickness)
+                                                                                         (- 1 c/formbar-outline-thickness)
                                                                                          (storage/formbar-radius))}
                                                                                      form-index))
                                                                    :radius radius
@@ -106,7 +106,7 @@
                                                                           (geom/scale-point
                                                                            {(if horizontal? :x :y)
                                                                             (* 2
-                                                                               (- 1 constants/formbar-outline-thickness)
+                                                                               (- 1 c/formbar-outline-thickness)
                                                                                (storage/formbar-radius))}
                                                                            form-index))
                                                          :radius radius
@@ -120,7 +120,7 @@
                             offsets)))
                   bar-stages
                   (range))))
-        constants/screen-sides)))
+        c/screen-sides)))
 
 (defn formbar-form-path-at [pos]
   (let [full-arrangement (formbar-arrangement)]
@@ -138,7 +138,7 @@
                                         (range (count circles)))))
                               (range (count stage)))))
                     (range (count arrangement)))))
-          constants/screen-sides)))
+          c/screen-sides)))
 
 (defn formbar-path-at [pos]
   (let [full-arrangement (formbar-arrangement)]
@@ -173,13 +173,13 @@
                                     [side stage-index bar-index])))
                               (range (count stage)))))
                     (range (count arrangement)))))
-          constants/screen-sides)))
+          c/screen-sides)))
 
 (defn formbar-insertion-path-at [pos]
   (let [arrangement (formbar-arrangement)
         layer-size (* 2
                       (storage/formbar-radius)
-                      constants/formbar-spacing)
+                      c/formbar-spacing)
         potential-paths
         (filter identity
                 (mapv (fn [side]
@@ -252,7 +252,7 @@
                                       rounded-layer-index
                                       insertion-index]
                                :error error}))))
-                      constants/screen-sides))
+                      c/screen-sides))
         min-error (apply min
                          (mapv :error potential-paths))]
     (some #(when (= min-error (:error %))
@@ -271,7 +271,7 @@
                               (let [outer-layer-spacing (* 2
                                                            (storage/formbar-radius)
                                                            (+ 0.5 layer-index)
-                                                           constants/formbar-spacing)]
+                                                           c/formbar-spacing)]
                                 (case bar-side
                                   :left (-> app-size
                                             (update :y (partial * 0.5))
@@ -289,7 +289,7 @@
                                                       #(- % outer-layer-spacing))))))
              (let [vertical? (#{:left :right} bar-side)
                    start-offset (* (storage/formbar-radius)
-                                   (inc constants/formbar-spacing)
+                                   (inc c/formbar-spacing)
                                    0.5)]
                (if (>= bar-index (count layer))
                  (let [bar (last layer)]
@@ -301,7 +301,7 @@
                  (geom/add-points (select-keys (nth layer bar-index) [:x :y])
                                   {(if vertical? :y :x)
                                    (- start-offset)}))))
-           :radius constants/formbar-placement-circle-radius)))
+           :radius c/formbar-placement-circle-radius)))
 
 (defn new-formbar-circles []
   (let [[app-pos app-size] (app-rect)
@@ -323,9 +323,9 @@
                                                     dim
                                                     #(- %
                                                         (* (storage/formbar-radius)
-                                                           (inc constants/new-formbar-circle-radius)
-                                                           constants/formbar-spacing)))
-                                            :radius (* constants/new-formbar-circle-radius
+                                                           (inc c/new-formbar-circle-radius)
+                                                           c/formbar-spacing)))
+                                            :radius (* c/new-formbar-circle-radius
                                                        (storage/formbar-radius)))
                                      [side stage-index 0]
                                      (assoc (update (last stage)
@@ -333,9 +333,9 @@
                                                     #(+ %
                                                         (size-attribute (last stage))
                                                         (* (storage/formbar-radius)
-                                                           (inc constants/new-formbar-circle-radius)
-                                                           constants/formbar-spacing)))
-                                            :radius (* constants/new-formbar-circle-radius
+                                                           (inc c/new-formbar-circle-radius)
+                                                           c/formbar-spacing)))
+                                            :radius (* c/new-formbar-circle-radius
                                                        (storage/formbar-radius)))
                                      [side stage-index (count stage)])))
                                 (range (count side-formbars))))
@@ -353,14 +353,14 @@
                             arrangement-side (get arrangement side)]
                         [(assoc (geom/add-points side-center
                                                  (geom/scale-point perpendicular-direction
-                                                                   (- (+ (* constants/new-formbar-circle-radius
+                                                                   (- (+ (* c/new-formbar-circle-radius
                                                                             (storage/formbar-radius))
                                                                          (formbar-offset (count arrangement-side)))
                                                                       (storage/formbar-radius))))
-                                :radius (* constants/new-formbar-circle-radius
+                                :radius (* c/new-formbar-circle-radius
                                            (storage/formbar-radius)))
                          [side (count arrangement-side) 0]])))
-                   constants/screen-sides))))
+                   c/screen-sides))))
 
 (defn new-formbar-circle-path-at [pos]
   (let [circles (new-formbar-circles)]
@@ -386,7 +386,7 @@
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)
         formbar-form-path (formbar-form-path-at mouse)]
-    (doseq [side constants/screen-sides]
+    (doseq [side c/screen-sides]
       (let [horizontal? (#{:top :bottom} side)
             side-arrangement (get arrangement side)]
         (doseq [stage side-arrangement]
@@ -394,7 +394,7 @@
             (let [bar-type (:type bar)]
               (doseq [[color radius-factor]
                       [[(:foreground (storage/color-scheme)) 1]
-                       [(:background (storage/color-scheme)) (- 1 constants/formbar-outline-thickness)]]]
+                       [(:background (storage/color-scheme)) (- 1 c/formbar-outline-thickness)]]]
                 (let [[primary-dim secondary-dim size-key]
                       (if horizontal?
                         [:x :y :width]
@@ -424,7 +424,7 @@
                    (= (first formbar-form-path) side))
           (draw-circle (update (get-in arrangement
                                        (butlast (formbar-form-path-at mouse)))
-                               :radius (partial * (/ constants/formbar-form-size)))
+                               :radius (partial * (/ c/formbar-form-size)))
                        (:highlight (storage/color-scheme))
                        :formbar))
         (doseq [stage side-arrangement]

@@ -16,7 +16,7 @@
             [vlojure.layout :as layout]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.vedn :as vedn]
             [vlojure.evaluation :as evaluation]))
 
@@ -69,7 +69,7 @@
                (:mouse @app-state)))
 
 (defn mouse-dragging? []
-  (> (:drag-dist (attr :mouse)) constants/min-drag-dist))
+  (> (:drag-dist (attr :mouse)) c/min-drag-dist))
 
 (defn render-top-left-button-background [& [highlighted-background?]]
   (let [current-app-rect (app-rect)
@@ -78,15 +78,15 @@
                            (:highlight (storage/color-scheme))
                            (:foreground (storage/color-scheme)))]
     (draw-circle (assoc app-pos
-                        :radius constants/upper-corner-zone-radius)
+                        :radius c/upper-corner-zone-radius)
                  background-color
                  :menu)))
 
 (defn render-top-left-settings-button [& [highlighted-background?]]
   (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
-        radius (/ (* (- 1 constants/corner-zone-bar-thickness)
-                     constants/upper-corner-zone-radius)
+        radius (/ (* (- 1 c/corner-zone-bar-thickness)
+                     c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
         base-circle-pos (geom/add-points app-pos
                                          (geom/scale-point geom/unit radius))
@@ -94,45 +94,45 @@
                            (:highlight (storage/color-scheme))
                            (:foreground (storage/color-scheme)))]
     (doseq [angle (map (partial * geom/TAU)
-                       (u/prop-range constants/settings-zone-icon-spokes true))]
+                       (u/prop-range c/settings-zone-icon-spokes true))]
       (draw-line base-circle-pos
                  (geom/add-points base-circle-pos
                                   (geom/scale-point (geom/angle-point angle)
                                                     (* radius
-                                                       constants/settings-zone-icon-spoke-length-factor)))
+                                                       c/settings-zone-icon-spoke-length-factor)))
                  (* radius
-                    constants/settings-zone-icon-spoke-width-factor)
+                    c/settings-zone-icon-spoke-width-factor)
                  (:text (storage/color-scheme))
                  :menu))
     (draw-circle (assoc base-circle-pos
                             :radius (* radius
-                                       constants/settings-zone-icon-radius-factor))
+                                       c/settings-zone-icon-radius-factor))
                      (:text (storage/color-scheme))
                      :menu)
     (draw-circle (assoc base-circle-pos
                             :radius (* radius
-                                       constants/settings-zone-icon-radius-factor
-                                       constants/settings-zone-icon-inner-radius-factor))
+                                       c/settings-zone-icon-radius-factor
+                                       c/settings-zone-icon-inner-radius-factor))
                      background-color
                      :menu)))
 
 (defn render-top-left-back-button []
   (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
-        radius (/ (* (- 1 constants/corner-zone-bar-thickness)
-                     constants/upper-corner-zone-radius)
+        radius (/ (* (- 1 c/corner-zone-bar-thickness)
+                     c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
         base-circle-pos (geom/add-points app-pos
                                          (geom/scale-point geom/unit radius))
         tip (geom/add-points base-circle-pos
                              {:x (- (* radius
-                                       constants/back-icon-left-length-factor))})
-        width (* radius constants/back-icon-width-factor)
-        arrow-size (* radius constants/back-icon-tip-length-factor)]
+                                       c/back-icon-left-length-factor))})
+        width (* radius c/back-icon-width-factor)
+        arrow-size (* radius c/back-icon-tip-length-factor)]
     (draw-line tip
                    (geom/add-points base-circle-pos
                                     {:x (* radius
-                                           constants/back-icon-right-length-factor)})
+                                           c/back-icon-right-length-factor)})
                    width
                    (:text (storage/color-scheme))
                    :menu)
@@ -150,21 +150,21 @@
 (defn render-top-left-invalid-button []
   (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
-        radius (/ (* (- 1 constants/corner-zone-bar-thickness)
-                     constants/upper-corner-zone-radius)
+        radius (/ (* (- 1 c/corner-zone-bar-thickness)
+                     c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
         base-circle-pos (geom/add-points app-pos
                                          (geom/scale-point geom/unit radius))
         base-offset (geom/scale-point geom/unit
                                       (* (Math/sqrt 0.5)
-                                         constants/new-icon-size
+                                         c/new-icon-size
                                          radius))]
     (doseq [offset [base-offset (update base-offset :x -)]]
       (draw-line (geom/add-points base-circle-pos
                                       (geom/scale-point offset -1))
                      (geom/add-points base-circle-pos
                                       offset)
-                     (* radius constants/new-icon-width)
+                     (* radius c/new-icon-width)
                      (:text (storage/color-scheme))
                      :menu))))
 
@@ -183,11 +183,11 @@
 
 (defn update-app []
   (let [delta (get-delta)]
-    (when-not (zero? constants/scroll-speed)
+    (when-not (zero? c/scroll-speed)
       (storage/update-attr! :scroll-direction
                             #(geom/angle-point
                               (+ (geom/point-angle %)
-                                 (* constants/scroll-speed delta)))))
+                                 (* c/scroll-speed delta)))))
     (let [{:keys [mouse page]} @app-state]
       (when (and (:down? mouse)
                  (mouse-dragging?)
@@ -198,7 +198,7 @@
                                                                              (:last-pos mouse))
                                                        (storage/attr :scroll-direction))
                          (* (storage/base-zoom)
-                            constants/outer-form-spacing)))
+                            c/outer-form-spacing)))
                      (assoc mouse :dragging? (mouse-dragging?)))))
     (all-pages-action :update delta (attr :mouse) (get-mouse-zone))
     (update-attr! :mouse

@@ -1,6 +1,6 @@
 (ns vlojure.storage
   (:require [vlojure.util :as u]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.evaluation :as evaluation]
             [vlojure.vedn :as vedn]
             [clojure.edn :as edn]
@@ -72,7 +72,7 @@
 
 (defn add-code-history-entry! [code]
   (update-project-attr! :code-history
-                        #(take constants/max-undo-history
+                        #(take c/max-undo-history
                                (conj % code))))
 
 (defn modify-code! [mutator]
@@ -285,13 +285,13 @@
   (count (:children (project-attr :form))))
 
 (defn color-scheme []
-  (nth constants/color-schemes
+  (nth c/color-schemes
        (or (:color-scheme @app-state)
            0)))
 
 (defn default-app-state []
   (merge
-   (zipmap (mapv second constants/settings-sliders)
+   (zipmap (mapv second c/settings-sliders)
            (repeat 0))
    {:base-zoom 0.5}
    {:active-project 0

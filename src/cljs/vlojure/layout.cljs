@@ -7,7 +7,7 @@
             [vlojure.storage :as storage]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.vedn :as vedn]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -29,10 +29,10 @@
                (if (= subform-count 1)
                  [(form-layout (first children)
                                (assoc current-layout
-                                      :radius (* constants/sole-subform-shrink-factor (:radius current-layout))))]
+                                      :radius (* c/sole-subform-shrink-factor (:radius current-layout))))]
                  (let [raw-radius (Math/sin (/ Math/PI subform-count))
                        unscaled-radius (/ raw-radius (inc raw-radius))
-                       radius (* unscaled-radius (- 1 constants/bubble-thickness) (:radius current-layout))]
+                       radius (* unscaled-radius (- 1 c/bubble-thickness) (:radius current-layout))]
                    (mapv (fn [subform i]
                            (let [angle (- (* Math/PI -0.5)
                                           (/ (* Math/PI 2 i) subform-count))]
@@ -40,9 +40,9 @@
                                           (assoc (geom/add-points current-layout
                                                                   (geom/scale-point (geom/angle-point angle)
                                                                                     (- (* (:radius current-layout)
-                                                                                          (- 1 constants/bubble-thickness))
+                                                                                          (- 1 c/bubble-thickness))
                                                                                        radius)))
-                                                 :radius (* constants/subform-shrink-factor radius)))))
+                                                 :radius (* c/subform-shrink-factor radius)))))
                          children
                          (range)))))))))
 
@@ -67,13 +67,13 @@
                             (* geom/PI 1.25)
                             (* geom/PI 1.75)]]
           (draw-polygon [(geom/add-points layout
-                                              (geom/scale-point (geom/angle-point (- base-angle constants/map-point-width))
+                                              (geom/scale-point (geom/angle-point (- base-angle c/map-point-width))
                                                                 r))
                              (geom/add-points layout
                                               (geom/scale-point (geom/angle-point base-angle)
-                                                                (* (inc constants/map-point-height) r)))
+                                                                (* (inc c/map-point-height) r)))
                              (geom/add-points layout
-                                              (geom/scale-point (geom/angle-point (+ base-angle constants/map-point-width))
+                                              (geom/scale-point (geom/angle-point (+ base-angle c/map-point-width))
                                                                 r))]
                             (:foreground (storage/color-scheme))
                             layer))))
@@ -84,27 +84,27 @@
                        geom/PI
                        (* geom/PI 1.5)]]
           (let [base-offset (geom/scale-point (geom/angle-point (+ angle (* geom/PI 0.5)))
-                                              (* r constants/set-line-offset))]
+                                              (* r c/set-line-offset))]
             (doseq [offset [base-offset (geom/scale-point base-offset -1)]]
               (draw-line (geom/add-points offset layout)
                              (geom/add-points layout
                                               offset
                                               (geom/scale-point (geom/angle-point angle)
-                                                                (* (inc constants/set-line-length) r)))
-                             (* r constants/set-line-width)
+                                                                (* (inc c/set-line-length) r)))
+                             (* r c/set-line-width)
                              (:foreground (storage/color-scheme))
                              layer))))))
     (when (#{:list :map :set :lit-fn} (:type layout))
       (draw-circle (update layout
                                :radius (partial *
-                                                (- 1 constants/bubble-thickness)))
+                                                (- 1 c/bubble-thickness)))
                        (:background (storage/color-scheme))
                        layer))
     (when (= (:type layout) :vector)
       (draw-polygon (mapv #(geom/add-points center
                                                 (geom/scale-point %
                                                                   (* radius
-                                                                     constants/vector-size-factor)))
+                                                                     c/vector-size-factor)))
                               (geom/polygon 8
                                             (* geom/PI 0.125)))
                         (:foreground (storage/color-scheme))
@@ -112,65 +112,65 @@
       (draw-polygon (mapv #(geom/add-points center
                                                 (geom/scale-point %
                                                                   (* radius
-                                                                     constants/vector-size-factor
-                                                                     (- 1 constants/bubble-thickness))))
+                                                                     c/vector-size-factor
+                                                                     (- 1 c/bubble-thickness))))
                               (geom/polygon 8
                                             (* geom/PI 0.125)))
                         (:background (storage/color-scheme))
                         layer))
     (when (= (:type layout) :quote)
       (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/quote-divs true))]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/quote-divs true))]
           (let [[start end]
                 (map #(geom/add-points layout
                                        (geom/scale-point (geom/angle-point
                                                           (+ angle
-                                                             (* % (/ geom/TAU constants/quote-divs 4))))
+                                                             (* % (/ geom/TAU c/quote-divs 4))))
                                                          radius))
                      [-1 1])]
             (draw-line start end
                            (* radius
-                              constants/bubble-thickness)
+                              c/bubble-thickness)
                            (:foreground (storage/color-scheme))
                            layer)))))
     (when (= (:type layout) :deref)
       (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/deref-circles true))]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/deref-circles true))]
           (draw-circle (update (geom/add-points layout
                                                     (geom/scale-point (geom/angle-point angle)
                                                                       radius))
                                    :radius
-                                   (partial * constants/deref-circle-size-factor))
+                                   (partial * c/deref-circle-size-factor))
                            (:foreground (storage/color-scheme))
                            layer))))
     (when (= (:type layout) :syntax-quote)
       (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/syntax-quote-divs true))]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/syntax-quote-divs true))]
           (let [[start end]
                 (map #(geom/add-points layout
                                        (geom/scale-point (geom/angle-point
                                                           (+ angle
-                                                             (* % (/ geom/TAU constants/syntax-quote-divs 4))))
+                                                             (* % (/ geom/TAU c/syntax-quote-divs 4))))
                                                          (* radius
                                                             (+ 1
-                                                               (* % constants/syntax-quote-offset-factor)))))
+                                                               (* % c/syntax-quote-offset-factor)))))
                      [-1 1])]
             (draw-line start end
                            (* radius
-                              constants/bubble-thickness)
+                              c/bubble-thickness)
                            (:foreground (storage/color-scheme))
                            layer)))))
     (when (= (:type layout) :comment)
       (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/comment-divs true))]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/comment-divs true))]
           (draw-line (geom/add-points layout
                                           (geom/scale-point (geom/angle-point angle)
                                                             radius))
                          (geom/add-points layout
                                           (geom/scale-point (geom/angle-point angle)
-                                                            (* radius (- 1 constants/comment-length-factor))))
+                                                            (* radius (- 1 c/comment-length-factor))))
                          (* radius
-                            constants/bubble-thickness)
+                            c/bubble-thickness)
                          (:foreground (storage/color-scheme))
                          layer))))
     (when (= (:type layout) :unquote)
@@ -180,19 +180,19 @@
                          (range 8))
             points (mapv #(geom/scale-point (geom/angle-point %)
                                             (* radius
-                                               constants/vector-size-factor))
+                                               c/vector-size-factor))
                          angles)]
         (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-size (/ 0.5 constants/unquote-divs)
+          (let [div-size (/ 0.5 c/unquote-divs)
                 tween-starts (mapv #(* div-size (+ 0.5 (* 2 %)))
-                                   (range constants/unquote-divs))]
+                                   (range c/unquote-divs))]
             (doseq [tween-start tween-starts]
               (draw-line (geom/add-points layout
                                               (geom/tween-points start-point end-point tween-start))
                              (geom/add-points layout
                                               (geom/tween-points start-point end-point (+ tween-start div-size)))
                              (* radius
-                                constants/bubble-thickness)
+                                c/bubble-thickness)
                              (:foreground (storage/color-scheme))
                              layer))))))
     (when (= (:type layout) :unquote-splice)
@@ -202,59 +202,59 @@
                          (range 8))
             points (mapv #(geom/scale-point (geom/angle-point %)
                                             (* radius
-                                               constants/vector-size-factor))
+                                               c/vector-size-factor))
                          angles)]
         (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-spacing (/ 0.5 constants/unquote-splice-circles)]
-            (doseq [t (u/prop-range constants/unquote-splice-circles true)]
+          (let [div-spacing (/ 0.5 c/unquote-splice-circles)]
+            (doseq [t (u/prop-range c/unquote-splice-circles true)]
               (draw-circle (update (geom/add-points layout
                                                         (geom/tween-points start-point end-point t))
                                        :radius
-                                       (partial * constants/deref-circle-size-factor))
+                                       (partial * c/deref-circle-size-factor))
                                (:foreground (storage/color-scheme))
                                layer))))))
     (when (= (:type layout) :meta)
       (let [radius (:radius layout)
-            angle-offset (/ geom/PI 2 constants/meta-divs)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/meta-divs true))]
+            angle-offset (/ geom/PI 2 c/meta-divs)]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/meta-divs true))]
           (let [tip (geom/add-points layout
                                      (geom/scale-point (geom/angle-point angle)
                                                        radius))
                 [start end]
                 (mapv #(geom/add-points layout
                                         (geom/scale-point (geom/angle-point (+ angle (* % angle-offset)))
-                                                          (* radius (- 1 constants/meta-length-factor))))
+                                                          (* radius (- 1 c/meta-length-factor))))
                       [1 -1])]
             (draw-polyline [start tip end]
                                (* radius
-                                  constants/bubble-thickness)
+                                  c/bubble-thickness)
                                (:foreground (storage/color-scheme))
                                layer)))))
     (when (= (:type layout) :var-quote)
       (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range constants/var-quote-divs true))]
+        (doseq [angle (mapv (partial * geom/TAU) (u/prop-range c/var-quote-divs true))]
           (let [[start end]
                 (map #(geom/add-points layout
                                        (geom/scale-point (geom/angle-point
                                                           (+ angle
-                                                             (* % (/ geom/TAU constants/var-quote-divs 4))))
+                                                             (* % (/ geom/TAU c/var-quote-divs 4))))
                                                          radius))
                      [-1 1])]
             (draw-line start
                            end
                            (* radius
-                              constants/bubble-thickness)
+                              c/bubble-thickness)
                            (:foreground (storage/color-scheme))
                            layer))
           (let [[start end]
                 (map #(geom/add-points layout
                                        (geom/scale-point (geom/angle-point angle)
                                                          (* radius %)))
-                     [1 (inc constants/var-quote-length)])]
+                     [1 (inc c/var-quote-length)])]
             (draw-line start
                            end
                            (* radius
-                              constants/bubble-thickness)
+                              c/bubble-thickness)
                            (:foreground (storage/color-scheme))
                            layer)))))
     (when (= (:type layout) :literal)

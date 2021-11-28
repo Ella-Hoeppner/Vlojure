@@ -6,7 +6,7 @@
                                       screen-y
                                       html-color]]
             [vlojure.storage :as storage]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.geometry :as geom]
             [vlojure.vedn :as vedn]
             [vlojure.app :as app]))
@@ -45,7 +45,7 @@
     (set! (.-onchange input) update-validity!)
     (set! (.-resize style) "none")
     (set! (.-position style) "absolute")
-    (set! (.-fontFamily style) constants/font-name)
+    (set! (.-fontFamily style) c/font-name)
     (set! (.-background style) "transparent")
     (set! (.-border style) "none")
     (set! (.-outline style) "none")
@@ -76,15 +76,15 @@
     (fn []
       (let [input @input-element
             left-x (screen-x (+ (:x (first (app-rect)))
-                                         constants/text-page-border))
+                                         c/text-page-border))
             top-y (screen-y (+ (:y (first (app-rect)))
-                                        constants/text-page-border))]
+                                        c/text-page-border))]
         (set! (.-left (.-style input))
               (str left-x
                    "px"))
         (set! (.-width (.-style input))
               (str (- (screen-x (- (:x (apply geom/add-points (app-rect)))
-                                            constants/text-page-border))
+                                            c/text-page-border))
                       top-y)
                    "px"))
         (set! (.-top (.-style input))
@@ -92,7 +92,7 @@
                    "px"))
         (set! (.-height (.-style input))
               (str (- (screen-y (- (:y (apply geom/add-points (app-rect)))
-                                            constants/text-page-border))
+                                            c/text-page-border))
                       top-y)
                    "px"))))
 
@@ -107,7 +107,7 @@
         (<= (geom/point-magnitude
              (geom/subtract-points (first (app-rect))
                                    mouse))
-            constants/upper-corner-zone-radius)
+            c/upper-corner-zone-radius)
         :back-icon
 
         :else :empty))
@@ -115,10 +115,10 @@
     :render
     (fn [mouse mouse-zone]
       (draw-rect (let [[app-pos app-size] (app-rect)]
-                            [(reduce #(update %1 %2 (partial + constants/text-page-border))
+                            [(reduce #(update %1 %2 (partial + c/text-page-border))
                                      app-pos
                                      [:x :y])
-                             (reduce #(update %1 %2 (fn [v] (- v (* 2 constants/text-page-border))))
+                             (reduce #(update %1 %2 (fn [v] (- v (* 2 c/text-page-border))))
                                      app-size
                                      [:x :y])])
                           (:foreground (storage/color-scheme))

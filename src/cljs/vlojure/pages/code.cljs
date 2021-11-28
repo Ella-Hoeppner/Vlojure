@@ -16,7 +16,7 @@
             [vlojure.formbar :as formbar]
             [vlojure.layout :as layout]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as constants]
+            [vlojure.constants :as c]
             [vlojure.vedn :as vedn]
             [vlojure.evaluation :as evaluation]
             [clojure.string :as string]
@@ -32,7 +32,7 @@
 (defonce literal-text-input-path (atom nil))
 (defonce ideal-scroll-pos (atom 0))
 (defonce scroll-pos (atom nil))
-(defonce eval-zone-radius (atom constants/lower-corner-zone-radius))
+(defonce eval-zone-radius (atom c/lower-corner-zone-radius))
 (defonce camera-pos (atom geom/origin))
 (defonce camera-zoom (atom 1))
 (defonce camera-move-diff (atom nil))
@@ -82,7 +82,7 @@
          :sublayouts (mapv (fn [child index]
                              (layout/form-layout child
                                           (assoc (geom/scale-point (storage/attr :scroll-direction)
-                                                                   (* constants/outer-form-spacing
+                                                                   (* c/outer-form-spacing
                                                                       index
                                                                       2))
                                                  :radius 1)))
@@ -127,7 +127,7 @@
    (let [scroll-dir (storage/attr :scroll-direction)
          total-layout (-> (current-form-layouts)
                           (layout/adjust-layout (geom/scale-point scroll-dir
-                                                                  (* constants/outer-form-spacing
+                                                                  (* c/outer-form-spacing
                                                                      2
                                                                      @scroll-pos))
                                                 1))
@@ -136,7 +136,7 @@
      (if (pos? (count @selected-layout-path))
        (geom/add-points sublayout
                         (geom/scale-point scroll-dir
-                                          (* constants/outer-form-spacing
+                                          (* c/outer-form-spacing
                                              -2
                                              (first @selected-layout-path))))
        sublayout))
@@ -174,7 +174,7 @@
                (= down-zone :formbar))
       (let [{:keys [tool-type]} (get-in (storage/project-attr :formbars)
                                         (formbar/formbar-path-at down-pos))]
-        (when (constants/draggable-tools tool-type)
+        (when (c/draggable-tools tool-type)
           tool-type)))))
 
 (defn apply-dragged-tool [tool path]
@@ -208,7 +208,7 @@
             screen-side (first formbar-path)
             bar-arrangement (get-in arrangement formbar-path)
             form-spacing (* (storage/formbar-radius)
-                            (- 1 constants/formbar-outline-thickness))]
+                            (- 1 c/formbar-outline-thickness))]
         (if (zero? (count (:circles bar-arrangement)))
           0
           (let [horizontal? (#{:top :bottom} screen-side)
@@ -233,7 +233,7 @@
                                                    (storage/attr :scroll-direction))
             pos (/ projection
                    (* (storage/base-zoom)
-                      constants/outer-form-spacing))]
+                      c/outer-form-spacing))]
         (when (< (Math/abs rejection)
                  (* 0.5 (storage/base-zoom)))
           (if (neg? pos)
@@ -252,7 +252,7 @@
                                           (cond
                                             (string? result)
                                             (str \"
-                                                 (string/escape result constants/char-escape-string)
+                                                 (string/escape result c/char-escape-string)
                                                  \")
 
                                             (fn? result)
@@ -282,7 +282,7 @@
     (reset! literal-text-input literal-text-input-element)
     (set! (.-position style) "absolute")
     (set! (.-textAlign style) "center")
-    (set! (.-fontFamily style) constants/font-name)
+    (set! (.-fontFamily style) c/font-name)
     (set! (.-background style) "transparent")
     (set! (.-border style) "none")
     (set! (.-outline style) "none")
@@ -308,22 +308,22 @@
                                                              @literal-text-input-path))
                 text-input-str (.-value @literal-text-input)
                 length (count text-input-str)
-                new-text-size (* constants/html-text-size-factor
+                new-text-size (* c/html-text-size-factor
                                  radius
                                  (text-size text-input-str))
 
                 new-text-width (* new-text-size length)
-                new-text-height (* constants/html-text-height-factor new-text-size)
+                new-text-height (* c/html-text-height-factor new-text-size)
                 style (.-style @literal-text-input)]
             (set! (.-left style)
                   (str (int (+ (- (screen-x x)
                                   (/ new-text-width 2))
-                               (* constants/html-text-x-offset new-text-size)))
+                               (* c/html-text-x-offset new-text-size)))
                        "px"))
             (set! (.-top style)
                   (str (int (+ (- (screen-y y)
                                   (/ new-text-height 2))
-                               (* constants/html-text-y-offset new-text-size)))
+                               (* c/html-text-y-offset new-text-size)))
                        "px"))
             (set! (.-width style)
                   (str new-text-width "px"))
@@ -345,14 +345,14 @@
           (<= (geom/point-magnitude
                (geom/subtract-points app-pos
                                      mouse))
-              constants/upper-corner-zone-radius)
+              c/upper-corner-zone-radius)
           :settings-icon
 
           (<= (geom/point-magnitude
                (geom/subtract-points (geom/add-points app-pos
                                                       (select-keys app-size [:x]))
                                      mouse))
-              constants/upper-corner-zone-radius)
+              c/upper-corner-zone-radius)
           :text-icon
 
           (in-discard-corner? mouse)
@@ -396,7 +396,7 @@
                    (or current-dragged-tool
                        current-placement-form))
           (draw-circle (assoc mouse
-                              :radius constants/drag-cursor-radius)
+                              :radius c/drag-cursor-radius)
                        (:highlight (storage/color-scheme))
                        :drag))
         (when (and dragging?
@@ -416,11 +416,11 @@
                                           (layout/shift-layout adjusted-form-layout
                                                                (geom/scale-point scroll-direction
                                                                                  (* (if start? -1 1)
-                                                                                    constants/outer-form-spacing
+                                                                                    c/outer-form-spacing
                                                                                     radius)))
-                                          constants/drop-form-radius-factor)
+                                          c/drop-form-radius-factor)
                                          [:x :y :radius])]
-            (draw-circle (update base-circle :radius (partial * constants/drop-form-outline-radius-factor))
+            (draw-circle (update base-circle :radius (partial * c/drop-form-outline-radius-factor))
                          (:background (storage/color-scheme))
                          :drag)
             (layout/render-sublayouts (layout/form-layout current-placement-form
@@ -444,7 +444,7 @@
             (let [sublayout (layout/get-sublayout (adjusted-form-layouts) layout-path)]
               (when dragging?
                 (let [parent-radius (:radius sublayout)
-                      radius (* constants/drop-form-radius-factor
+                      radius (* c/drop-form-radius-factor
                                 (:radius (first (:sublayouts sublayout))))
                       child-count (count (:sublayouts sublayout))
                       last-insertion-index (last insertion-path)
@@ -462,12 +462,12 @@
                                                                                      0.25)
                                                                                   geom/TAU)))
                                                                            (- parent-radius
-                                                                              (* constants/drop-form-offset-factor
+                                                                              (* c/drop-form-offset-factor
                                                                                  radius))))))]
                   (when (= mouse-zone :program)
                     (draw-line mouse
                                placement-pos
-                               constants/drag-cursor-line-width
+                               c/drag-cursor-line-width
                                (:highlight (storage/color-scheme))
                                :program-overlay)
                     (let [base-sublayout (layout/form-layout (placement-form mouse)
@@ -489,9 +489,9 @@
                                                                      layout-path))))
                             (layout/render-sublayouts (layout/adjust-layout base-sublayout
                                                                             (geom/scale-point sublayout
-                                                                                              (/ (* constants/drop-form-radius-factor
+                                                                                              (/ (* c/drop-form-radius-factor
                                                                                                     (:radius sublayout))))
-                                                                            (* constants/drop-form-radius-factor
+                                                                            (* c/drop-form-radius-factor
                                                                                (:radius sublayout)))
                                                       :program-overlay)
                             (let [adjusted-layout (layout/adjust-layout base-sublayout
@@ -500,7 +500,7 @@
                                                                         radius)]
                               (draw-circle (update adjusted-layout
                                                    :radius
-                                                   (partial * constants/drop-form-outline-radius-factor))
+                                                   (partial * c/drop-form-outline-radius-factor))
                                            (:background (storage/color-scheme))
                                            :program-overlay)
                               (layout/render-sublayouts adjusted-layout
@@ -509,8 +509,8 @@
 
        ;; Draw discard circle, icon, and last discarded form
         (let [last-discard (first (storage/project-attr :discard-history))
-              radius (/ (* (- 1 constants/corner-zone-bar-thickness)
-                           constants/lower-corner-zone-radius)
+              radius (/ (* (- 1 c/corner-zone-bar-thickness)
+                           c/lower-corner-zone-radius)
                         (inc (Math/sqrt 2)))
               base-circle-pos (-> app-pos
                                   (update :y (partial + (- (:y app-size) radius)))
@@ -521,7 +521,7 @@
             (layout/render-sublayouts (layout/form-layout last-discard
                                                           (assoc base-circle-pos
                                                                  :radius (* radius
-                                                                            constants/discard-zone-form-radius-factor)))
+                                                                            c/discard-zone-form-radius-factor)))
                                       :menu)))
 
        ;; Draw eval circle, icon, and last evaluation result
@@ -533,12 +533,12 @@
                          (:foreground (storage/color-scheme)))
                        :menu)
           (draw-circle (assoc (geom/add-points app-pos app-size)
-                              :radius (* (- 1 constants/corner-zone-bar-thickness)
+                              :radius (* (- 1 c/corner-zone-bar-thickness)
                                          @eval-zone-radius))
                        (:background (storage/color-scheme))
                        :menu)
           (let [last-eval-form (first (storage/project-attr :eval-results))
-                radius (/ (* (- 1 constants/corner-zone-bar-thickness)
+                radius (/ (* (- 1 c/corner-zone-bar-thickness)
                              @eval-zone-radius)
                           (inc (Math/sqrt 2)))
                 base-circle-pos (geom/subtract-points (geom/add-points app-pos app-size)
@@ -547,64 +547,64 @@
               (if (= last-eval-form :error)
                 (let [base-offset (geom/scale-point geom/unit
                                                     (* (Math/sqrt 0.5)
-                                                       constants/new-icon-size
+                                                       c/new-icon-size
                                                        radius))]
                   (doseq [offset [base-offset (update base-offset :x -)]]
                     (draw-line (geom/add-points base-circle-pos
                                                 (geom/scale-point offset -1))
                                (geom/add-points base-circle-pos
                                                 offset)
-                               (* radius constants/new-icon-width)
+                               (* radius c/new-icon-width)
                                (:highlight (storage/color-scheme))
                                :menu)))
                 (layout/render-sublayouts (layout/form-layout last-eval-form
                                                               (assoc base-circle-pos
                                                                      :radius (* radius
-                                                                                constants/eval-zone-form-radius-factor)))
+                                                                                c/eval-zone-form-radius-factor)))
                                           :menu))
               (let [caret-offset (geom/scale-point
-                                  (geom/angle-point (- constants/eval-zone-icon-angle
+                                  (geom/angle-point (- c/eval-zone-icon-angle
                                                        geom/PI))
                                   (* radius
-                                     constants/eval-zone-caret-factor))]
+                                     c/eval-zone-caret-factor))]
                 (draw-polyline (mapv #(update %
                                               :x (partial +
                                                           (* radius
-                                                             constants/eval-zone-caret-offset)))
+                                                             c/eval-zone-caret-offset)))
                                      [(geom/add-points base-circle-pos
                                                        caret-offset)
                                       base-circle-pos
                                       (geom/add-points base-circle-pos
                                                        (update caret-offset :y -))])
-                               (* radius constants/eval-zone-icon-thickness)
+                               (* radius c/eval-zone-icon-thickness)
                                (:foreground (storage/color-scheme))
                                :menu)
                 (let [underscore-base (-> base-circle-pos
                                           (update :y (partial +
                                                               (- (:y caret-offset))
                                                               (* radius
-                                                                 constants/eval-zone-underscore-y-offset)))
+                                                                 c/eval-zone-underscore-y-offset)))
                                           (update :x (partial +
                                                               (* radius
-                                                                 constants/eval-zone-underscore-x-offset))))]
+                                                                 c/eval-zone-underscore-x-offset))))]
                   (draw-line underscore-base
                              (update underscore-base
                                      :x
-                                     (partial + (* radius constants/eval-zone-underscore-size)))
-                             (* radius constants/eval-zone-icon-thickness)
+                                     (partial + (* radius c/eval-zone-underscore-size)))
+                             (* radius c/eval-zone-icon-thickness)
                              (:foreground (storage/color-scheme))
                              :menu))))))
 
        ;; Draw text-mode circle and icon
         (draw-circle (assoc (geom/add-points app-pos
                                              (select-keys app-size [:x]))
-                            :radius constants/upper-corner-zone-radius)
+                            :radius c/upper-corner-zone-radius)
                      (if (= mouse-zone :text-icon)
                        (:highlight (storage/color-scheme))
                        (:foreground (storage/color-scheme)))
                      :menu)
-        (let [radius (/ (* (- 1 constants/corner-zone-bar-thickness)
-                           constants/upper-corner-zone-radius)
+        (let [radius (/ (* (- 1 c/corner-zone-bar-thickness)
+                           c/upper-corner-zone-radius)
                         (inc (Math/sqrt 2)))
               base-circle-pos (geom/add-points (geom/add-points app-pos
                                                                 (select-keys app-size [:x]))
@@ -625,26 +625,26 @@
                     screen-side (first formbar-path)
                     bar-arrangement (get-in arrangement formbar-path)
                     form-spacing (* (storage/formbar-radius)
-                                    (- 1 constants/formbar-outline-thickness))
+                                    (- 1 c/formbar-outline-thickness))
                     insertion-index (get-formbar-insertion-index mouse)
                     placement-circle
                     (if (zero? (count (:circles bar-arrangement)))
                       (-> bar-arrangement
                           (assoc :radius
                                  (* form-spacing
-                                    constants/formbar-form-placement-size)))
+                                    c/formbar-form-placement-size)))
                       (let [horizontal? (#{:top :bottom} screen-side)]
                         (-> bar-arrangement
                             (assoc :radius
                                    (* form-spacing
-                                      constants/formbar-form-placement-size))
+                                      c/formbar-form-placement-size))
                             (update (if horizontal? :x :y)
                                     #(+ % (* (- insertion-index 0.5) 2 form-spacing)))
                             (update (if horizontal? :y :x)
                                     #((if (#{:top :left} screen-side) + -)
                                       %
                                       (* form-spacing
-                                         constants/formbar-form-placement-offset))))))]
+                                         c/formbar-form-placement-offset))))))]
                 (layout/render-sublayouts (layout/form-layout (placement-form mouse) placement-circle)
                                           :formbar)))))
         (app/render-top-left-button-background (= mouse-zone :settings-icon))
@@ -677,12 +677,12 @@
                                              delta)))))
       (swap! eval-zone-radius
              (fn [size]
-               (let [p (Math/pow constants/eval-zone-speed delta)]
+               (let [p (Math/pow c/eval-zone-speed delta)]
                  (+ (* p size)
                     (* (- 1 p)
                        (if (= mouse-zone :eval)
-                         constants/eval-zone-max-radius
-                         constants/lower-corner-zone-radius))))))
+                         c/eval-zone-max-radius
+                         c/lower-corner-zone-radius))))))
       (when (and (:dragging? mouse)
                  (= (:down-zone mouse) :empty)
                  (> (count @selected-layout-path) 1))
