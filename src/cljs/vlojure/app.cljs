@@ -190,7 +190,6 @@
                          (* (storage/base-zoom)
                             constants/outer-form-spacing)))
                      (assoc mouse :dragging? (mouse-dragging?)))))
-    (prn (get-mouse-zone))
     (all-pages-action :update delta (attr :mouse) (get-mouse-zone))
     (update-attr! :mouse
                   #(assoc %

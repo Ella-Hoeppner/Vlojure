@@ -645,10 +645,10 @@
              #(max 0
                    (min (count (:children (storage/project-attr :form)))
                         %)))
-      (when @scroll-pos
+      (when @ideal-scroll-pos
         (swap! scroll-pos
                #(u/tween @ideal-scroll-pos
-                         %
+                         (or % 0)
                          (Math/pow (:move (storage/camera-speed 0))
                                    delta))))
       (let [{:keys [move zoom]}
