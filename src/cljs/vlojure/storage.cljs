@@ -1,7 +1,6 @@
 (ns vlojure.storage
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
-            [vlojure.evaluation :as evaluation]
             [vlojure.vedn :as vedn]
             [clojure.edn :as edn]
             [clojure.string :as string]))
@@ -32,23 +31,23 @@
            "state"
             ""))
 
-(defn attr [key]
+(defn global-attr [key]
   (get @app-state key))
 
-(defn set-attr! [key value]
+(defn set-global-attr! [key value]
   (swap! app-state
          #(assoc % key value))
   (save-state!)
   value)
 
-(defn update-attr! [key value]
+(defn update-global-attr! [key value]
   (swap! app-state
          #(update % key value))
   (save-state!)
-  (attr key))
+  (global-attr key))
 
 (defn active-project []
-  (attr :active-project))
+  (global-attr :active-project))
 
 (defn project-attr [key]
   (get-in @app-state
@@ -152,7 +151,7 @@
                                                 #(u/vector-insert % formbar-index new-formbar)))))))))
 
 (defn camera-speed [diff]
-  (let [speed-param (attr :camera-speed)
+  (let [speed-param (global-attr :camera-speed)
         speed-factor (/ (- 1 speed-param))
         base-speed-exp (* speed-factor 4.5)
         speed-boost-exp (* speed-factor 1.5)
@@ -171,44 +170,44 @@
 (defn base-zoom []
   (u/map-range 0 1
                0.3 1
-               (attr :base-zoom)))
+               (global-attr :base-zoom)))
 
 (defn formbar-radius []
   (u/map-range 0 1
                0.03 0.1
-               (attr :formbar-radius)))
+               (global-attr :formbar-radius)))
 
 (defn load-project [index]
-  (update-attr! :projects
-                (fn [projects]
-                  (vec (concat [(nth projects index)]
-                               (u/vector-remove projects
-                                                index))))))
+  (update-global-attr! :projects
+                       (fn [projects]
+                         (vec (concat [(nth projects index)]
+                                      (u/vector-remove projects
+                                                       index))))))
 
 (defn duplicate-project []
-  (update-attr! :projects
-                (fn [projects]
-                  (vec (conj (seq projects)
-                             (update (first projects)
-                                     :name
-                                     (let [names (set (mapv :name projects))]
-                                       (fn [name]
-                                         (let [is-copy? (re-matches #".* copy($| \d+)$" name)]
-                                           (some (fn [index]
-                                                   (let [suffix (if (zero? index)
-                                                                  " copy"
-                                                                  (str " copy " index))
-                                                         new-name (if is-copy?
-                                                                    (string/replace name
-                                                                                    #" copy($| \d+)$"
-                                                                                    suffix)
-                                                                    (str name suffix))]
-                                                     (when-not (names new-name)
-                                                       new-name)))
-                                                 (range)))))))))))
+  (update-global-attr! :projects
+                       (fn [projects]
+                         (vec (conj (seq projects)
+                                    (update (first projects)
+                                            :name
+                                            (let [names (set (mapv :name projects))]
+                                              (fn [name]
+                                                (let [is-copy? (re-matches #".* copy($| \d+)$" name)]
+                                                  (some (fn [index]
+                                                          (let [suffix (if (zero? index)
+                                                                         " copy"
+                                                                         (str " copy " index))
+                                                                new-name (if is-copy?
+                                                                           (string/replace name
+                                                                                           #" copy($| \d+)$"
+                                                                                           suffix)
+                                                                           (str name suffix))]
+                                                            (when-not (names new-name)
+                                                              new-name)))
+                                                        (range)))))))))))
 
 (defn blank-project []
-  (let [project-names (mapv :name (attr :projects))
+  (let [project-names (mapv :name (global-attr :projects))
         name (some (fn [index]
                      (let [untitled-name (if (zero? index)
                                            "Untitled"
@@ -266,13 +265,13 @@
         :left []})}))
 
 (defn new-project []
-  (update-attr! :projects
+  (update-global-attr! :projects
                 #(conj % (blank-project)))
-  (load-project (dec (count (attr :projects)))))
+  (load-project (dec (count (global-attr :projects)))))
 
 (defn delete-project []
-  (when (> (count (attr :projects)) 1)
-    (update-attr! :projects
+  (when (> (count (global-attr :projects)) 1)
+    (update-global-attr! :projects
                   #(vec (rest %)))
     (load-project 0)))
 
@@ -395,8 +394,8 @@
   (when (not
          (some #{:saved-formbars}
                (keys @app-state)))
-    (set-attr! :saved-formbars
-               (:saved-formbars (default-app-state)))))
+    (set-global-attr! :saved-formbars
+                      (:saved-formbars (default-app-state)))))
 
 (defn init []
   (u/log "Storage Initializing...")

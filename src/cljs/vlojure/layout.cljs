@@ -4,7 +4,7 @@
                                       draw-polyline
                                       draw-polygon
                                       draw-text]]
-            [vlojure.storage :as storage]
+            [vlojure.storage :refer [color-scheme]]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
@@ -58,7 +58,7 @@
         radius (:radius layout)]
     (when (#{:list :map :set :lit-fn :literal} (:type layout))
       (draw-circle layout
-                       (:foreground (storage/color-scheme))
+                       (:foreground (color-scheme))
                        layer))
     (when (#{:map :set} (:type layout))
       (let [r (:radius layout)]
@@ -75,7 +75,7 @@
                              (geom/add-points layout
                                               (geom/scale-point (geom/angle-point (+ base-angle c/map-point-width))
                                                                 r))]
-                            (:foreground (storage/color-scheme))
+                            (:foreground (color-scheme))
                             layer))))
     (when (#{:set :lit-fn} (:type layout))
       (let [r (:radius layout)]
@@ -92,13 +92,13 @@
                                               (geom/scale-point (geom/angle-point angle)
                                                                 (* (inc c/set-line-length) r)))
                              (* r c/set-line-width)
-                             (:foreground (storage/color-scheme))
+                             (:foreground (color-scheme))
                              layer))))))
     (when (#{:list :map :set :lit-fn} (:type layout))
       (draw-circle (update layout
                                :radius (partial *
                                                 (- 1 c/bubble-thickness)))
-                       (:background (storage/color-scheme))
+                       (:background (color-scheme))
                        layer))
     (when (= (:type layout) :vector)
       (draw-polygon (mapv #(geom/add-points center
@@ -107,7 +107,7 @@
                                                                      c/vector-size-factor)))
                               (geom/polygon 8
                                             (* geom/PI 0.125)))
-                        (:foreground (storage/color-scheme))
+                        (:foreground (color-scheme))
                         layer)
       (draw-polygon (mapv #(geom/add-points center
                                                 (geom/scale-point %
@@ -116,7 +116,7 @@
                                                                      (- 1 c/bubble-thickness))))
                               (geom/polygon 8
                                             (* geom/PI 0.125)))
-                        (:background (storage/color-scheme))
+                        (:background (color-scheme))
                         layer))
     (when (= (:type layout) :quote)
       (let [radius (:radius layout)]
@@ -131,7 +131,7 @@
             (draw-line start end
                            (* radius
                               c/bubble-thickness)
-                           (:foreground (storage/color-scheme))
+                           (:foreground (color-scheme))
                            layer)))))
     (when (= (:type layout) :deref)
       (let [radius (:radius layout)]
@@ -141,7 +141,7 @@
                                                                       radius))
                                    :radius
                                    (partial * c/deref-circle-size-factor))
-                           (:foreground (storage/color-scheme))
+                           (:foreground (color-scheme))
                            layer))))
     (when (= (:type layout) :syntax-quote)
       (let [radius (:radius layout)]
@@ -158,7 +158,7 @@
             (draw-line start end
                            (* radius
                               c/bubble-thickness)
-                           (:foreground (storage/color-scheme))
+                           (:foreground (color-scheme))
                            layer)))))
     (when (= (:type layout) :comment)
       (let [radius (:radius layout)]
@@ -171,7 +171,7 @@
                                                             (* radius (- 1 c/comment-length-factor))))
                          (* radius
                             c/bubble-thickness)
-                         (:foreground (storage/color-scheme))
+                         (:foreground (color-scheme))
                          layer))))
     (when (= (:type layout) :unquote)
       (let [segment-angle (/ geom/TAU 8)
@@ -193,7 +193,7 @@
                                               (geom/tween-points start-point end-point (+ tween-start div-size)))
                              (* radius
                                 c/bubble-thickness)
-                             (:foreground (storage/color-scheme))
+                             (:foreground (color-scheme))
                              layer))))))
     (when (= (:type layout) :unquote-splice)
       (let [segment-angle (/ geom/TAU 8)
@@ -211,7 +211,7 @@
                                                         (geom/tween-points start-point end-point t))
                                        :radius
                                        (partial * c/deref-circle-size-factor))
-                               (:foreground (storage/color-scheme))
+                               (:foreground (color-scheme))
                                layer))))))
     (when (= (:type layout) :meta)
       (let [radius (:radius layout)
@@ -228,7 +228,7 @@
             (draw-polyline [start tip end]
                                (* radius
                                   c/bubble-thickness)
-                               (:foreground (storage/color-scheme))
+                               (:foreground (color-scheme))
                                layer)))))
     (when (= (:type layout) :var-quote)
       (let [radius (:radius layout)]
@@ -244,7 +244,7 @@
                            end
                            (* radius
                               c/bubble-thickness)
-                           (:foreground (storage/color-scheme))
+                           (:foreground (color-scheme))
                            layer))
           (let [[start end]
                 (map #(geom/add-points layout
@@ -255,13 +255,13 @@
                            end
                            (* radius
                               c/bubble-thickness)
-                           (:foreground (storage/color-scheme))
+                           (:foreground (color-scheme))
                            layer)))))
     (when (= (:type layout) :literal)
       (draw-text (:value layout)
                      layout
                      (:radius layout)
-                     (:text (storage/color-scheme))
+                     (:text (color-scheme))
                      layer))))
 
 (defn render-sublayouts [layout & [layer]]

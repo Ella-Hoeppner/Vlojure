@@ -13,7 +13,21 @@
                                       in-discard-corner?
                                       html-color
                                       app-size]]
-            [vlojure.storage :as storage]
+            [vlojure.storage :refer [color-scheme
+                                     add-project-formbar-form-at
+                                     load-project
+                                     formbar-radius
+                                     set-global-attr!
+                                     set-project-attr!
+                                     delete-project-formbar-at
+                                     add-project-formbar-at
+                                     new-project
+                                     duplicate-project
+                                     delete-project
+                                     camera-speed
+                                     global-attr
+                                     base-zoom
+                                     project-attr]]
             [vlojure.util :as u]
             [vlojure.layout :as layout]
             [vlojure.formbar :as formbar]
@@ -40,10 +54,10 @@
 
 (defn settings-circle [index]
   (let [center-circle (update (geom/circle-within (app-rect))
-                              :radius (partial * (storage/base-zoom)))
+                              :radius (partial * (base-zoom)))
         center-radius (:radius center-circle)]
     (geom/add-points center-circle
-                     (geom/scale-point (storage/attr :scroll-direction)
+                     (geom/scale-point (global-attr :scroll-direction)
                                        (* (- index @scroll-pos)
                                           2
                                           center-radius
@@ -87,7 +101,7 @@
 (defn settings-bar-scroll-circle []
   (let [center-circle (settings-circle c/settings-sliders-page)]
     (update (geom/add-points center-circle
-                             (geom/scale-point (storage/attr :scroll-direction)
+                             (geom/scale-point (global-attr :scroll-direction)
                                                (* (:radius center-circle)
                                                   c/settings-bar-scroll-circle-pos)))
             :radius
@@ -164,7 +178,7 @@
 
 (defn refresh-dropdown-names []
   (let [dropdown @dropdown-element
-        option-names (mapv :name (storage/attr :projects))]
+        option-names (mapv :name (global-attr :projects))]
     (when dropdown
       (while (.-firstChild dropdown)
         (.removeChild dropdown
@@ -175,7 +189,7 @@
               option-style (.-style option)]
           (set! (.-innerHTML option) name)
           (set! (.-backgroundColor option-style)
-                (html-color (:highlight (storage/color-scheme))))
+                (html-color (:highlight (color-scheme))))
           (set! (.-border option-style) "none")
           (set! (.-outline option-style) "none")
           (set! (.-box-shadow option-style) "none")
@@ -189,7 +203,7 @@
 
 (defn activate-project-rename-input []
   (let [rename @rename-element]
-    (set! (.-value rename) (storage/project-attr :name))
+    (set! (.-value rename) (project-attr :name))
     (set! (.-display (.-style rename)) "block")))
 
 (defn saved-formbar-scroll-circles []
@@ -346,7 +360,7 @@
   (let [dropdown (.createElement js/document "select")
         style (.-style dropdown)]
     (set! (.-onchange dropdown)
-          #(do (storage/load-project (.-selectedIndex dropdown))
+          #(do (load-project (.-selectedIndex dropdown))
                (refresh-dropdown-names)))
     (.appendChild (.-body js/document) dropdown)
     (set! (.-textAlign style) "center")
@@ -359,7 +373,7 @@
   (let [project-rename-input (.createElement js/document "input")
         style (.-style project-rename-input)]
     (set! (.-onchange project-rename-input)
-          #(do (storage/set-project-attr! :name (.-value project-rename-input))
+          #(do (set-project-attr! :name (.-value project-rename-input))
                (refresh-dropdown-names)
                (hide-rename)
                (hide-dropdown)))
@@ -467,7 +481,7 @@
       (refresh-dropdown-names)
       (doseq [html-object [@dropdown-element @rename-element]]
         (set! (.-color (.-style html-object))
-              (html-color (:text (storage/color-scheme))))))
+              (html-color (:text (color-scheme))))))
 
     :mouse-zone
     (fn [mouse]
@@ -534,7 +548,7 @@
       (formbar/render-formbars mouse)
       (doseq [i (range c/settings-pages)]
         (draw-circle (settings-circle i)
-                         (:foreground (storage/color-scheme))
+                         (:foreground (color-scheme))
                          :background))
 
      ;; Sliders
@@ -558,19 +572,19 @@
                            (* center-radius
                               c/settings-slider-radius
                               2)
-                           (:background (storage/color-scheme))
+                           (:background (color-scheme))
                            :background)
             (doseq [p [right left]]
               (draw-circle (assoc p
                                       :radius (* center-radius
                                                  c/settings-slider-radius))
-                               (:background (storage/color-scheme))
+                               (:background (color-scheme))
                                :background))
-            (draw-circle (assoc (geom/tween-points left right (storage/attr slider-key))
+            (draw-circle (assoc (geom/tween-points left right (global-attr slider-key))
                                     :radius (* center-radius
                                                c/settings-slider-radius
                                                c/settings-slider-inner-radius-factor))
-                             (:foreground (storage/color-scheme))
+                             (:foreground (color-scheme))
                              :background)
             (draw-text slider-name
                            (geom/add-points center-circle
@@ -578,7 +592,7 @@
                            (* center-radius
                               c/settings-slider-text-size
                               (count slider-name))
-                           (:text (storage/color-scheme))
+                           (:text (color-scheme))
                            :background))))
 
      ;; Render formbar tools page
@@ -588,12 +602,12 @@
                        (-> center-circle
                            (update :y (partial + (* center-radius c/settings-formbar-tool-text-y))))
                        (* center-radius c/settings-formbar-tool-text-size)
-                       (:text (storage/color-scheme))
+                       (:text (color-scheme))
                        :background)
         (doseq [row (formbar-tool-circles)]
           (doseq [circle row]
             (draw-circle circle
-                             (:background (storage/color-scheme))
+                             (:background (color-scheme))
                              :background)
             (when (on-stage? c/settings-formbar-tools-page)
               (render-tool (:type circle)
@@ -606,7 +620,7 @@
                        (-> center-circle
                            (update :y (partial + (* center-radius c/settings-saved-formbars-text-y))))
                        (* center-radius c/settings-saved-formbars-text-size)
-                       (:text (storage/color-scheme))
+                       (:text (color-scheme))
                        :background)
         (let [formbar-radius (* center-radius c/settings-saved-formbar-radius)
               saved-formbar-box-width (+ (* 2 formbar-radius
@@ -633,27 +647,27 @@
                                    (assoc :radius corner-radius)
                                    (update :x (partial + corner-radius))
                                    (update :y (partial + y)))
-                               (:background (storage/color-scheme))
+                               (:background (color-scheme))
                                :background)
               (draw-circle (-> formbar-zone-corner
                                    (assoc :radius corner-radius)
                                    (update :x (partial + (- saved-formbar-box-width corner-radius)))
                                    (update :y (partial + y)))
-                               (:background (storage/color-scheme))
+                               (:background (color-scheme))
                                :background))
             (draw-rect [(-> formbar-zone-corner
                                 (update :x (partial + corner-radius)))
                             {:x (- saved-formbar-box-width
                                    (* 2 corner-radius))
                              :y saved-formbar-box-height}]
-                           (:background (storage/color-scheme))
+                           (:background (color-scheme))
                            :background)
             (draw-rect [(-> formbar-zone-corner
                                 (update :y (partial + corner-radius)))
                             {:x saved-formbar-box-width
                              :y (- saved-formbar-box-height
                                    (* 2 corner-radius))}]
-                           (:background (storage/color-scheme))
+                           (:background (color-scheme))
                            :background))
 
          ; Saved formbars
@@ -702,10 +716,10 @@
                                               color
                                               layer))]
                 (draw-bar 1
-                          (:foreground (storage/color-scheme))
+                          (:foreground (color-scheme))
                           :program)
                 (draw-bar (- 1 c/formbar-outline-thickness)
-                          (:background (storage/color-scheme))
+                          (:background (color-scheme))
                           :program)
                 (doseq [form-index (range (count formbar-forms))]
                   (when (< form-index c/settings-saved-formbars-box-width)
@@ -726,7 +740,7 @@
                 (when (and (not (:down? mouse))
                            (= adjusted-formbar-index hovered-formbar-index))
                   (draw-bar 1
-                            (:highlight (storage/color-scheme))
+                            (:highlight (color-scheme))
                             :program-overlay))))
             (when (and (:down? mouse)
                        (or (= :formbar (:down-zone mouse))
@@ -751,16 +765,16 @@
                                        (update :x (partial + (- saved-formbar-box-width x-offset)))
                                        (update :y (partial + y-offset)))
                                    c/settings-saved-formbar-insertion-bar-thickness
-                                   (:highlight (storage/color-scheme))
+                                   (:highlight (color-scheme))
                                    :program-overlay))))))
 
          ; Saved Formbar Slider
           (draw-rect (saved-formbar-scroll-rectangle)
-                         (:background (storage/color-scheme))
+                         (:background (color-scheme))
                          :background)
           (doseq [scroll-circle (saved-formbar-scroll-circles)]
             (draw-circle scroll-circle
-                             (:background (storage/color-scheme))
+                             (:background (color-scheme))
                              :background))
           (when (> (count (formbar/saved-formbar-contents))
                    c/settings-saved-formbars-box-height)
@@ -771,7 +785,7 @@
                                                           (- (count (formbar/saved-formbar-contents))
                                                              c/settings-saved-formbars-box-height)))))
                                      :radius (partial * c/settings-slider-inner-radius-factor))
-                             (:foreground (storage/color-scheme))
+                             (:foreground (color-scheme))
                              :background))))
 
      ;; Render project dropdown
@@ -790,7 +804,7 @@
                                   2
                                   c/settings-project-dropdown-x-shrink-factor))
                          :y bar-height}]
-                       (:highlight (storage/color-scheme))
+                       (:highlight (color-scheme))
                        :background)
         (draw-circle (-> center-circle
                              (update :x #(+ (- % (* center-radius c/settings-project-dropdown-width))
@@ -800,7 +814,7 @@
                                                  (* center-radius c/settings-project-dropdown-y)
                                                  (* 0.5 bar-height)))
                              (assoc :radius (* 0.5 bar-height)))
-                         (:highlight (storage/color-scheme))
+                         (:highlight (color-scheme))
                          :background)
         (draw-circle (-> center-circle
                              (update :x #(+ (- %
@@ -812,17 +826,17 @@
                                                  (* center-radius c/settings-project-dropdown-y)
                                                  (* 0.5 bar-height)))
                              (assoc :radius (* 0.5 bar-height)))
-                         (:highlight (storage/color-scheme))
+                         (:highlight (color-scheme))
                          :background)
         (draw-text "Active Project"
                        (-> center-circle
                            (update :y (partial + (* center-radius (+ c/settings-project-dropdown-y
                                                                      c/settings-project-text-y)))))
                        (* center-radius c/settings-project-text-size)
-                       (:text (storage/color-scheme))
+                       (:text (color-scheme))
                        :background)
         (when (not (on-stage? c/settings-project-selector-page))
-          (draw-text (storage/project-attr :name)
+          (draw-text (project-attr :name)
                          (-> center-circle
                              (update :y (partial + (* center-radius
                                                       (+ c/settings-project-dropdown-y
@@ -830,8 +844,8 @@
                                                             c/settings-project-dropdown-height))))))
                          (* center-radius
                             c/settings-project-name-size
-                            (count (storage/project-attr :name)))
-                         (:text (storage/color-scheme))
+                            (count (project-attr :name)))
+                         (:text (color-scheme))
                          :background))
 
         (let [button-circles (settings-button-circles)]
@@ -840,14 +854,14 @@
                   button-circle (nth button-circles index)
                   button-radius (:radius button-circle)]
               (draw-circle button-circle
-                               (:background (storage/color-scheme))
+                               (:background (color-scheme))
                                :background)
               (draw-circle (update button-circle
                                        :radius
                                        (partial * c/settings-project-button-inner-radius-factor))
                                (if (= mouse-zone type)
-                                 (:highlight (storage/color-scheme))
-                                 (:foreground (storage/color-scheme)))
+                                 (:highlight (color-scheme))
+                                 (:foreground (color-scheme)))
                                :background)
               (case type
                 :rename-project
@@ -898,17 +912,17 @@
                                       tip-top
                                       tip]
                                      line-width
-                                     (:background (storage/color-scheme))
+                                     (:background (color-scheme))
                                      :background)
                   (draw-line eraser-edge-top
                                  eraser-edge-bottom
                                  line-width
-                                 (:background (storage/color-scheme))
+                                 (:background (color-scheme))
                                  :background)
                   (draw-line tip-top
                                  tip-bottom
                                  line-width
-                                 (:background (storage/color-scheme))
+                                 (:background (color-scheme))
                                  :background))
 
                 :new-project
@@ -926,7 +940,7 @@
                                            dim
                                            (partial + size))
                                    width
-                                   (:background (storage/color-scheme))
+                                   (:background (color-scheme))
                                    :background)))
 
                 :duplicate-project
@@ -948,8 +962,8 @@
                                                        (geom/scale-point corner -1))
                                       (geom/scale-point corner 2)]
                                      (if (= mouse-zone :duplicate-project)
-                                       (:highlight (storage/color-scheme))
-                                       (:foreground (storage/color-scheme)))
+                                       (:highlight (color-scheme))
+                                       (:foreground (color-scheme)))
                                      :background)
                       (draw-polyline (mapv (fn [dims]
                                                  (geom/add-points base
@@ -962,7 +976,7 @@
                                                 [:y]
                                                 []])
                                          line-width
-                                         (:background (storage/color-scheme))
+                                         (:background (color-scheme))
                                          :background))))
 
                 :delete-project
@@ -982,26 +996,26 @@
                                      (geom/add-points button-circle
                                                       modified-offset)
                                      width
-                                     (:background (storage/color-scheme))
+                                     (:background (color-scheme))
                                      :background)))))))))
 
      ;; Render scroll circle
       (let [scroll-circle (settings-bar-scroll-circle)
-            scroll-direction (storage/attr :scroll-direction)
+            scroll-direction (global-attr :scroll-direction)
             triangle-base (geom/add-points scroll-circle
                                            (geom/scale-point scroll-direction
                                                              (* (:radius scroll-circle)
                                                                 c/settings-bar-scroll-triangle-pos)))
             color (if (= mouse-zone :scroll-circle)
-                    (:highlight (storage/color-scheme))
-                    (:foreground (storage/color-scheme)))]
+                    (:highlight (color-scheme))
+                    (:foreground (color-scheme)))]
         (draw-circle scroll-circle
                          color
                          :background)
         (draw-circle (update scroll-circle
                                  :radius
                                  (partial * c/settings-bar-scroll-circle-inner-radius))
-                         (:background (storage/color-scheme))
+                         (:background (color-scheme))
                          :background)
         (draw-polygon (mapv #(geom/add-points triangle-base
                                                        (geom/scale-point %
@@ -1029,7 +1043,7 @@
                                             (* center-radius
                                                c/settings-color-header-text-y))))
                        (* center-radius c/settings-color-header-text-size)
-                       (:text (storage/color-scheme))
+                       (:text (color-scheme))
                        :background)
 
         (doseq [i (range (count c/color-schemes))]
@@ -1096,18 +1110,18 @@
      ;; Render new formbar circles
       (doseq [[new-formbar-circle] (formbar/new-formbar-circles)]
         (draw-circle new-formbar-circle
-                         (:highlight (storage/color-scheme))
+                         (:highlight (color-scheme))
                          :settings-overlay)
-        (let [line-size (* (storage/formbar-radius)
+        (let [line-size (* (formbar-radius)
                            c/new-formbar-circle-radius
                            c/new-icon-size)]
           (doseq [dim [:x :y]]
             (draw-line (update new-formbar-circle dim (partial + line-size))
                            (update new-formbar-circle dim #(- % line-size))
-                           (* (storage/formbar-radius)
+                           (* (formbar-radius)
                               c/new-formbar-circle-radius
                               c/new-icon-width)
-                           (:background (storage/color-scheme))
+                           (:background (color-scheme))
                            :settings-overlay))))
 
      ;; Render formbar overlays
@@ -1121,32 +1135,32 @@
                                                            :y height}
                                                           0.5))]
             (draw-circle (assoc hovered-formbar
-                                    :radius (storage/formbar-radius))
-                             (:highlight (storage/color-scheme))
+                                    :radius (formbar-radius))
+                             (:highlight (color-scheme))
                              :settings-overlay)
             (when (pos? width)
               (draw-circle (-> hovered-formbar
                                    (update :x (partial + width))
-                                   (assoc :radius (storage/formbar-radius)))
-                               (:highlight (storage/color-scheme))
+                                   (assoc :radius (formbar-radius)))
+                               (:highlight (color-scheme))
                                :settings-overlay)
               (draw-rect [(update hovered-formbar
-                                      :y #(- % (storage/formbar-radius)))
+                                      :y #(- % (formbar-radius)))
                               {:x width
-                               :y (* 2 (storage/formbar-radius))}]
-                             (:highlight (storage/color-scheme))
+                               :y (* 2 (formbar-radius))}]
+                             (:highlight (color-scheme))
                              :settings-overlay))
             (when (pos? height)
               (draw-circle (-> hovered-formbar
                                    (update :y (partial + height))
-                                   (assoc :radius (storage/formbar-radius)))
-                               (:highlight (storage/color-scheme))
+                                   (assoc :radius (formbar-radius)))
+                               (:highlight (color-scheme))
                                :settings-overlay)
               (draw-rect [(update hovered-formbar
-                                      :x #(- % (storage/formbar-radius)))
-                              {:x (* 2 (storage/formbar-radius))
+                                      :x #(- % (formbar-radius)))
+                              {:x (* 2 (formbar-radius))
                                :y height}]
-                             (:highlight (storage/color-scheme))
+                             (:highlight (color-scheme))
                              :settings-overlay)))))
       (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
         (when (:down? mouse)
@@ -1157,18 +1171,18 @@
                               (count (formbar/saved-formbar-contents)))))
               (when (not= :bindings
                           (:type
-                           (get-in (storage/project-attr :formbars)
+                           (get-in (project-attr :formbars)
                                    (formbar/formbar-path-at (:down-pos mouse)))))
                 (render-discard-zone (= mouse-zone :discard) true))
               (when (and (not (= mouse-zone :discard))
                          formbar-insertion-path)
                 (let [formbar-insertion-circle (formbar/formbar-insertion-circle formbar-insertion-path)]
                   (draw-circle formbar-insertion-circle
-                                   (:foreground (storage/color-scheme))
+                                   (:foreground (color-scheme))
                                    :settings-overlay)
                   (draw-circle (update formbar-insertion-circle
                                            :radius (partial * 0.9))
-                                   (:background (storage/color-scheme))
+                                   (:background (color-scheme))
                                    :settings-overlay)))))))
 
       (app/render-top-left-button-background (= mouse-zone :back-icon))
@@ -1182,7 +1196,7 @@
                 x-off (apply - (map :x [mouse settings-circle]))
                 adjusted-x-off (/ x-off (* (:radius settings-circle) c/settings-slider-width))]
             (when @down-settings-slider
-              (storage/set-attr! (second
+              (set-global-attr! (second
                                   (nth c/settings-sliders
                                        @down-settings-slider))
                                  (min 1
@@ -1190,7 +1204,7 @@
                                            (* 0.5
                                               (inc adjusted-x-off))))))))
         (when (= (:down-zone mouse) :scroll-circle)
-          (storage/set-attr! :scroll-direction
+          (set-global-attr! :scroll-direction
                              (geom/angle-point
                               (let [raw-angle (mod (geom/point-angle
                                                     (geom/subtract-points mouse
@@ -1214,7 +1228,7 @@
         (swap! scroll-pos
                #(u/tween @ideal-scroll-pos
                          %
-                         (Math/pow (:move (storage/camera-speed 0))
+                         (Math/pow (:move (camera-speed 0))
                                    delta))))
       (when (and (:down? mouse)
                  (= (:down-zone mouse)
@@ -1249,9 +1263,9 @@
                                       (:down-pos mouse))]
             (when-not (= :bindings
                          (:type
-                          (get-in (storage/project-attr :formbars)
+                          (get-in (project-attr :formbars)
                                   dragged-formbar-path)))
-              (storage/delete-project-formbar-at dragged-formbar-path)))
+              (delete-project-formbar-at dragged-formbar-path)))
 
           :saved-formbar
           (let [adjusted-formbar-index (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)]
@@ -1270,12 +1284,12 @@
           (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
                 saved-formbar-insertion-index (saved-formbar-insertion-index-at mouse)]
             (when saved-formbar-insertion-index
-              (let [dragged-formbar (get-in (storage/project-attr :formbars)
+              (let [dragged-formbar (get-in (project-attr :formbars)
                                             (formbar/formbar-path-at (:down-pos mouse)))]
                 (when (not (:type dragged-formbar))
                   (formbar/add-saved-formbar! saved-formbar-insertion-index
                                               (:forms
-                                               (get-in (storage/project-attr :formbars)
+                                               (get-in (project-attr :formbars)
                                                        (formbar/formbar-path-at (:down-pos mouse))))))))
             (when (and (not saved-formbar-insertion-index)
                        formbar-placement-path)
@@ -1286,15 +1300,15 @@
                                   (update dragged-formbar-path 2 inc))
                                (in-discard-corner? mouse)))
                   (let [forms (:forms
-                               (get-in (storage/project-attr :formbars)
+                               (get-in (project-attr :formbars)
                                        dragged-formbar-path))
-                        dragged-formbar (get-in (storage/project-attr :formbars)
+                        dragged-formbar (get-in (project-attr :formbars)
                                                 dragged-formbar-path)
                         create-new! (fn []
-                                      (storage/add-project-formbar-at formbar-placement-path
+                                      (add-project-formbar-at formbar-placement-path
                                                                       dragged-formbar))
                         delete-old! (fn []
-                                      (storage/delete-project-formbar-at dragged-formbar-path))]
+                                      (delete-project-formbar-at dragged-formbar-path))]
                     (if (and (= (take 2 formbar-placement-path)
                                 (take 2 dragged-formbar-path))
                              (< (nth formbar-placement-path 2)
@@ -1307,7 +1321,7 @@
           (= (:down-zone mouse) :tool-circle)
           (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
             (when formbar-placement-path
-              (storage/add-project-formbar-at formbar-placement-path
+              (add-project-formbar-at formbar-placement-path
                                               {:type :tool
                                                :tool-type (tool-circle-at
                                                            (:down-pos mouse))})))
@@ -1335,27 +1349,27 @@
                   (let [selected-saved-formbar-index (+ @saved-formbar-scroll-pos
                                                         (saved-formbar-index-at (:down-pos mouse)))
                         saved-formbar (nth saved-formbars selected-saved-formbar-index)]
-                    (storage/add-project-formbar-at formbar-placement-path)
+                    (add-project-formbar-at formbar-placement-path)
                     (doseq [index (range (count saved-formbar))]
                       (let [form (nth saved-formbar index)]
-                        (storage/add-project-formbar-form-at form formbar-placement-path index)))))))))
+                        (add-project-formbar-form-at form formbar-placement-path index)))))))))
         (case (:down-zone mouse)
           :back-icon
           (app/enter-page :code)
 
           :color-scheme
-          (storage/set-attr! :color-scheme (color-scheme-index-at mouse))
+          (set-global-attr! :color-scheme (color-scheme-index-at mouse))
 
           :new-project
-          (do (storage/new-project)
+          (do (new-project)
               (refresh-dropdown-names))
 
           :duplicate-project
-          (do (storage/duplicate-project)
+          (do (duplicate-project)
               (refresh-dropdown-names))
 
           :delete-project
-          (do (storage/delete-project)
+          (do (delete-project)
               (refresh-dropdown-names))
 
           :rename-project

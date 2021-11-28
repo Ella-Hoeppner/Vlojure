@@ -11,7 +11,14 @@
                                       app-width
                                       app-height
                                       app-size]]
-            [vlojure.storage :as storage]
+            [vlojure.storage :refer [color-scheme
+                                     update-global-attr!
+                                     global-attr
+                                     base-zoom
+                                     project-attr
+                                     undo!
+                                     redo!
+                                     add-project-formbar-at]]
             [vlojure.formbar :as formbar]
             [vlojure.layout :as layout]
             [vlojure.util :as u]
@@ -75,8 +82,8 @@
   (let [current-app-rect (app-rect)
         [app-pos] current-app-rect
         background-color (if highlighted-background?
-                           (:highlight (storage/color-scheme))
-                           (:foreground (storage/color-scheme)))]
+                           (:highlight (color-scheme))
+                           (:foreground (color-scheme)))]
     (draw-circle (assoc app-pos
                         :radius c/upper-corner-zone-radius)
                  background-color
@@ -91,8 +98,8 @@
         base-circle-pos (geom/add-points app-pos
                                          (geom/scale-point geom/unit radius))
         background-color (if highlighted-background?
-                           (:highlight (storage/color-scheme))
-                           (:foreground (storage/color-scheme)))]
+                           (:highlight (color-scheme))
+                           (:foreground (color-scheme)))]
     (doseq [angle (map (partial * geom/TAU)
                        (u/prop-range c/settings-zone-icon-spokes true))]
       (draw-line base-circle-pos
@@ -102,12 +109,12 @@
                                                        c/settings-zone-icon-spoke-length-factor)))
                  (* radius
                     c/settings-zone-icon-spoke-width-factor)
-                 (:text (storage/color-scheme))
+                 (:text (color-scheme))
                  :menu))
     (draw-circle (assoc base-circle-pos
                             :radius (* radius
                                        c/settings-zone-icon-radius-factor))
-                     (:text (storage/color-scheme))
+                     (:text (color-scheme))
                      :menu)
     (draw-circle (assoc base-circle-pos
                             :radius (* radius
@@ -134,7 +141,7 @@
                                     {:x (* radius
                                            c/back-icon-right-length-factor)})
                    width
-                   (:text (storage/color-scheme))
+                   (:text (color-scheme))
                    :menu)
     (draw-polyline [(geom/add-points tip
                                          {:x arrow-size
@@ -144,7 +151,7 @@
                                          {:x arrow-size
                                           :y arrow-size})]
                        width
-                       (:text (storage/color-scheme))
+                       (:text (color-scheme))
                        :menu)))
 
 (defn render-top-left-invalid-button []
@@ -165,14 +172,14 @@
                      (geom/add-points base-circle-pos
                                       offset)
                      (* radius c/new-icon-width)
-                     (:text (storage/color-scheme))
+                     (:text (color-scheme))
                      :menu))))
 
 (defn render-app-state []
   (let [current-app-rect (app-rect)
         mouse-zone (get-mouse-zone)]
     (draw-rect current-app-rect
-                        (:background (storage/color-scheme))
+                        (:background (color-scheme))
                         :background)
     (page-action (attr :page)
                  :render
@@ -184,10 +191,10 @@
 (defn update-app []
   (let [delta (get-delta)]
     (when-not (zero? c/scroll-speed)
-      (storage/update-attr! :scroll-direction
-                            #(geom/angle-point
-                              (+ (geom/point-angle %)
-                                 (* c/scroll-speed delta)))))
+      (update-global-attr! :scroll-direction
+                                   #(geom/angle-point
+                                     (+ (geom/point-angle %)
+                                        (* c/scroll-speed delta)))))
     (let [{:keys [mouse page]} @app-state]
       (when (and (:down? mouse)
                  (mouse-dragging?)
@@ -196,8 +203,8 @@
                      (-
                       (/ (geom/scalar-point-projection (geom/subtract-points mouse
                                                                              (:last-pos mouse))
-                                                       (storage/attr :scroll-direction))
-                         (* (storage/base-zoom)
+                                                       (global-attr :scroll-direction))
+                         (* (base-zoom)
                             c/outer-form-spacing)))
                      (assoc mouse :dragging? (mouse-dragging?)))))
     (all-pages-action :update delta (attr :mouse) (get-mouse-zone))
@@ -245,7 +252,7 @@
     (when ss
       (.insertRule ss
                    (str "::selection { background: "
-                        (html-color (:background (storage/color-scheme)))
+                        (html-color (:background (color-scheme)))
                         "}")))))
 
 (defn on-click-up [event]
@@ -267,10 +274,10 @@
       (case (:down-zone mouse)
         :formbar
         (let [form-path (take 3 (formbar/formbar-form-path-at (:down-pos mouse)))
-              {:keys [tool-type]} (get-in (storage/project-attr :formbars) form-path)]
+              {:keys [tool-type]} (get-in (project-attr :formbars) form-path)]
           (case tool-type
-            :undo (storage/undo!)
-            :redo (storage/redo!)
+            :undo (undo!)
+            :redo (redo!)
             nil))
 
         :color-scheme
@@ -280,7 +287,7 @@
         (enter-page :text)
 
         :new-formbar
-        (storage/add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
+        (add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
 
         nil))))
 

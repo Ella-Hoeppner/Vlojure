@@ -5,7 +5,10 @@
                                       screen-x
                                       screen-y
                                       html-color]]
-            [vlojure.storage :as storage]
+            [vlojure.storage :refer [color-scheme
+                                     set-project-attr!
+                                     fill-empty-project
+                                     project-attr]]
             [vlojure.constants :as c]
             [vlojure.geometry :as geom]
             [vlojure.vedn :as vedn]
@@ -27,7 +30,7 @@
 
 (defn update-validity! [& _]
   (try (let [current-text (.-value @input-element)]
-         (storage/set-project-attr! :form (vedn/clj->vedn current-text))
+         (set-project-attr! :form (vedn/clj->vedn current-text))
          (reset! current-text-validity true))
        (catch :default _
          (reset! current-text-validity false))))
@@ -58,7 +61,7 @@
       (let [input @input-element]
         (set! (.-display (.-style input)) "block")
         (set! (.-value input)
-              (let [form (storage/project-attr :form)]
+              (let [form (project-attr :form)]
                 (apply str
                        (mapcat (fn [subform]
                                  (str (vedn/vedn->clj subform)
@@ -70,7 +73,7 @@
     (fn []
       (let [input @input-element]
         (set! (.-display (.-style input)) "none"))
-      (storage/fill-empty-project))
+      (fill-empty-project))
 
     :resize-html
     (fn []
@@ -99,7 +102,7 @@
     :refresh-html-colors
     (fn []
       (set! (.-color (.-style @input-element))
-            (html-color (:text (storage/color-scheme)))))
+            (html-color (:text (color-scheme)))))
 
     :mouse-zone
     (fn [mouse]
@@ -121,7 +124,7 @@
                              (reduce #(update %1 %2 (fn [v] (- v (* 2 c/text-page-border))))
                                      app-size
                                      [:x :y])])
-                          (:foreground (storage/color-scheme))
+                          (:foreground (color-scheme))
                           :background)
 
 

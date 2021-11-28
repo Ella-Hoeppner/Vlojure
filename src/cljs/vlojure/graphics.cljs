@@ -4,7 +4,7 @@
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
-            [vlojure.storage :as storage]
+            [vlojure.storage :refer [color-scheme]]
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
 
@@ -195,7 +195,7 @@
 
 (defn render-svg [tool-name pos radius]
   (update-attr! :svgs-to-render #(conj % [tool-name pos radius]))
-  (update-svg-color-scheme (storage/color-scheme)))
+  (update-svg-color-scheme (color-scheme)))
 
 (defn render-tool [tool-name tool-circle & [outline?]]
   (render-svg tool-name
@@ -205,10 +205,10 @@
     (draw-circle (update tool-circle
                     :radius
                     (partial * (inc c/formbar-outline-thickness)))
-            (:foreground (storage/color-scheme))
+            (:foreground (color-scheme))
             :drag)
     (draw-circle tool-circle
-            (:background (storage/color-scheme))
+            (:background (color-scheme))
             :drag)))
 
 (defn new-svg-copy [name]
@@ -356,14 +356,14 @@
                                     (select-keys app-size [:y]))
                    :radius c/lower-corner-zone-radius)
             (if highlighted?
-              (:highlight (storage/color-scheme))
-              (:foreground (storage/color-scheme)))
+              (:highlight (color-scheme))
+              (:foreground (color-scheme)))
             :menu)
     (draw-circle (assoc (geom/add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius (* (- 1 c/corner-zone-bar-thickness)
                               c/lower-corner-zone-radius))
-            (:background (storage/color-scheme))
+            (:background (color-scheme))
             :menu)
     (when blank-symbol?
       (let [radius (/ (* (- 1 c/corner-zone-bar-thickness)
@@ -378,13 +378,13 @@
         (draw-circle (assoc base-circle-pos
                        :radius (* radius
                                   c/discard-zone-icon-radius-factor))
-                (:foreground (storage/color-scheme))
+                (:foreground (color-scheme))
                 :menu)
         (draw-circle (assoc base-circle-pos
                        :radius (* radius
                                   c/discard-zone-icon-radius-factor
                                   (- 1 c/discard-zone-icon-thickness)))
-                (:background (storage/color-scheme))
+                (:background (color-scheme))
                 :menu)
         (draw-line (geom/add-points base-circle-pos
                                angle-offset)
@@ -393,5 +393,5 @@
               (* radius
                  (* c/discard-zone-icon-radius-factor
                     c/discard-zone-icon-thickness))
-              (:foreground (storage/color-scheme))
+              (:foreground (color-scheme))
               :menu)))))
