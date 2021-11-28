@@ -19,7 +19,8 @@
                                      undo!
                                      redo!
                                      add-project-formbar-at]]
-            [vlojure.formbar :as formbar]
+            [vlojure.formbar :refer [formbar-form-path-at
+                                     new-formbar-circle-path-at]]
             [vlojure.layout :as layout]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
@@ -243,7 +244,7 @@
                            :down-pos (select-keys mouse [:x :y])
                            :down? true
                            :down-zone zone
-                           :down-formbar-form-path (formbar/formbar-form-path-at mouse))))
+                           :down-formbar-form-path (formbar-form-path-at mouse))))
     (page-action (attr :page) :click-down mouse zone)))
 
 (defn refresh-html-colors []
@@ -273,7 +274,7 @@
     (when-not currently-dragging?
       (case (:down-zone mouse)
         :formbar
-        (let [form-path (take 3 (formbar/formbar-form-path-at (:down-pos mouse)))
+        (let [form-path (take 3 (formbar-form-path-at (:down-pos mouse)))
               {:keys [tool-type]} (get-in (project-attr :formbars) form-path)]
           (case tool-type
             :undo (undo!)
@@ -287,7 +288,7 @@
         (enter-page :text)
 
         :new-formbar
-        (add-project-formbar-at (formbar/new-formbar-circle-path-at mouse))
+        (add-project-formbar-at (new-formbar-circle-path-at mouse))
 
         nil))))
 

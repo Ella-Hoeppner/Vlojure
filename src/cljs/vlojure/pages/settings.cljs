@@ -30,7 +30,12 @@
                                      project-attr]]
             [vlojure.util :as u]
             [vlojure.layout :as layout]
-            [vlojure.formbar :as formbar]
+            [vlojure.formbar :refer [new-formbar-circle-path-at
+                                     saved-formbar-contents
+                                     render-formbars
+                                     formbar-insertion-path-at
+                                     formbar-insertion-circle
+                                     new-formbar-circles]]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
             [vlojure.app :as app]))
@@ -506,10 +511,10 @@
                   c/upper-corner-zone-radius)
               :back-icon
 
-              (formbar/formbar-path-at mouse)
+              (formbar-path-at mouse)
               :formbar
 
-              (formbar/new-formbar-circle-path-at mouse)
+              (new-formbar-circle-path-at mouse)
               :new-formbar
 
               (and (on-stage? c/settings-sliders-page)
@@ -545,7 +550,7 @@
 
     :render
     (fn [mouse mouse-zone]
-      (formbar/render-formbars mouse)
+      (render-formbars mouse)
       (doseq [i (range c/settings-pages)]
         (draw-circle (settings-circle i)
                          (:foreground (color-scheme))
@@ -671,7 +676,7 @@
                            :background))
 
          ; Saved formbars
-          (let [saved-formbar-contents (formbar/saved-formbar-contents)
+          (let [saved-formbar-contents (saved-formbar-contents)
                 formbar-index-offset @saved-formbar-scroll-pos
                 hovered-formbar-index (saved-formbar-index-at mouse)]
             (doseq [formbar-index (map (partial + formbar-index-offset)
@@ -746,9 +751,9 @@
                        (or (= :formbar (:down-zone mouse))
                            (and (= :saved-formbar (:down-zone mouse))
                                 (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
-                                   (count (formbar/saved-formbar-contents))))))
+                                   (count (saved-formbar-contents))))))
               (let [insertion-index (min (saved-formbar-insertion-index-at mouse)
-                                         (count (formbar/saved-formbar-contents)))]
+                                         (count (saved-formbar-contents)))]
                 (when insertion-index
                   (let [y-offset (+ (* insertion-index
                                        formbar-radius
@@ -776,13 +781,13 @@
             (draw-circle scroll-circle
                              (:background (color-scheme))
                              :background))
-          (when (> (count (formbar/saved-formbar-contents))
+          (when (> (count (saved-formbar-contents))
                    c/settings-saved-formbars-box-height)
             (draw-circle (update (apply geom/tween-points
                                             (conj (saved-formbar-scroll-circles)
                                                   (/ @saved-formbar-scroll-pos
                                                      (max 0
-                                                          (- (count (formbar/saved-formbar-contents))
+                                                          (- (count (saved-formbar-contents))
                                                              c/settings-saved-formbars-box-height)))))
                                      :radius (partial * c/settings-slider-inner-radius-factor))
                              (:foreground (color-scheme))
@@ -1099,16 +1104,16 @@
      ;; Render dragged tools
       (when (and (:dragging? mouse)
                  (= (:down-zone mouse) :tool-circle))
-        (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
+        (let [formbar-insertion-path (formbar-insertion-path-at mouse)]
           (render-tool (tool-circle-at (:down-pos mouse))
                                 (if formbar-insertion-path
-                                  (formbar/formbar-insertion-circle formbar-insertion-path)
+                                  (formbar-insertion-circle formbar-insertion-path)
                                   (assoc mouse
                                          :radius c/settings-formbar-drag-tool-radius))
                                 true)))
 
      ;; Render new formbar circles
-      (doseq [[new-formbar-circle] (formbar/new-formbar-circles)]
+      (doseq [[new-formbar-circle] (new-formbar-circles)]
         (draw-circle new-formbar-circle
                          (:highlight (color-scheme))
                          :settings-overlay)
@@ -1125,9 +1130,9 @@
                            :settings-overlay))))
 
      ;; Render formbar overlays
-      (let [formbar-path (formbar/formbar-path-at mouse)]
+      (let [formbar-path (formbar-path-at mouse)]
         (when formbar-path
-          (let [current-formbar-arrangement (formbar/formbar-arrangement)
+          (let [current-formbar-arrangement (formbar-arrangement)
                 hovered-formbar (get-in current-formbar-arrangement formbar-path)
                 {:keys [width height]} hovered-formbar
                 center (geom/add-points hovered-formbar
@@ -1162,21 +1167,21 @@
                                :y height}]
                              (:highlight (color-scheme))
                              :settings-overlay)))))
-      (let [formbar-insertion-path (formbar/formbar-insertion-path-at mouse)]
+      (let [formbar-insertion-path (formbar-insertion-path-at mouse)]
         (when (:down? mouse)
           (let [{:keys [down-zone]} mouse]
             (when (or (= :formbar down-zone)
                       (and (= :saved-formbar down-zone)
                            (< (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)
-                              (count (formbar/saved-formbar-contents)))))
+                              (count (saved-formbar-contents)))))
               (when (not= :bindings
                           (:type
                            (get-in (project-attr :formbars)
-                                   (formbar/formbar-path-at (:down-pos mouse)))))
+                                   (formbar-path-at (:down-pos mouse)))))
                 (render-discard-zone (= mouse-zone :discard) true))
               (when (and (not (= mouse-zone :discard))
                          formbar-insertion-path)
-                (let [formbar-insertion-circle (formbar/formbar-insertion-circle formbar-insertion-path)]
+                (let [formbar-insertion-circle (formbar-insertion-circle formbar-insertion-path)]
                   (draw-circle formbar-insertion-circle
                                    (:foreground (color-scheme))
                                    :settings-overlay)
@@ -1236,7 +1241,7 @@
         (let [[scroll-top-y scroll-bottom-y] (mapv :y (saved-formbar-scroll-circles))
               scroll-pos (u/clamp (u/map-range scroll-top-y scroll-bottom-y 0 1 (:y mouse)))
               saved-formbar-overflow-count (max 0
-                                                (- (count (formbar/saved-formbar-contents))
+                                                (- (count (saved-formbar-contents))
                                                    c/settings-saved-formbars-box-height))]
           (reset! saved-formbar-scroll-pos
                   (min (int (* (inc saved-formbar-overflow-count) scroll-pos))
@@ -1259,7 +1264,7 @@
         (= mouse-zone :discard)
         (case (:down-zone mouse)
           :formbar
-          (let [dragged-formbar-path (formbar/formbar-path-at
+          (let [dragged-formbar-path (formbar-path-at
                                       (:down-pos mouse))]
             (when-not (= :bindings
                          (:type
@@ -1270,30 +1275,30 @@
           :saved-formbar
           (let [adjusted-formbar-index (+ (saved-formbar-index-at (:down-pos mouse)) @saved-formbar-scroll-pos)]
             (when (< adjusted-formbar-index
-                     (count (formbar/saved-formbar-contents)))
-              (formbar/delete-saved-formbar! adjusted-formbar-index)
+                     (count (saved-formbar-contents)))
+              (delete-saved-formbar! adjusted-formbar-index)
               (swap! saved-formbar-scroll-pos
                      (fn [pos]
-                       (u/clamp 0 (- (count (formbar/saved-formbar-contents))
+                       (u/clamp 0 (- (count (saved-formbar-contents))
                                      c/settings-saved-formbars-box-height)
                                 pos)))))
           nil))
       (if (:dragging? mouse)
         (cond
           (= (:down-zone mouse) :formbar)
-          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
+          (let [formbar-placement-path (formbar-insertion-path-at mouse)
                 saved-formbar-insertion-index (saved-formbar-insertion-index-at mouse)]
             (when saved-formbar-insertion-index
               (let [dragged-formbar (get-in (project-attr :formbars)
-                                            (formbar/formbar-path-at (:down-pos mouse)))]
+                                            (formbar-path-at (:down-pos mouse)))]
                 (when (not (:type dragged-formbar))
-                  (formbar/add-saved-formbar! saved-formbar-insertion-index
+                  (add-saved-formbar! saved-formbar-insertion-index
                                               (:forms
                                                (get-in (project-attr :formbars)
-                                                       (formbar/formbar-path-at (:down-pos mouse))))))))
+                                                       (formbar-path-at (:down-pos mouse))))))))
             (when (and (not saved-formbar-insertion-index)
                        formbar-placement-path)
-              (let [dragged-formbar-path (formbar/formbar-path-at (:down-pos mouse))]
+              (let [dragged-formbar-path (formbar-path-at (:down-pos mouse))]
                 (when (not (or (= formbar-placement-path
                                   dragged-formbar-path)
                                (= formbar-placement-path
@@ -1319,7 +1324,7 @@
                           (delete-old!))))))))
 
           (= (:down-zone mouse) :tool-circle)
-          (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)]
+          (let [formbar-placement-path (formbar-insertion-path-at mouse)]
             (when formbar-placement-path
               (add-project-formbar-at formbar-placement-path
                                               {:type :tool
@@ -1332,19 +1337,19 @@
                                 (saved-formbar-index-at (:down-pos mouse)))
                   to-index (+ @saved-formbar-scroll-pos
                               (saved-formbar-insertion-index-at mouse))
-                  saved-formbars (formbar/saved-formbar-contents)]
+                  saved-formbars (saved-formbar-contents)]
               (when (and (< from-index (count saved-formbars))
                          from-index to-index
                          (not= from-index to-index))
-                (formbar/add-saved-formbar! to-index
+                (add-saved-formbar! to-index
                                             (nth saved-formbars (min (dec (count saved-formbars))
                                                                      from-index)))
-                (formbar/delete-saved-formbar! (if (> from-index to-index)
+                (delete-saved-formbar! (if (> from-index to-index)
                                                  (inc from-index)
                                                  from-index))))
             (when (not (in-discard-corner? mouse))
-              (let [formbar-placement-path (formbar/formbar-insertion-path-at mouse)
-                    saved-formbars (formbar/saved-formbar-contents)]
+              (let [formbar-placement-path (formbar-insertion-path-at mouse)
+                    saved-formbars (saved-formbar-contents)]
                 (when formbar-placement-path
                   (let [selected-saved-formbar-index (+ @saved-formbar-scroll-pos
                                                         (saved-formbar-index-at (:down-pos mouse)))
