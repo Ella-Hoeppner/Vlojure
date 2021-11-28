@@ -21,12 +21,9 @@
                                      add-project-formbar-at]]
             [vlojure.formbar :refer [formbar-form-path-at
                                      new-formbar-circle-path-at]]
-            [vlojure.layout :as layout]
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
-            [vlojure.constants :as c]
-            [vlojure.vedn :as vedn]
-            [vlojure.evaluation :as evaluation]))
+            [vlojure.constants :as c]))
 
 ;;; This file defines the core logic of the app that is common between the
 ;;; different pages. The logic specific to the code page, the settings page,

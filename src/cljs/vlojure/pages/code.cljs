@@ -25,8 +25,18 @@
                                      project-attr
                                      delete-project-formbar-form-at]]
             [vlojure.util :as u]
-            [vlojure.formbar :as formbar]
-            [vlojure.layout :as layout]
+            [vlojure.formbar :refer [formbar-arrangement
+                                     formbar-path-at
+                                     render-formbars]]
+            [vlojure.layout :refer [form-layout
+                                    map-layout
+                                    adjust-layout
+                                    get-sublayout
+                                    render-sublayouts
+                                    expand-layout
+                                    shift-layout
+                                    layout-insertion-path-at
+                                    layout-path-encapsulated?]]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
             [vlojure.vedn :as vedn]
@@ -92,7 +102,7 @@
 (defn current-form-layouts []
   (assoc geom/origin
          :sublayouts (mapv (fn [child index]
-                             (layout/form-layout child
+                             (form-layout child
                                           (assoc (geom/scale-point (global-attr :scroll-direction)
                                                                    (* c/outer-form-spacing
                                                                       index
@@ -110,10 +120,10 @@
               (update-in layouts
                          [:sublayouts index]
                          #(-> %
-                              (layout/adjust-layout @camera-pos
+                              (adjust-layout @camera-pos
                                                     @camera-zoom)
-                              (layout/adjust-layout geom/unit 0.5)
-                              (layout/map-layout (geom/circle-within current-app-rect)
+                              (adjust-layout geom/unit 0.5)
+                              (map-layout (geom/circle-within current-app-rect)
                                                  form-circle))))
             form-layouts
             (range (count (:sublayouts form-layouts))))))
@@ -138,12 +148,12 @@
   (geom/scale-point
    (let [scroll-dir (global-attr :scroll-direction)
          total-layout (-> (current-form-layouts)
-                          (layout/adjust-layout (geom/scale-point scroll-dir
+                          (adjust-layout (geom/scale-point scroll-dir
                                                                   (* c/outer-form-spacing
                                                                      2
                                                                      @scroll-pos))
                                                 1))
-         sublayout (layout/get-sublayout total-layout
+         sublayout (get-sublayout total-layout
                                          @selected-layout-path)]
      (if (pos? (count @selected-layout-path))
        (geom/add-points sublayout
@@ -158,7 +168,7 @@
   (if @selected-layout-path
     (/ (base-zoom)
        (:radius
-        (layout/get-sublayout (current-form-layouts)
+        (get-sublayout (current-form-layouts)
                               @selected-layout-path)))
     (base-zoom)))
 
@@ -178,14 +188,14 @@
             (first (project-attr :discard-history))
 
             down-formbar-form-path
-            (get-in (formbar/formbar-arrangement) down-formbar-form-path)))))
+            (get-in (formbar-arrangement) down-formbar-form-path)))))
 
 (defn dragged-tool [mouse]
   (let [{:keys [down? down-zone down-pos]} mouse]
     (when (and down?
                (= down-zone :formbar))
       (let [{:keys [tool-type]} (get-in (project-attr :formbars)
-                                        (formbar/formbar-path-at down-pos))]
+                                        (formbar-path-at down-pos))]
         (when (c/draggable-tools tool-type)
           tool-type)))))
 
@@ -214,9 +224,9 @@
          form)))))
 
 (defn get-formbar-insertion-index [mouse]
-  (let [formbar-path (formbar/formbar-path-at mouse)]
+  (let [formbar-path (formbar-path-at mouse)]
     (when formbar-path
-      (let [arrangement (formbar/formbar-arrangement)
+      (let [arrangement (formbar-arrangement)
             screen-side (first formbar-path)
             bar-arrangement (get-in arrangement formbar-path)
             form-spacing (* (formbar-radius)
@@ -316,7 +326,7 @@
       (let [current-size (app-size)]
         (when literal-text-input
           (let [{:keys [x y radius]} (when @literal-text-input-path
-                                       (layout/get-sublayout (adjusted-form-layouts)
+                                       (get-sublayout (adjusted-form-layouts)
                                                              @literal-text-input-path))
                 text-input-str (.-value @literal-text-input)
                 length (count text-input-str)
@@ -377,7 +387,7 @@
               @eval-zone-radius)
           :eval
 
-          (formbar/formbar-path-at mouse)
+          (formbar-path-at mouse)
           :formbar
 
           (reduce #(or %1
@@ -392,7 +402,7 @@
     :render
     (fn [mouse mouse-zone]
       (when @literal-text-input-path
-        (draw-circle (layout/get-sublayout (adjusted-form-layouts)
+        (draw-circle (get-sublayout (adjusted-form-layouts)
                                                @literal-text-input-path)
                          (:highlight (color-scheme))
                          :menu))
@@ -402,7 +412,7 @@
             current-outer-form-insertion-index (outer-form-insertion-index mouse mouse-zone)
             current-placement-form (placement-form mouse)
             current-dragged-tool (dragged-tool mouse)]
-        (layout/render-sublayouts (adjusted-form-layouts)
+        (render-sublayouts (adjusted-form-layouts)
                                   :program)
         (when (and dragging?
                    (or current-dragged-tool
@@ -424,8 +434,8 @@
                                                  (dec (count sublayouts)))))
                 {:keys [radius]} adjusted-form-layout
                 scroll-direction (global-attr :scroll-direction)
-                base-circle (select-keys (layout/expand-layout
-                                          (layout/shift-layout adjusted-form-layout
+                base-circle (select-keys (expand-layout
+                                          (shift-layout adjusted-form-layout
                                                                (geom/scale-point scroll-direction
                                                                                  (* (if start? -1 1)
                                                                                     c/outer-form-spacing
@@ -435,25 +445,25 @@
             (draw-circle (update base-circle :radius (partial * c/drop-form-outline-radius-factor))
                          (:background (color-scheme))
                          :drag)
-            (layout/render-sublayouts (layout/form-layout current-placement-form
+            (render-sublayouts (form-layout current-placement-form
                                                           base-circle)
                                       :drag)))
         (let [layout-path (layout-path-at (adjusted-form-layouts)
                                           mouse)
-              insertion-path (layout/layout-insertion-path-at (adjusted-form-layouts)
+              insertion-path (layout-insertion-path-at (adjusted-form-layouts)
                                                               mouse)
               literal? (and (= (count layout-path) (count insertion-path))
                             (= :literal (:type (vedn/get-child (project-attr :form)
                                                                insertion-path))))
-              layout-encapsulated? (layout/layout-path-encapsulated? (adjusted-form-layouts)
+              layout-encapsulated? (layout-path-encapsulated? (adjusted-form-layouts)
                                                                      insertion-path)]
           (when (and layout-path (not dragging?) literal?)
-            (draw-circle (layout/get-sublayout (adjusted-form-layouts)
+            (draw-circle (get-sublayout (adjusted-form-layouts)
                                                layout-path)
                          (:highlight (color-scheme))
                          :program))
           (when (and layout-path current-placement-form)
-            (let [sublayout (layout/get-sublayout (adjusted-form-layouts) layout-path)]
+            (let [sublayout (get-sublayout (adjusted-form-layouts) layout-path)]
               (when dragging?
                 (let [parent-radius (:radius sublayout)
                       radius (* c/drop-form-radius-factor
@@ -462,7 +472,7 @@
                       last-insertion-index (last insertion-path)
                       placement-pos (if (and (not literal?)
                                              layout-encapsulated?)
-                                      (layout/get-sublayout (adjusted-form-layouts) layout-path)
+                                      (get-sublayout (adjusted-form-layouts) layout-path)
                                       (if (= last-insertion-index -1)
                                         (geom/add-points sublayout
                                                          {:y (- radius
@@ -482,31 +492,31 @@
                                c/drag-cursor-line-width
                                (:highlight (color-scheme))
                                :program-overlay)
-                    (let [base-sublayout (layout/form-layout (placement-form mouse)
+                    (let [base-sublayout (form-layout (placement-form mouse)
                                                              (assoc geom/origin :radius 1))]
                       (if literal?
-                        (layout/render-sublayouts (layout/adjust-layout base-sublayout
+                        (render-sublayouts (adjust-layout base-sublayout
                                                                         (geom/scale-point sublayout
                                                                                           (/ (:radius sublayout)))
                                                                         (:radius sublayout))
                                                   :program-overlay)
                         (if layout-encapsulated?
-                          (let [encapsulated-sublayout (layout/get-sublayout (adjusted-form-layouts) layout-path)]
-                            (layout/render-sublayouts (layout/adjust-layout base-sublayout
+                          (let [encapsulated-sublayout (get-sublayout (adjusted-form-layouts) layout-path)]
+                            (render-sublayouts (adjust-layout base-sublayout
                                                                             (geom/scale-point encapsulated-sublayout
                                                                                               (/ (:radius encapsulated-sublayout)))
                                                                             (:radius encapsulated-sublayout))
                                                       :program-overlay))
                           (if (= 0 (count (:children (vedn/get-child (project-attr :form)
                                                                      layout-path))))
-                            (layout/render-sublayouts (layout/adjust-layout base-sublayout
+                            (render-sublayouts (adjust-layout base-sublayout
                                                                             (geom/scale-point sublayout
                                                                                               (/ (* c/drop-form-radius-factor
                                                                                                     (:radius sublayout))))
                                                                             (* c/drop-form-radius-factor
                                                                                (:radius sublayout)))
                                                       :program-overlay)
-                            (let [adjusted-layout (layout/adjust-layout base-sublayout
+                            (let [adjusted-layout (adjust-layout base-sublayout
                                                                         (geom/scale-point placement-pos
                                                                                           (/ radius))
                                                                         radius)]
@@ -515,9 +525,9 @@
                                                    (partial * c/drop-form-outline-radius-factor))
                                            (:background (color-scheme))
                                            :program-overlay)
-                              (layout/render-sublayouts adjusted-layout
+                              (render-sublayouts adjusted-layout
                                                         :program-overlay))))))))))))
-        (formbar/render-formbars mouse)
+        (render-formbars mouse)
 
        ;; Draw discard circle, icon, and last discarded form
         (let [last-discard (first (project-attr :discard-history))
@@ -530,7 +540,7 @@
           (render-discard-zone (= mouse-zone :discard)
                                last-discard)
           (when last-discard
-            (layout/render-sublayouts (layout/form-layout last-discard
+            (render-sublayouts (form-layout last-discard
                                                           (assoc base-circle-pos
                                                                  :radius (* radius
                                                                             c/discard-zone-form-radius-factor)))
@@ -569,7 +579,7 @@
                                (* radius c/new-icon-width)
                                (:highlight (color-scheme))
                                :menu)))
-                (layout/render-sublayouts (layout/form-layout last-eval-form
+                (render-sublayouts (form-layout last-eval-form
                                                               (assoc base-circle-pos
                                                                      :radius (* radius
                                                                                 c/eval-zone-form-radius-factor)))
@@ -629,11 +639,11 @@
                      :menu))
 
         (when (and (= mouse-zone :formbar) current-placement-form)
-          (let [formbar-path (formbar/formbar-path-at mouse)]
+          (let [formbar-path (formbar-path-at mouse)]
             (when (and formbar-path
                        (not (:type (get-in (project-attr :formbars)
                                            formbar-path))))
-              (let [arrangement (formbar/formbar-arrangement)
+              (let [arrangement (formbar-arrangement)
                     screen-side (first formbar-path)
                     bar-arrangement (get-in arrangement formbar-path)
                     form-spacing (* (formbar-radius)
@@ -657,7 +667,7 @@
                                       %
                                       (* form-spacing
                                          c/formbar-form-placement-offset))))))]
-                (layout/render-sublayouts (layout/form-layout (placement-form mouse) placement-circle)
+                (render-sublayouts (form-layout (placement-form mouse) placement-circle)
                                           :formbar)))))
         (app/render-top-left-button-background (= mouse-zone :settings-icon))
         (app/render-top-left-settings-button)))
@@ -722,7 +732,7 @@
         (if (:dragging? mouse)
           (case mouse-zone
             :program
-            (let [insertion-path (layout/layout-insertion-path-at layout mouse)
+            (let [insertion-path (layout-insertion-path-at layout mouse)
                   current-placement-form (placement-form mouse)
                   current-dragged-tool (dragged-tool mouse)]
               (when current-placement-form
@@ -767,8 +777,8 @@
               (let [{:keys [down-formbar-form-path]} mouse]
                 (when (and down-formbar-form-path
                            (not (:type (get-in (project-attr :formbars)
-                                               (formbar/formbar-path-at (:down-pos mouse))))))
-                  (let [arrangement (formbar/formbar-arrangement)]
+                                               (formbar-path-at (:down-pos mouse))))))
+                  (let [arrangement (formbar-arrangement)]
                     (track-discard
                      (get-in arrangement down-formbar-form-path))
                     (delete-project-formbar-form-at down-formbar-form-path))))
@@ -785,7 +795,7 @@
             :formbar
             (let [current-placement-form (placement-form mouse)]
               (when (placement-form mouse)
-                (let [formbar-path (formbar/formbar-path-at mouse)
+                (let [formbar-path (formbar-path-at mouse)
                       formbar (get-in (project-attr :formbars)
                                       formbar-path)]
                   (when (not (:type formbar))

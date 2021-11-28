@@ -11,7 +11,8 @@
             [vlojure.util :as u]
             [vlojure.geometry :as geom]
             [vlojure.constants :as c]
-            [vlojure.layout :as layout]))
+            [vlojure.layout :refer [render-sublayouts
+                                    form-layout]]))
 
 ;;; This file defines functionality for rendering and interacting with
 ;;; formbars. Formbars are displayed on the sides of the screen when the user
@@ -440,6 +441,6 @@
                   (render-tool (:tool-type bar)
                                (first (:circles bar))))
               (doseq [bar-circle (:circles bar)]
-                (layout/render-sublayouts (layout/form-layout (:form bar-circle)
+                (render-sublayouts (form-layout (:form bar-circle)
                                                               bar-circle)
                                           :formbar)))))))))
