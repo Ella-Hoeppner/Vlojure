@@ -9,7 +9,12 @@
                                      formbar-radius
                                      project-attr]]
             [vlojure.util :as u]
-            [vlojure.geometry :as geom]
+            [vlojure.geometry :refer [add-points
+                                      subtract-points
+                                      scale-point
+                                      point-magnitude
+                                      in-circle?
+                                      in-rect?]]
             [vlojure.constants :as c]
             [vlojure.layout :refer [render-sublayouts
                                     form-layout]]))
@@ -95,8 +100,8 @@
                                           :tool [(assoc bar-pos
                                                         :radius radius)]
                                           :bindings (mapv (fn [name form-index]
-                                                            (assoc (geom/add-points bar-pos
-                                                                                    (geom/scale-point
+                                                            (assoc (add-points bar-pos
+                                                                                    (scale-point
                                                                                      {(if horizontal? :x :y)
                                                                                       (* 2
                                                                                          (- 1 c/formbar-outline-thickness)
@@ -107,8 +112,8 @@
                                                           []
                                                           (range))
                                           (mapv (fn [form form-index]
-                                                  (assoc (geom/add-points bar-pos
-                                                                          (geom/scale-point
+                                                  (assoc (add-points bar-pos
+                                                                          (scale-point
                                                                            {(if horizontal? :x :y)
                                                                             (* 2
                                                                                (- 1 c/formbar-outline-thickness)
@@ -138,7 +143,7 @@
                                       {:keys [circles]} bar]
                                   (some (fn [circle-index]
                                           (let [bar-circle (nth circles circle-index)]
-                                            (when (geom/in-circle? bar-circle pos)
+                                            (when (in-circle? bar-circle pos)
                                               [side stage-index bar-index :circles circle-index :form])))
                                         (range (count circles)))))
                               (range (count stage)))))
@@ -154,23 +159,23 @@
                       (let [stage (nth arrangement stage-index)]
                         (some (fn [bar-index]
                                 (let [bar (nth stage bar-index)]
-                                  (when (or (<= (geom/point-magnitude
-                                                 (geom/subtract-points pos
+                                  (when (or (<= (point-magnitude
+                                                 (subtract-points pos
                                                                        bar))
                                                 (formbar-radius))
-                                            (<= (geom/point-magnitude
-                                                 (geom/subtract-points pos
-                                                                       (geom/add-points bar
+                                            (<= (point-magnitude
+                                                 (subtract-points pos
+                                                                       (add-points bar
                                                                                         (if horizontal?
                                                                                           {:x (:width bar)}
                                                                                           {:y (:height bar)}))))
                                                 (formbar-radius))
-                                            (geom/in-rect? (if horizontal?
-                                                             [(geom/subtract-points bar
+                                            (in-rect? (if horizontal?
+                                                             [(subtract-points bar
                                                                                     {:y (formbar-radius)})
                                                               {:x (:width bar)
                                                                :y (* 2 (formbar-radius))}]
-                                                             [(geom/subtract-points bar
+                                                             [(subtract-points bar
                                                                                     {:x (formbar-radius)})
                                                               {:x (* 2 (formbar-radius))
                                                                :y (:height bar)}])
@@ -214,8 +219,8 @@
                                                []
                                                (nth side-layers rounded-layer-index))
                                   bar-centers (mapv (fn [bar]
-                                                      (geom/add-points bar
-                                                                       (geom/scale-point
+                                                      (add-points bar
+                                                                       (scale-point
                                                                         {:x (:width bar)
                                                                          :y (:height bar)}
                                                                         0.5)))
@@ -272,7 +277,7 @@
         layer (get-in arrangement layer-path)
         layer-count (count layer)]
     (assoc (if (empty? layer)
-             (geom/add-points app-pos
+             (add-points app-pos
                               (let [outer-layer-spacing (* 2
                                                            (formbar-radius)
                                                            (+ 0.5 layer-index)
@@ -298,12 +303,12 @@
                                    0.5)]
                (if (>= bar-index (count layer))
                  (let [bar (last layer)]
-                   (geom/add-points (select-keys bar [:x :y])
+                   (add-points (select-keys bar [:x :y])
                                     {:x (:width bar)
                                      :y (:height bar)}
                                     {(if vertical? :y :x)
                                      start-offset}))
-                 (geom/add-points (select-keys (nth layer bar-index) [:x :y])
+                 (add-points (select-keys (nth layer bar-index) [:x :y])
                                   {(if vertical? :y :x)
                                    (- start-offset)}))))
            :radius c/formbar-placement-circle-radius)))
@@ -344,7 +349,7 @@
                                                        (formbar-radius)))
                                      [side stage-index (count stage)])))
                                 (range (count side-formbars))))
-                      (let [side-center (geom/add-points app-pos
+                      (let [side-center (add-points app-pos
                                                          (case side
                                                            :top {:x (* 0.5 (:x app-size))}
                                                            :bottom (update app-size :x (partial * 0.5))
@@ -356,8 +361,8 @@
                                                       :left {:x 1}
                                                       :right {:x -1})
                             arrangement-side (get arrangement side)]
-                        [(assoc (geom/add-points side-center
-                                                 (geom/scale-point perpendicular-direction
+                        [(assoc (add-points side-center
+                                                 (scale-point perpendicular-direction
                                                                    (- (+ (* c/new-formbar-circle-radius
                                                                             (formbar-radius))
                                                                          (formbar-offset (count arrangement-side)))
@@ -370,7 +375,7 @@
 (defn new-formbar-circle-path-at [pos]
   (let [circles (new-formbar-circles)]
     (some (fn [[new-formbar-circle path]]
-            (when (geom/in-circle? new-formbar-circle pos)
+            (when (in-circle? new-formbar-circle pos)
               path))
           circles)))
 
@@ -406,20 +411,20 @@
                         [:y :x :height])]
                   (when (not= bar-type :bindings)
                     (doseq [center [bar
-                                    (geom/add-points bar
+                                    (add-points bar
                                                      {primary-dim (size-key bar)})]]
                       (draw-circle (assoc center
                                           :radius (* (formbar-radius) radius-factor))
                                    color
                                    :formbar)))
                   (draw-rect (if (= bar-type :bindings)
-                               [(geom/subtract-points bar
+                               [(subtract-points bar
                                                       {primary-dim (* (formbar-radius) radius-factor)
                                                        secondary-dim (* (formbar-radius) radius-factor)})
                                 {primary-dim (+ (size-key bar)
                                                 (* 2 (formbar-radius) radius-factor))
                                  secondary-dim (* 2 (formbar-radius) radius-factor)}]
-                               [(geom/subtract-points bar
+                               [(subtract-points bar
                                                       {secondary-dim (* (formbar-radius) radius-factor)})
                                 {primary-dim (size-key bar)
                                  secondary-dim (* 2 (formbar-radius) radius-factor)}])

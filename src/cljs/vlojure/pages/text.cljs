@@ -9,9 +9,12 @@
                                      set-project-attr!
                                      fill-empty-project
                                      project-attr]]
+            [vlojure.vedn :refer [vedn->clj
+                                  clj->vedn]]
             [vlojure.constants :as c]
-            [vlojure.geometry :as geom]
-            [vlojure.vedn :as vedn]
+            [vlojure.geometry :refer [add-points
+                                      subtract-points
+                                      point-magnitude]]
             [vlojure.app :as app]))
 
 ;;; This file contains the logic for the "text" page. This page shows the user
@@ -30,7 +33,7 @@
 
 (defn update-validity! [& _]
   (try (let [current-text (.-value @input-element)]
-         (set-project-attr! :form (vedn/clj->vedn current-text))
+         (set-project-attr! :form (clj->vedn current-text))
          (reset! current-text-validity true))
        (catch :default _
          (reset! current-text-validity false))))
@@ -64,7 +67,7 @@
               (let [form (project-attr :form)]
                 (apply str
                        (mapcat (fn [subform]
-                                 (str (vedn/vedn->clj subform)
+                                 (str (vedn->clj subform)
                                       "\n\n"))
                                (:children form))))))
       (update-validity!))
@@ -86,7 +89,7 @@
               (str left-x
                    "px"))
         (set! (.-width (.-style input))
-              (str (- (screen-x (- (:x (apply geom/add-points (app-rect)))
+              (str (- (screen-x (- (:x (apply add-points (app-rect)))
                                             c/text-page-border))
                       top-y)
                    "px"))
@@ -94,7 +97,7 @@
               (str top-y
                    "px"))
         (set! (.-height (.-style input))
-              (str (- (screen-y (- (:y (apply geom/add-points (app-rect)))
+              (str (- (screen-y (- (:y (apply add-points (app-rect)))
                                             c/text-page-border))
                       top-y)
                    "px"))))
@@ -107,8 +110,8 @@
     :mouse-zone
     (fn [mouse]
       (cond
-        (<= (geom/point-magnitude
-             (geom/subtract-points (first (app-rect))
+        (<= (point-magnitude
+             (subtract-points (first (app-rect))
                                    mouse))
             c/upper-corner-zone-radius)
         :back-icon

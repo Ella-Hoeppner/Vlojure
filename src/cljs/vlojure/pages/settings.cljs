@@ -41,7 +41,18 @@
                                      formbar-arrangement
                                      delete-saved-formbar!
                                      add-saved-formbar!]]
-            [vlojure.geometry :as geom]
+            [vlojure.geometry :refer [add-points
+                                      subtract-points
+                                      scale-point
+                                      unit
+                                      TAU
+                                      angle-point
+                                      point-angle
+                                      tween-points
+                                      in-circle?
+                                      in-rect?
+                                      circle-within
+                                      point-magnitude]]
             [vlojure.constants :as c]
             [vlojure.app :as app]))
 
@@ -63,18 +74,18 @@
   (reset! ideal-scroll-pos pos))
 
 (defn settings-circle [index]
-  (let [center-circle (update (geom/circle-within (app-rect))
+  (let [center-circle (update (circle-within (app-rect))
                               :radius (partial * (base-zoom)))
         center-radius (:radius center-circle)]
-    (geom/add-points center-circle
-                     (geom/scale-point (global-attr :scroll-direction)
+    (add-points center-circle
+                     (scale-point (global-attr :scroll-direction)
                                        (* (- index @scroll-pos)
                                           2
                                           center-radius
                                           c/outer-form-spacing)))))
 
 (defn settings-circle-at [pos]
-  (some #(when (geom/in-circle? (settings-circle %)
+  (some #(when (in-circle? (settings-circle %)
                                 pos)
            %)
         (range c/settings-pages)))
@@ -110,8 +121,8 @@
 
 (defn settings-bar-scroll-circle []
   (let [center-circle (settings-circle c/settings-sliders-page)]
-    (update (geom/add-points center-circle
-                             (geom/scale-point (global-attr :scroll-direction)
+    (update (add-points center-circle
+                             (scale-point (global-attr :scroll-direction)
                                                (* (:radius center-circle)
                                                   c/settings-bar-scroll-circle-pos)))
             :radius
@@ -142,11 +153,11 @@
                              {:x (apply - (map :x [right left]))
                               :y (* 2 (:radius slider-settings-circle)
                                     c/settings-slider-radius)}]]
-            (when (or (geom/in-circle? right
+            (when (or (in-circle? right
                                        pos)
-                      (geom/in-circle? left
+                      (in-circle? left
                                        pos)
-                      (geom/in-rect? slider-rect
+                      (in-rect? slider-rect
                                      pos))
               index)))
         (range (count c/settings-sliders))))
@@ -164,18 +175,18 @@
                     width (* center-radius
                              2
                              c/settings-color-width)]
-                (when (or (geom/in-rect? [(-> center-circle
+                (when (or (in-rect? [(-> center-circle
                                               (update :y (partial + y (* -0.5 height)))
                                               (update :x (partial + (* -0.5 width))))
                                           {:x width
                                            :y height}]
                                          pos)
-                          (geom/in-circle? (-> center-circle
+                          (in-circle? (-> center-circle
                                                (update :y (partial + y))
                                                (update :x (partial + (* -0.5 width)))
                                                (assoc :radius (* 0.5 height)))
                                            pos)
-                          (geom/in-circle? (-> center-circle
+                          (in-circle? (-> center-circle
                                                (update :y (partial + y))
                                                (update :x (partial + (* 0.5 width)))
                                                (assoc :radius (* 0.5 height)))
@@ -252,7 +263,7 @@
 
 (defn saved-formbar-index-at [pos]
   (let [saved-formbar-circle (settings-circle c/settings-saved-formbars-page)]
-    (when (geom/in-circle? saved-formbar-circle
+    (when (in-circle? saved-formbar-circle
                            pos)
       (let [center-radius (:radius saved-formbar-circle)
             formbar-radius (* center-radius c/settings-saved-formbar-radius)
@@ -272,7 +283,7 @@
                                     (update :x (partial + (- (* c/settings-saved-formbars-box-x center-radius)
                                                              (* 0.5 saved-formbar-box-width))))
                                     (update :y (partial + (* center-radius c/settings-saved-formbars-box-y))))]
-        (when (geom/in-rect? [formbar-zone-corner
+        (when (in-rect? [formbar-zone-corner
                               {:x saved-formbar-box-width
                                :y saved-formbar-box-height}]
                              pos)
@@ -292,7 +303,7 @@
 
 (defn saved-formbar-insertion-index-at [pos]
   (let [saved-formbar-circle (settings-circle c/settings-saved-formbars-page)]
-    (when (geom/in-circle? saved-formbar-circle
+    (when (in-circle? saved-formbar-circle
                            pos)
       (let [center-radius (:radius saved-formbar-circle)
             formbar-radius (* center-radius c/settings-saved-formbar-radius)
@@ -312,7 +323,7 @@
                                     (update :x (partial + (- (* c/settings-saved-formbars-box-x center-radius)
                                                              (* 0.5 saved-formbar-box-width))))
                                     (update :y (partial + (* center-radius c/settings-saved-formbars-box-y))))]
-        (when (geom/in-rect? [formbar-zone-corner
+        (when (in-rect? [formbar-zone-corner
                               {:x saved-formbar-box-width
                                :y saved-formbar-box-height}]
                              pos)
@@ -359,7 +370,7 @@
           (range (count c/settings-formbar-tool-types)))))
 
 (defn tool-circle-at [pos]
-  (some #(when (geom/in-circle? % pos)
+  (some #(when (in-circle? % pos)
            (:type %))
         (apply concat
                (formbar-tool-circles))))
@@ -499,7 +510,7 @@
             button-circles (settings-button-circles)]
         (or (when (on-stage? c/settings-project-selector-page)
               (some (fn [index]
-                      (when (geom/in-circle? (nth button-circles index)
+                      (when (in-circle? (nth button-circles index)
                                              mouse)
                         (nth c/settings-project-buttons index)))
                     (range (count button-circles))))
@@ -510,8 +521,8 @@
                    (in-discard-corner? mouse))
               :discard
 
-              (<= (geom/point-magnitude
-                   (geom/subtract-points app-pos
+              (<= (point-magnitude
+                   (subtract-points app-pos
                                          mouse))
                   c/upper-corner-zone-radius)
               :back-icon
@@ -523,7 +534,7 @@
               :new-formbar
 
               (and (on-stage? c/settings-sliders-page)
-                   (geom/in-circle? (settings-bar-scroll-circle) mouse))
+                   (in-circle? (settings-bar-scroll-circle) mouse))
               :scroll-circle
 
               (and (on-stage? c/settings-sliders-page)
@@ -532,10 +543,10 @@
 
               (and (on-stage? c/settings-saved-formbars-page)
                    (or (reduce #(or %1
-                                    (geom/in-circle? %2 mouse))
+                                    (in-circle? %2 mouse))
                                false
                                (saved-formbar-scroll-circles))
-                       (geom/in-rect? (saved-formbar-scroll-rectangle) mouse)))
+                       (in-rect? (saved-formbar-scroll-rectangle) mouse)))
               :saved-formbar-scroll
 
               (color-scheme-index-at mouse)
@@ -569,12 +580,12 @@
                 y (* center-radius
                      (+ c/settings-top-slider-y
                         (* slider-index c/settings-slider-spacing)))
-                left (geom/add-points center-circle
+                left (add-points center-circle
                                       {:x (* -1
                                              center-radius
                                              c/settings-slider-width)
                                        :y y})
-                right (geom/add-points center-circle
+                right (add-points center-circle
                                        {:x (* center-radius
                                               c/settings-slider-width)
                                         :y y})]
@@ -590,14 +601,14 @@
                                                  c/settings-slider-radius))
                                (:background (color-scheme))
                                :background))
-            (draw-circle (assoc (geom/tween-points left right (global-attr slider-key))
+            (draw-circle (assoc (tween-points left right (global-attr slider-key))
                                     :radius (* center-radius
                                                c/settings-slider-radius
                                                c/settings-slider-inner-radius-factor))
                              (:foreground (color-scheme))
                              :background)
             (draw-text slider-name
-                           (geom/add-points center-circle
+                           (add-points center-circle
                                             {:y (+ y (* center-radius c/settings-slider-text-y))})
                            (* center-radius
                               c/settings-slider-text-size
@@ -788,7 +799,7 @@
                              :background))
           (when (> (count (saved-formbar-contents))
                    c/settings-saved-formbars-box-height)
-            (draw-circle (update (apply geom/tween-points
+            (draw-circle (update (apply tween-points
                                             (conj (saved-formbar-scroll-circles)
                                                   (/ @saved-formbar-scroll-pos
                                                      (max 0
@@ -875,7 +886,7 @@
                                :background)
               (case type
                 :rename-project
-                (let [eraser-offset (update (geom/scale-point geom/unit
+                (let [eraser-offset (update (scale-point unit
                                                               (* button-radius
                                                                  (Math/sqrt 0.5)
                                                                  c/settings-project-button-inner-radius-factor
@@ -886,34 +897,34 @@
                                c/rename-icon-width)
                       line-width (* button-radius
                                     c/settings-button-line-width)
-                      eraser (geom/add-points button-circle
+                      eraser (add-points button-circle
                                               eraser-offset)
-                      eraser-top (geom/add-points eraser
-                                                  (geom/scale-point geom/unit
+                      eraser-top (add-points eraser
+                                                  (scale-point unit
                                                                     (* (Math/sqrt 0.5)
                                                                        -0.5
                                                                        width)))
-                      eraser-bottom (geom/add-points eraser
-                                                     (geom/scale-point geom/unit
+                      eraser-bottom (add-points eraser
+                                                     (scale-point unit
                                                                        (* (Math/sqrt 0.5)
                                                                           0.5
                                                                           width)))
-                      eraser-edge-top (geom/add-points eraser-top
-                                                       (geom/scale-point eraser-offset
+                      eraser-edge-top (add-points eraser-top
+                                                       (scale-point eraser-offset
                                                                          (- c/rename-icon-eraser-size)))
-                      eraser-edge-bottom (geom/add-points eraser-bottom
-                                                          (geom/scale-point eraser-offset
+                      eraser-edge-bottom (add-points eraser-bottom
+                                                          (scale-point eraser-offset
                                                                             (- c/rename-icon-eraser-size)))
-                      tip-top (geom/add-points eraser-top
-                                               (geom/scale-point eraser-offset
+                      tip-top (add-points eraser-top
+                                               (scale-point eraser-offset
                                                                  (- c/rename-icon-tip-size
                                                                     (inc c/rename-icon-tip-factor))))
-                      tip-bottom (geom/add-points eraser-bottom
-                                                  (geom/scale-point eraser-offset
+                      tip-bottom (add-points eraser-bottom
+                                                  (scale-point eraser-offset
                                                                     (- c/rename-icon-tip-size
                                                                        (inc c/rename-icon-tip-factor))))
-                      tip (geom/add-points button-circle
-                                           (geom/scale-point eraser-offset
+                      tip (add-points button-circle
+                                           (scale-point eraser-offset
                                                              (- c/rename-icon-tip-factor)))]
                   (draw-polyline [tip
                                       tip-bottom
@@ -962,21 +973,21 @@
                                     c/settings-button-line-width)
                       corner {:x width
                               :y height}
-                      base-offset (geom/scale-point geom/unit
+                      base-offset (scale-point unit
                                                     (* button-radius
                                                        c/duplicate-icon-offset))]
-                  (doseq [offset [(geom/scale-point base-offset -1)
+                  (doseq [offset [(scale-point base-offset -1)
                                   base-offset]]
-                    (let [base (geom/add-points button-circle offset)]
-                      (draw-rect [(geom/add-points base
-                                                       (geom/scale-point corner -1))
-                                      (geom/scale-point corner 2)]
+                    (let [base (add-points button-circle offset)]
+                      (draw-rect [(add-points base
+                                                       (scale-point corner -1))
+                                      (scale-point corner 2)]
                                      (if (= mouse-zone :duplicate-project)
                                        (:highlight (color-scheme))
                                        (:foreground (color-scheme)))
                                      :background)
                       (draw-polyline (mapv (fn [dims]
-                                                 (geom/add-points base
+                                                 (add-points base
                                                                   (reduce #(update %1 %2 -)
                                                                           corner
                                                                           dims)))
@@ -990,7 +1001,7 @@
                                          :background))))
 
                 :delete-project
-                (let [offset (geom/scale-point geom/unit
+                (let [offset (scale-point unit
                                                (* button-radius
                                                   (Math/sqrt 0.5)
                                                   c/settings-project-button-inner-radius-factor
@@ -1000,10 +1011,10 @@
                                c/new-icon-width)]
                   (doseq [offset-modifier [identity #(update % :y -)]]
                     (let [modified-offset (offset-modifier offset)]
-                      (draw-line (geom/add-points button-circle
-                                                      (geom/scale-point modified-offset
+                      (draw-line (add-points button-circle
+                                                      (scale-point modified-offset
                                                                         -1))
-                                     (geom/add-points button-circle
+                                     (add-points button-circle
                                                       modified-offset)
                                      width
                                      (:background (color-scheme))
@@ -1012,8 +1023,8 @@
      ;; Render scroll circle
       (let [scroll-circle (settings-bar-scroll-circle)
             scroll-direction (global-attr :scroll-direction)
-            triangle-base (geom/add-points scroll-circle
-                                           (geom/scale-point scroll-direction
+            triangle-base (add-points scroll-circle
+                                           (scale-point scroll-direction
                                                              (* (:radius scroll-circle)
                                                                 c/settings-bar-scroll-triangle-pos)))
             color (if (= mouse-zone :scroll-circle)
@@ -1027,16 +1038,16 @@
                                  (partial * c/settings-bar-scroll-circle-inner-radius))
                          (:background (color-scheme))
                          :background)
-        (draw-polygon (mapv #(geom/add-points triangle-base
-                                                       (geom/scale-point %
+        (draw-polygon (mapv #(add-points triangle-base
+                                                       (scale-point %
                                                                          (:radius scroll-circle)))
-                                     [(geom/scale-point scroll-direction
+                                     [(scale-point scroll-direction
                                                         c/settings-bar-scroll-triangle-height)
-                                      (geom/scale-point (assoc scroll-direction
+                                      (scale-point (assoc scroll-direction
                                                                :x (:y scroll-direction)
                                                                :y (- (:x scroll-direction)))
                                                         c/settings-bar-scroll-triangle-width)
-                                      (geom/scale-point (assoc scroll-direction
+                                      (scale-point (assoc scroll-direction
                                                                :x (- (:y scroll-direction))
                                                                :y (:x scroll-direction))
                                                         c/settings-bar-scroll-triangle-width)])
@@ -1140,8 +1151,8 @@
           (let [current-formbar-arrangement (formbar-arrangement)
                 hovered-formbar (get-in current-formbar-arrangement formbar-path)
                 {:keys [width height]} hovered-formbar
-                center (geom/add-points hovered-formbar
-                                        (geom/scale-point {:x width
+                center (add-points hovered-formbar
+                                        (scale-point {:x width
                                                            :y height}
                                                           0.5))]
             (draw-circle (assoc hovered-formbar
@@ -1215,18 +1226,18 @@
                                               (inc adjusted-x-off))))))))
         (when (= (:down-zone mouse) :scroll-circle)
           (set-global-attr! :scroll-direction
-                             (geom/angle-point
-                              (let [raw-angle (mod (geom/point-angle
-                                                    (geom/subtract-points mouse
+                             (angle-point
+                              (let [raw-angle (mod (point-angle
+                                                    (subtract-points mouse
                                                                           (settings-circle c/settings-project-selector-page)))
-                                                   geom/TAU)
+                                                   TAU)
                                     snap-angle (some (fn [angle]
                                                        (when (< (min (Math/abs (- angle raw-angle))
-                                                                     (- geom/TAU
+                                                                     (- TAU
                                                                         (Math/abs (- angle raw-angle))))
                                                                 c/scroll-angle-snap-distance)
                                                          angle))
-                                                     (mapv (partial * geom/TAU)
+                                                     (mapv (partial * TAU)
                                                            (u/prop-range c/scroll-angle-snap-positions true)))]
                                 (or snap-angle
                                     raw-angle))))))

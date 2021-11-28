@@ -2,7 +2,14 @@
   (:require ["pixi.js" :as pixi]
             ["fontfaceobserver" :as FaceFontObserver]
             [vlojure.util :as u]
-            [vlojure.geometry :as geom]
+            [vlojure.geometry :refer [add-points
+                                      subtract-points
+                                      scale-point
+                                      angle-point
+                                      point-magnitude
+                                      rect-around
+                                      unit-square
+                                      PI]]
             [vlojure.constants :as c]
             [vlojure.storage :refer [color-scheme]]
             [clojure.string :refer [index-of]]
@@ -48,7 +55,7 @@
 (defn app-size [] (min (app-width) (app-height)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
-  (geom/rect-around geom/unit-square
+  (rect-around unit-square
                     (app-aspect-ratio)))
 
 (defn screen-x [x]
@@ -344,22 +351,22 @@
 
 (defn in-discard-corner? [pos]
   (let [[app-pos app-size] (app-rect)]
-    (<= (geom/point-magnitude
-         (geom/subtract-points (geom/add-points app-pos
+    (<= (point-magnitude
+         (subtract-points (add-points app-pos
                                                 (select-keys app-size [:y]))
                                pos))
         c/lower-corner-zone-radius)))
 
 (defn render-discard-zone [& [highlighted? blank-symbol?]]
   (let [[app-pos app-size] (app-rect)]
-    (draw-circle (assoc (geom/add-points app-pos
+    (draw-circle (assoc (add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius c/lower-corner-zone-radius)
             (if highlighted?
               (:highlight (color-scheme))
               (:foreground (color-scheme)))
             :menu)
-    (draw-circle (assoc (geom/add-points app-pos
+    (draw-circle (assoc (add-points app-pos
                                     (select-keys app-size [:y]))
                    :radius (* (- 1 c/corner-zone-bar-thickness)
                               c/lower-corner-zone-radius))
@@ -372,7 +379,7 @@
             base-circle-pos (-> app-pos
                                 (update :y (partial + (- (:y app-size) radius)))
                                 (update :x (partial + radius)))
-            angle-offset (geom/scale-point (geom/angle-point (* 0.25 geom/PI))
+            angle-offset (scale-point (angle-point (* 0.25 PI))
                                            (* radius
                                               c/discard-zone-icon-radius-factor))]
         (draw-circle (assoc base-circle-pos
@@ -386,9 +393,9 @@
                                   (- 1 c/discard-zone-icon-thickness)))
                 (:background (color-scheme))
                 :menu)
-        (draw-line (geom/add-points base-circle-pos
+        (draw-line (add-points base-circle-pos
                                angle-offset)
-              (geom/subtract-points base-circle-pos
+              (subtract-points base-circle-pos
                                     angle-offset)
               (* radius
                  (* c/discard-zone-icon-radius-factor

@@ -1,7 +1,8 @@
 (ns vlojure.storage
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
-            [vlojure.vedn :as vedn]
+            [vlojure.vedn :refer [clj->vedn
+                                  fill-empty-encapsulators]]
             [clojure.edn :as edn]
             [clojure.string :as string]))
 
@@ -76,7 +77,7 @@
 
 (defn modify-code! [mutator]
   (let [old-code (project-attr :form)
-        new-code (vedn/fill-empty-encapsulators (mutator old-code))]
+        new-code (fill-empty-encapsulators (mutator old-code))]
     (add-code-history-entry! old-code)
     (set-project-attr! :code-future nil)
     (set-project-attr! :form new-code)))
@@ -218,19 +219,19 @@
     {:name name
 
      :form
-     (vedn/clj->vedn "()")
+     (clj->vedn "()")
 
      :formbars
      (let [primary [[{:forms (mapv (comp first
                                          :children
-                                         vedn/clj->vedn)
+                                         clj->vedn)
                                    ["()"
                                     "[]"
                                     "{}"
                                     "#{}"])}]
                     [{:forms (mapv (comp first
                                          :children
-                                         vedn/clj->vedn)
+                                         clj->vedn)
                                    ["'"
                                     "@"
                                     "`"
@@ -241,19 +242,19 @@
                                     "#'"])}]
                     [{:forms (mapv (comp first
                                          :children
-                                         vedn/clj->vedn)
+                                         clj->vedn)
                                    ["#()"
                                     "%"
                                     "(fn [x] ())"
                                     "(let [] ())"])}]]
            secondary [[{:forms (mapv (comp first
                                            :children
-                                           vedn/clj->vedn)
+                                           clj->vedn)
                                      ["1"
                                       "10"])}
                        {:forms (mapv (comp first
                                            :children
-                                           vedn/clj->vedn)
+                                           clj->vedn)
                                      ["+"
                                       "-"
                                       "*"
@@ -278,7 +279,7 @@
 (defn fill-empty-project []
   (when (zero? (count (:children (project-attr :form))))
     (set-project-attr! :form
-                       (vedn/clj->vedn "nil"))))
+                       (clj->vedn "nil"))))
 
 (defn project-form-count []
   (count (:children (project-attr :form))))
@@ -303,25 +304,25 @@
     :projects [{:name "Calculator"
 
                 :form
-                (vedn/clj->vedn "(+ 1 (* 5 10))")
+                (clj->vedn "(+ 1 (* 5 10))")
 
                 :formbars
                 (let [primary [[{:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["()"
                                                "[]"
                                                "{}"])}
                                 {:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["#()"
                                                "%"
                                                "(fn [x] ())"
                                                "(let [] ())"])}]
                                [{:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["apply"
                                                "map"
                                                "mapv"
@@ -333,18 +334,18 @@
                                                "count"])}]]
                       secondary [[{:forms (mapv (comp first
                                                       :children
-                                                      vedn/clj->vedn)
+                                                      clj->vedn)
                                                 ["Math/pow"
                                                  "Math/sqrt"
                                                  "Math/PI"])}]
                                  [{:forms (mapv (comp first
                                                       :children
-                                                      vedn/clj->vedn)
+                                                      clj->vedn)
                                                 ["1"
                                                  "10"])}
                                   {:forms (mapv (comp first
                                                       :children
-                                                      vedn/clj->vedn)
+                                                      clj->vedn)
                                                 ["+"
                                                  "-"
                                                  "*"
@@ -357,12 +358,12 @@
                {:name "Fibonacci"
 
                 :form
-                (vedn/clj->vedn "(nth (iterate (fn [f] (conj f (+ (last f) (last (butlast f))))) [0 1]) 10)")
+                (clj->vedn "(nth (iterate (fn [f] (conj f (+ (last f) (last (butlast f))))) [0 1]) 10)")
 
                 :formbars
                 (let [primary [[{:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["()"
                                                "[]"
                                                "{}"
@@ -370,16 +371,16 @@
                                                "#{}"])}]
                                [{:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["mapv"
                                                "reduce"])}
                                 {:forms (mapv (comp first
                                                     :children
-                                                    vedn/clj->vedn)
+                                                    clj->vedn)
                                               ["(let [] ())"])}]]
                       secondary [[{:forms (mapv (comp first
                                                       :children
-                                                      vedn/clj->vedn)
+                                                      clj->vedn)
                                                 ["+"
                                                  "-"
                                                  "*"

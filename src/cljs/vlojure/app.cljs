@@ -22,7 +22,15 @@
             [vlojure.formbar :refer [formbar-form-path-at
                                      new-formbar-circle-path-at]]
             [vlojure.util :as u]
-            [vlojure.geometry :as geom]
+            [vlojure.geometry :refer [add-points
+                                      subtract-points
+                                      scale-point
+                                      unit
+                                      TAU
+                                      angle-point
+                                      point-angle
+                                      scalar-point-projection
+                                      point-magnitude]]
             [vlojure.constants :as c]))
 
 ;;; This file defines the core logic of the app that is common between the
@@ -93,16 +101,16 @@
         radius (/ (* (- 1 c/corner-zone-bar-thickness)
                      c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
-        base-circle-pos (geom/add-points app-pos
-                                         (geom/scale-point geom/unit radius))
+        base-circle-pos (add-points app-pos
+                                         (scale-point unit radius))
         background-color (if highlighted-background?
                            (:highlight (color-scheme))
                            (:foreground (color-scheme)))]
-    (doseq [angle (map (partial * geom/TAU)
+    (doseq [angle (map (partial * TAU)
                        (u/prop-range c/settings-zone-icon-spokes true))]
       (draw-line base-circle-pos
-                 (geom/add-points base-circle-pos
-                                  (geom/scale-point (geom/angle-point angle)
+                 (add-points base-circle-pos
+                                  (scale-point (angle-point angle)
                                                     (* radius
                                                        c/settings-zone-icon-spoke-length-factor)))
                  (* radius
@@ -127,25 +135,25 @@
         radius (/ (* (- 1 c/corner-zone-bar-thickness)
                      c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
-        base-circle-pos (geom/add-points app-pos
-                                         (geom/scale-point geom/unit radius))
-        tip (geom/add-points base-circle-pos
+        base-circle-pos (add-points app-pos
+                                         (scale-point unit radius))
+        tip (add-points base-circle-pos
                              {:x (- (* radius
                                        c/back-icon-left-length-factor))})
         width (* radius c/back-icon-width-factor)
         arrow-size (* radius c/back-icon-tip-length-factor)]
     (draw-line tip
-                   (geom/add-points base-circle-pos
+                   (add-points base-circle-pos
                                     {:x (* radius
                                            c/back-icon-right-length-factor)})
                    width
                    (:text (color-scheme))
                    :menu)
-    (draw-polyline [(geom/add-points tip
+    (draw-polyline [(add-points tip
                                          {:x arrow-size
                                           :y (- arrow-size)})
                         tip
-                        (geom/add-points tip
+                        (add-points tip
                                          {:x arrow-size
                                           :y arrow-size})]
                        width
@@ -158,16 +166,16 @@
         radius (/ (* (- 1 c/corner-zone-bar-thickness)
                      c/upper-corner-zone-radius)
                   (inc (Math/sqrt 2)))
-        base-circle-pos (geom/add-points app-pos
-                                         (geom/scale-point geom/unit radius))
-        base-offset (geom/scale-point geom/unit
+        base-circle-pos (add-points app-pos
+                                         (scale-point unit radius))
+        base-offset (scale-point unit
                                       (* (Math/sqrt 0.5)
                                          c/new-icon-size
                                          radius))]
     (doseq [offset [base-offset (update base-offset :x -)]]
-      (draw-line (geom/add-points base-circle-pos
-                                      (geom/scale-point offset -1))
-                     (geom/add-points base-circle-pos
+      (draw-line (add-points base-circle-pos
+                                      (scale-point offset -1))
+                     (add-points base-circle-pos
                                       offset)
                      (* radius c/new-icon-width)
                      (:text (color-scheme))
@@ -190,8 +198,8 @@
   (let [delta (get-delta)]
     (when-not (zero? c/scroll-speed)
       (update-global-attr! :scroll-direction
-                                   #(geom/angle-point
-                                     (+ (geom/point-angle %)
+                                   #(angle-point
+                                     (+ (point-angle %)
                                         (* c/scroll-speed delta)))))
     (let [{:keys [mouse page]} @app-state]
       (when (and (:down? mouse)
@@ -199,7 +207,7 @@
                  (= (:down-zone mouse) :empty))
         (page-action page :scroll
                      (-
-                      (/ (geom/scalar-point-projection (geom/subtract-points mouse
+                      (/ (scalar-point-projection (subtract-points mouse
                                                                              (:last-pos mouse))
                                                        (global-attr :scroll-direction))
                          (* (base-zoom)
@@ -224,11 +232,11 @@
                      :y (/ (- y (* 0.5 (- height size))) size)}]
     (update-attr! :mouse
                   (fn [state]
-                    (let [diff (geom/subtract-points state
+                    (let [diff (subtract-points state
                                                      current-pos)]
                       (assoc (merge state current-pos)
                              :drag-dist (when (:down? state)
-                                          (+ (geom/point-magnitude diff)
+                                          (+ (point-magnitude diff)
                                              (:drag-dist state)))))))))
 
 (defn on-click-down [event]
