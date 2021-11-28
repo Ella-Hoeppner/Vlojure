@@ -1,5 +1,6 @@
 (ns vlojure.pages.text
   (:require [vlojure.util :as u]
+            [vlojure.constants :as c]
             [vlojure.graphics :refer [app-rect
                                       draw-rect
                                       screen-x
@@ -11,7 +12,6 @@
                                      project-attr]]
             [vlojure.vedn :refer [vedn->clj
                                   clj->vedn]]
-            [vlojure.constants :as c]
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       point-magnitude]]

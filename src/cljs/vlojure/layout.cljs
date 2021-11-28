@@ -1,11 +1,12 @@
 (ns vlojure.layout
-  (:require [vlojure.graphics :refer [draw-circle
+  (:require [vlojure.util :as u]
+            [vlojure.constants :as c]
+            [vlojure.graphics :refer [draw-circle
                                       draw-line
                                       draw-polyline
                                       draw-polygon
                                       draw-text]]
             [vlojure.storage :refer [color-scheme]]
-            [vlojure.util :as u]
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       scale-point
@@ -17,7 +18,6 @@
                                       perfect-polygon
                                       tween-points
                                       in-circle?]]
-            [vlojure.constants :as c]
             [vlojure.vedn :refer [encapsulator-types]]))
 
 ;;; This file defines functionality for rendering and interacting with

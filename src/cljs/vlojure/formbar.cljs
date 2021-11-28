@@ -1,5 +1,7 @@
 (ns vlojure.formbar
-  (:require [vlojure.graphics :refer [app-rect
+  (:require [vlojure.util :as u]
+            [vlojure.constants :as c]
+            [vlojure.graphics :refer [app-rect
                                       draw-circle
                                       draw-rect
                                       render-tool]]
@@ -8,14 +10,12 @@
                                      global-attr
                                      formbar-radius
                                      project-attr]]
-            [vlojure.util :as u]
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       scale-point
                                       point-magnitude
                                       in-circle?
                                       in-rect?]]
-            [vlojure.constants :as c]
             [vlojure.layout :refer [render-sublayouts
                                     form-layout]]))
 

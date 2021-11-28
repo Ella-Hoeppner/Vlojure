@@ -1,10 +1,10 @@
 (ns vlojure.storage
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
+            [clojure.string :as string]
+            [clojure.edn :refer [read-string]]
             [vlojure.vedn :refer [clj->vedn
-                                  fill-empty-encapsulators]]
-            [clojure.edn :as edn]
-            [clojure.string :as string]))
+                                  fill-empty-encapsulators]]))
 
 ;;; This file defines ways of interacting with browsers' local storage, which
 ;;; allows a user's code and preferences to be saved once the page is closed.
@@ -20,7 +20,7 @@
 
 (defn load-state! []
   (reset! app-state
-          (edn/read-string (saved-state))))
+          (read-string (saved-state))))
 
 (defn save-state! []
   (.setItem storage

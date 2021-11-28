@@ -1,5 +1,6 @@
 (ns vlojure.app
-  (:require [clojure.string :as string]
+  (:require [vlojure.util :as u]
+            [vlojure.constants :as c]
             [vlojure.graphics :refer [app-rect
                                       draw-circle
                                       draw-rect
@@ -21,7 +22,6 @@
                                      add-project-formbar-at]]
             [vlojure.formbar :refer [formbar-form-path-at
                                      new-formbar-circle-path-at]]
-            [vlojure.util :as u]
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       scale-point
@@ -30,8 +30,7 @@
                                       angle-point
                                       point-angle
                                       scalar-point-projection
-                                      point-magnitude]]
-            [vlojure.constants :as c]))
+                                      point-magnitude]]))
 
 ;;; This file defines the core logic of the app that is common between the
 ;;; different pages. The logic specific to the code page, the settings page,

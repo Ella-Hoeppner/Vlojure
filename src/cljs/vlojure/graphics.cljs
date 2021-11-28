@@ -2,6 +2,7 @@
   (:require ["pixi.js" :as pixi]
             ["fontfaceobserver" :as FaceFontObserver]
             [vlojure.util :as u]
+            [vlojure.constants :as c]
             [vlojure.geometry :refer [add-points
                                       subtract-points
                                       scale-point
@@ -10,7 +11,6 @@
                                       rect-around
                                       unit-square
                                       PI]]
-            [vlojure.constants :as c]
             [vlojure.storage :refer [color-scheme]]
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
