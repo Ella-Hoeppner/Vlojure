@@ -476,7 +476,7 @@
                    (geom/subtract-points app-pos
                                          mouse))
                   constants/upper-corner-zone-radius)
-              :settings-icon
+              :back-icon
 
               (formbar/formbar-path-at mouse)
               :formbar
@@ -1157,7 +1157,7 @@
                                    (:background (storage/color-scheme))
                                    :settings-overlay)))))))
 
-      (app/render-top-left-button-background)
+      (app/render-top-left-button-background (= mouse-zone :back-icon))
       (app/render-top-left-back-button))
 
     :update
@@ -1336,6 +1336,9 @@
                       (let [form (nth saved-formbar index)]
                         (storage/add-project-formbar-form-at form formbar-placement-path index)))))))))
         (case (:down-zone mouse)
+          :back-icon
+          (app/enter-page :code)
+
           :color-scheme
           (storage/set-attr! :color-scheme (color-scheme-index-at mouse))
 

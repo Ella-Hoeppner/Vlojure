@@ -636,7 +636,7 @@
                                          constants/formbar-form-placement-offset))))))]
                 (layout/render-sublayouts (layout/form-layout (placement-form mouse) placement-circle)
                                           :formbar)))))
-        (app/render-top-left-button-background)
+        (app/render-top-left-button-background (= mouse-zone :settings-icon))
         (app/render-top-left-settings-button)))
 
     :update
@@ -795,6 +795,9 @@
             :empty
             (do (hide-literal-text-input)
                 (reset! selected-layout-path nil))
+            
+            :settings-icon
+            (app/enter-page :settings)
 
             nil))
         (set-camera-move-diff (- (count layout-path)

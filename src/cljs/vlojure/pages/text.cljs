@@ -109,7 +109,7 @@
         :else :empty))
 
     :render
-    (fn [& _]
+    (fn [mouse mouse-zone]
       (graphics/rect (let [[app-pos app-size] (graphics/app-rect)]
                        [(reduce #(update %1 %2 (partial + constants/text-page-border))
                                 app-pos
@@ -121,7 +121,7 @@
                      :background)
 
 
-      (app/render-top-left-button-background)
+      (app/render-top-left-button-background (= mouse-zone :back-icon))
       (if (text-valid?)
         (app/render-top-left-back-button)
         (app/render-top-left-invalid-button)))

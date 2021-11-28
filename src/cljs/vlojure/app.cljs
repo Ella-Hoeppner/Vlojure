@@ -256,11 +256,6 @@
                            :drag-dist 0)))
     (when-not currently-dragging?
       (case (:down-zone mouse)
-        :settings-icon
-        (enter-page (case (attr :page)
-                      :code :settings
-                      :code))
-
         :formbar
         (let [form-path (take 3 (formbar/formbar-form-path-at (:down-pos mouse)))
               {:keys [tool-type]} (get-in (storage/project-attr :formbars) form-path)]
