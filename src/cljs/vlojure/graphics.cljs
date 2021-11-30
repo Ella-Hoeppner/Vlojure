@@ -11,7 +11,8 @@
                                       rect-around
                                       unit-square
                                       PI]]
-            [vlojure.storage :refer [color-scheme]]
+            [vlojure.storage :refer [color-scheme
+                                     quil-mode?]]
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
 
@@ -21,6 +22,7 @@
 (defonce svg-queue (atom ()))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
+(defonce quil-canvas (atom nil))
 
 (defn get-graphics [& [layer]]
   (get @pixi-graphics
@@ -43,7 +45,10 @@
                             num)))
                     (reverse (range 6))))))
 
-(defn app-width [] (.-innerWidth js/window))
+(defn app-width []
+  (if (quil-mode?)
+    (/ (.-innerWidth js/window) 2)
+    (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
@@ -81,9 +86,16 @@
              (count s)))))
 
 (defn resize []
-  (let [current-width (app-width)
-        current-height (app-height)]
-    (.resize (.-renderer @pixi-app) current-width current-height)))
+  (.resize (.-renderer @pixi-app)
+           (app-width)
+           (app-height))
+  (when (and (quil-mode?)
+             @quil-canvas)
+    (let [style (.-style @quil-canvas)]
+      (set! (.-left style) (app-width))
+      (set! (.-top style) 0))
+    (set! (.-width @quil-canvas) (app-width))
+    (set! (.-height @quil-canvas) (app-height))))
 
 (defn draw-rect [[pos size] fill & [layer]]
   (let [graphics (get-graphics layer)]
@@ -333,7 +345,11 @@
                        {:chars pixi/BitmapFont.ASCII}))
                (u/log "Font loaded."))))
 
-    (resize)))
+    (resize))
+  (reset! quil-canvas (js/document.createElement "canvas"))
+  (set! (.-id @quil-canvas) "quil")
+  (set! (.-position (.-style @quil-canvas)) "absolute")
+  (js/document.body.appendChild @quil-canvas))
 
 (defn in-discard-corner? [pos]
   (let [[app-pos app-size] (app-rect)]

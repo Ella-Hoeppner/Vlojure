@@ -162,10 +162,10 @@
 
 (def settings-project-quil-mode-y 0.6)
 (def settings-project-quil-mode-text-x -0.2)
-(def settings-project-quil-mode-circle-x 0.5)
+(def settings-project-quil-mode-circle-x 0.45)
 (def settings-project-quil-mode-circle-radius 0.15)
 (def settings-project-quil-mode-circle-outline-factor 0.4)
-(def settings-project-quil-mode-text-size 0.6)
+(def settings-project-quil-mode-text-size 0.5)
 
 (def settings-bar-scroll-circle-pos 0.95)
 (def settings-bar-scroll-circle-radius 0.13)
