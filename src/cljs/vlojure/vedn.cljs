@@ -1,6 +1,6 @@
 (ns vlojure.vedn
   (:require [vlojure.util :as u]
-            [clojure.set :as sets]))
+            [clojure.set :refer [map-invert]]))
 
 ;;; This file defines an edn/clj(s) reader that creates "vedn" ("visual edn")
 ;;; objects. The most important functions in this file are "clj->vedn" and
@@ -30,7 +30,7 @@
 (def encapsulator->type (zipmap encapsulators
                                 encapsulator-types))
 
-(def type->encapsulator (sets/map-invert encapsulator->type))
+(def type->encapsulator (map-invert encapsulator->type))
 
 (def opener->type {"(" :list
                    "[" :vector
@@ -38,7 +38,7 @@
                    "#{" :set
                    "#(" :lit-fn})
 
-(def type->opener (sets/map-invert opener->type))
+(def type->opener (map-invert opener->type))
 
 (def type->closer {:list ")"
                    :vector "]"

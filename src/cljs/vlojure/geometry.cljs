@@ -102,7 +102,7 @@
   {:x (- (:y point))
    :y (:x point)})
 
-(defn polygon [sides & [rotation]]
+(defn perfect-polygon [sides & [rotation]]
   (mapv (fn [i]
           (let [angle (+ rotation (/ (* TAU i) sides))]
             {:x (Math/cos angle)
