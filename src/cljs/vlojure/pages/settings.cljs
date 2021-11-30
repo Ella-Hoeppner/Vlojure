@@ -57,7 +57,10 @@
             [vlojure.app :refer [enter-page
                                  register-page!
                                  render-top-left-button-background
-                                 render-top-left-back-button]]))
+                                 render-top-left-back-button
+                                 quil-mode?
+                                 activate-quil-mode!
+                                 deactivate-quil-mode!]]))
 
 ;;; This file contains the logic for the "settings" page. This page lets the
 ;;; user create and delete projects as well as renaming and switching between
@@ -560,6 +563,9 @@
                        (in-rect? (saved-formbar-scroll-rectangle) mouse)))
               :saved-formbar-scroll
 
+              (in-circle? (settings-quil-mode-circle) mouse)
+              :quil-mode-circle
+
               (color-scheme-index-at mouse)
               :color-scheme
 
@@ -1041,10 +1047,11 @@
         (draw-circle (settings-quil-mode-circle)
                      (:background (color-scheme))
                      :background)
-        (draw-circle (update (settings-quil-mode-circle)
-                             :radius (partial * (- 1 c/settings-project-quil-mode-circle-outline-factor)))
-                     (:highlight (color-scheme))
-                     :background))
+        (when (quil-mode?)
+          (draw-circle (update (settings-quil-mode-circle)
+                               :radius (partial * (- 1 c/settings-project-quil-mode-circle-outline-factor)))
+                       (:highlight (color-scheme))
+                       :background)))
 
      ;; Render scroll circle
       (let [scroll-circle (settings-bar-scroll-circle)
@@ -1410,6 +1417,11 @@
           :new-project
           (do (new-project)
               (refresh-dropdown-names))
+          
+          :quil-mode-circle
+          (if (quil-mode?)
+            (deactivate-quil-mode!)
+            (activate-quil-mode!))
 
           :duplicate-project
           (do (duplicate-project)

@@ -17,6 +17,7 @@
                                      global-attr
                                      base-zoom
                                      project-attr
+                                     set-project-attr!
                                      undo!
                                      redo!
                                      add-project-formbar-at]]
@@ -44,6 +45,15 @@
 (defn register-page! [key page]
   (swap! pages
          #(assoc % key page)))
+
+(defn activate-quil-mode! []
+  (set-project-attr! :quil true))
+
+(defn deactivate-quil-mode! []
+  (set-project-attr! :quil false))
+
+(defn quil-mode? []
+  (boolean (project-attr :quil)))
 
 (defn page-action [page action & args]
   (let [action (get-in @pages [page action])]
