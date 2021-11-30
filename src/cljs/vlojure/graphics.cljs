@@ -15,10 +15,15 @@
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
 
-(defonce graphics-state (atom {}))
+(defonce pixi-app (atom nil))
+(defonce pixi-graphics (atom {}))
+(defonce texts (atom {}))
+(defonce svg-queue (atom ()))
+(defonce current-svg-color-scheme (atom nil))
+(defonce font-loaded? (atom false))
 
 (defn get-graphics [& [layer]]
-  (get (:graphics @graphics-state)
+  (get @pixi-graphics
        (or layer (first c/ui-layers))))
 
 (defn html-color [color]
@@ -37,18 +42,6 @@
                               15 "F"} num)
                             num)))
                     (reverse (range 6))))))
-
-(defn attr [key]
-  (get @graphics-state key))
-
-(defn set-attr! [key value]
-  (swap! graphics-state
-         #(assoc % key value))
-  value)
-
-(defn update-attr! [key value]
-  (swap! graphics-state
-         #(update % key value)))
 
 (defn app-width [] (.-innerWidth js/window))
 (defn app-height [] (.-innerHeight js/window))
@@ -71,7 +64,7 @@
     (+ (* 0.5 (- h s)) (* y s))))
 
 (defn get-mouse-pos []
-  (let [plugins (.-plugins (.-renderer (:app @graphics-state)))
+  (let [plugins (.-plugins (.-renderer @pixi-app))
         raw-pos (clj->js (.-global (.-mouse (get (js->clj plugins) "interaction"))))
         x (.-x raw-pos)
         y (.-y raw-pos)
@@ -90,7 +83,7 @@
 (defn resize []
   (let [current-width (app-width)
         current-height (app-height)]
-    (.resize (.-renderer (:app @graphics-state)) current-width current-height)))
+    (.resize (.-renderer @pixi-app) current-width current-height)))
 
 (defn draw-rect [[pos size] fill & [layer]]
   (let [graphics (get-graphics layer)]
@@ -149,7 +142,7 @@
     (.lineStyle graphics 0)))
 
 (defn draw-text [s pos size color & [layer]]
-  (when (:font-loaded? @graphics-state)
+  (when @font-loaded?
     (let [t (pixi/BitmapText.
              (str s)
              (clj->js {:fontName c/font-name
@@ -168,40 +161,36 @@
       (set! (.-x (.-scale t)) scale)
       (set! (.-y (.-scale t)) scale)
       (set! (.-resolution t) 10)
-      (.addChild (get (:texts @graphics-state)
+      (.addChild (get @texts
                       (or layer (first c/ui-layers)))
                  t))))
 
 (defn get-delta []
-  (/ (.-elapsedMS (.-ticker (attr :app))) 1000))
+  (/ (.-elapsedMS (.-ticker @pixi-app)) 1000))
 
 (defn update-svg-color-scheme [color-scheme]
-  (let [current-svg-color-scheme (attr :svg-color-scheme)]
-    (when (not= color-scheme current-svg-color-scheme)
-      (doseq [class [:background :foreground :highlight :text]]
-        (let [elements (.getElementsByClassName js/document (subs (str class) 1))
-              color (color-scheme class)
-              rgb-string (str "#"
-                              (apply str
-                                     (map #(.toString (mod (quot color
-                                                                 (Math/pow 256 %))
-                                                           256)
-                                                      16)
-                                          (reverse (range 3)))))]
-          (doseq [i (range (.-length elements))]
-            (let [element (.item elements i)]
-              (doseq [attribute ["fill" "stroke"]]
-                (let [current-value (.getAttribute element attribute)]
-                  (when (and current-value
-                             (not= current-value "none"))
-                    (.setAttribute element attribute rgb-string))))))))
-      (set-attr! :svg-color-scheme color-scheme))))
-
-(defn clear-svg-queue []
-  (set-attr! :svgs-to-render nil))
+  (when (not= color-scheme @current-svg-color-scheme)
+    (doseq [class [:background :foreground :highlight :text]]
+      (let [elements (.getElementsByClassName js/document (subs (str class) 1))
+            color (color-scheme class)
+            rgb-string (str "#"
+                            (apply str
+                                   (map #(.toString (mod (quot color
+                                                               (Math/pow 256 %))
+                                                         256)
+                                                    16)
+                                        (reverse (range 3)))))]
+        (doseq [i (range (.-length elements))]
+          (let [element (.item elements i)]
+            (doseq [attribute ["fill" "stroke"]]
+              (let [current-value (.getAttribute element attribute)]
+                (when (and current-value
+                           (not= current-value "none"))
+                  (.setAttribute element attribute rgb-string))))))))
+    (reset! current-svg-color-scheme color-scheme)))
 
 (defn render-svg [tool-name pos radius]
-  (update-attr! :svgs-to-render #(conj % [tool-name pos radius]))
+  (swap! svg-queue #(conj % [tool-name pos radius]))
   (update-svg-color-scheme (color-scheme)))
 
 (defn render-tool [tool-name tool-circle & [outline?]]
@@ -236,7 +225,7 @@
                                                   name
                                                   #(conj % [pos radius]))))
                                       {}
-                                      (attr :svgs-to-render))
+                                      @svg-queue)
         copy-svgs (js/document.getElementsByClassName "copy-svg")
         existing-svgs-by-name (reduce (fn [element-map svg]
                                         (let [id (.-id svg)
@@ -296,48 +285,45 @@
 
                                svg))
                      (inc index))))))))
-  (clear-svg-queue))
+  (reset! svg-queue ()))
 
 (defn update-graphics []
-  (let [app (attr :app)]
-    (resize)
-    (doseq [layer c/ui-layers]
-      (.clear (get-graphics layer)))
-    (let [stage (.-stage app)
-          texts (:texts @graphics-state)]
-      (when texts
-        (doseq [text-container (vals texts)]
-          (.removeChild stage text-container)
-          (.destroy text-container (clj->js {:children true :texture true :baseTexture true}))))
-      (doseq [[layer z] (mapv vector c/ui-layers (range))]
-        (let [container (pixi/Container.)]
-          (update-attr! :texts
-                        #(assoc % layer container))
-          (set! (.-zIndex container) (+ 0.5 z))
-          (.addChild stage container))))))
+  (resize)
+  (doseq [layer c/ui-layers]
+    (.clear (get-graphics layer)))
+  (let [stage (.-stage @pixi-app)]
+    (when @texts
+      (doseq [text-container (vals @texts)]
+        (.removeChild stage text-container)
+        (.destroy text-container (clj->js {:children true :texture true :baseTexture true}))))
+    (doseq [[layer z] (mapv vector c/ui-layers (range))]
+      (let [container (pixi/Container.)]
+        (swap! texts
+               #(assoc % layer container))
+        (set! (.-zIndex container) (+ 0.5 z))
+        (.addChild stage container)))))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
-  (let [app (set-attr! :app
-                       (pixi/Application. (clj->js {:autoResize true})))
-        stage (.-stage app)]
+  (reset! pixi-app
+          (pixi/Application. (clj->js {:autoResize true})))
+  (let [stage (.-stage @pixi-app)]
     (set! (.-sortableChildren stage) true)
-    (set-attr! :graphics {})
     (doseq [[layer z] (mapv vector c/ui-layers (range))]
-      (update-attr! :graphics
-                    #(let [graphics (pixi/Graphics.)]
-                       (set! (.-zIndex graphics) z)
-                       (.addChild stage graphics)
-                       (assoc % layer graphics))))
-    (js/document.body.appendChild (.-view app))
-    (.add (.-ticker app) update-fn)
-    (let [interaction (get (js->clj (.-plugins (.-renderer (:app @graphics-state)))) "interaction")]
+      (swap! pixi-graphics
+             #(let [graphics (pixi/Graphics.)]
+                (set! (.-zIndex graphics) z)
+                (.addChild stage graphics)
+                (assoc % layer graphics))))
+    (js/document.body.appendChild (.-view @pixi-app))
+    (.add (.-ticker @pixi-app) update-fn)
+    (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app))) "interaction")]
       (.on interaction "pointerdown" click-down-fn)
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
     (let [font (FaceFontObserver. c/font-name)]
       (.then (.load font)
              (fn []
-               (set-attr! :font-loaded? true)
+               (reset! font-loaded? true)
                (.from pixi/BitmapFont c/font-name
                       (clj->js
                        {:fontFamily c/font-name
