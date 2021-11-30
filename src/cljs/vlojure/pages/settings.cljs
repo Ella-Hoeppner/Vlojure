@@ -27,10 +27,7 @@
                                      camera-speed
                                      global-attr
                                      base-zoom
-                                     project-attr
-                                     quil-mode?
-                                     activate-quil-mode!
-                                     deactivate-quil-mode!]]
+                                     project-attr]]
             [vlojure.util :as u]
             [vlojure.layout :refer [render-sublayouts
                                     form-layout]]
@@ -60,7 +57,10 @@
             [vlojure.app :refer [enter-page
                                  register-page!
                                  render-top-left-button-background
-                                 render-top-left-back-button]]))
+                                 render-top-left-back-button]]
+            [vlojure.quil :refer [quil-mode?
+                                  activate-quil-mode!
+                                  deactivate-quil-mode!]]))
 
 ;;; This file contains the logic for the "settings" page. This page lets the
 ;;; user create and delete projects as well as renaming and switching between
@@ -1332,6 +1332,7 @@
                                      c/settings-saved-formbars-box-height)
                                 pos)))))
           nil))
+      (u/log "going into if")
       (if (:dragging? mouse)
         (cond
           (= (:down-zone mouse) :formbar)
@@ -1417,7 +1418,7 @@
           :new-project
           (do (new-project)
               (refresh-dropdown-names))
-          
+
           :quil-mode-circle
           (if (quil-mode?)
             (deactivate-quil-mode!)
