@@ -70,6 +70,15 @@
   (save-state!)
   (project-attr key))
 
+(defn activate-quil-mode! []
+  (set-project-attr! :quil true))
+
+(defn deactivate-quil-mode! []
+  (set-project-attr! :quil false))
+
+(defn quil-mode? []
+  (boolean (project-attr :quil)))
+
 (defn add-code-history-entry! [code]
   (update-project-attr! :code-history
                         #(take c/max-undo-history

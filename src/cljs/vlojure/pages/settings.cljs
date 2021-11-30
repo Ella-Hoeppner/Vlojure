@@ -27,7 +27,10 @@
                                      camera-speed
                                      global-attr
                                      base-zoom
-                                     project-attr]]
+                                     project-attr
+                                     quil-mode?
+                                     activate-quil-mode!
+                                     deactivate-quil-mode!]]
             [vlojure.util :as u]
             [vlojure.layout :refer [render-sublayouts
                                     form-layout]]
@@ -57,10 +60,7 @@
             [vlojure.app :refer [enter-page
                                  register-page!
                                  render-top-left-button-background
-                                 render-top-left-back-button
-                                 quil-mode?
-                                 activate-quil-mode!
-                                 deactivate-quil-mode!]]))
+                                 render-top-left-back-button]]))
 
 ;;; This file contains the logic for the "settings" page. This page lets the
 ;;; user create and delete projects as well as renaming and switching between
