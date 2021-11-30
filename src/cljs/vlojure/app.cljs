@@ -67,8 +67,12 @@
                :mouse-zone
                @mouse))
 
-(defn mouse-dragging? []
-  (> (:drag-dist @mouse) c/min-drag-dist))
+(defn update-mouse-dragging []
+  (swap! mouse
+         #(assoc %
+                 :dragging?
+                 (> (:drag-dist %)
+                    c/min-drag-dist))))
 
 (defn render-top-left-button-background [& [highlighted-background?]]
   (let [current-app-rect (app-rect)
@@ -175,12 +179,12 @@
                :background)
     (page-action @active-page
                  :render
-                 (assoc @mouse
-                        :dragging? (mouse-dragging?))
+                 @mouse
                  mouse-zone)
     (update-svgs)))
 
 (defn update-app []
+  (update-mouse-dragging)
   (let [delta (get-delta)]
     (when-not (zero? c/scroll-speed)
       (update-global-attr! :scroll-direction
@@ -188,7 +192,7 @@
                              (+ (point-angle %)
                                 (* c/scroll-speed delta)))))
     (when (and (:down? @mouse)
-               (mouse-dragging?)
+               (:dragging? @mouse)
                (= (:down-zone @mouse) :empty))
       (page-action @active-page :scroll
                    (-
@@ -197,7 +201,7 @@
                                                 (global-attr :scroll-direction))
                        (* (base-zoom)
                           c/outer-form-spacing)))
-                   (assoc @mouse :dragging? (mouse-dragging?))))
+                   @mouse))
     (all-pages-action :update delta @mouse (get-mouse-zone))
     (swap! mouse
            #(assoc %
@@ -247,19 +251,18 @@
 
 (defn on-click-up [event]
   (update-mouse-pos event)
-  (let [currently-dragging? (mouse-dragging?)
-        mouse-zone (get-mouse-zone)]
+  (update-mouse-dragging)
+  (let [mouse-zone (get-mouse-zone)]
     (page-action @active-page
                  :click-up
-                 (assoc @mouse
-                        :dragging? (mouse-dragging?))
+                 @mouse
                  mouse-zone)
     (swap! mouse
            (fn [mouse-state]
              (assoc mouse-state
                     :down? false
                     :drag-dist 0)))
-    (when-not currently-dragging?
+    (when-not (:dragging? @mouse)
       (case (:down-zone @mouse)
         :formbar
         (let [form-path (take 3 (formbar-form-path-at (:down-pos @mouse)))
