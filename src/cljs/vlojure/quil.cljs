@@ -6,10 +6,14 @@
 (defonce quil-canvas (atom nil))
 
 (defn activate-quil-mode! []
-  (set-project-attr! :quil true))
+  (set-project-attr! :quil true)
+  (when @quil-canvas
+    (set! (.-visibility (.-style @quil-canvas)) "visible")))
 
 (defn deactivate-quil-mode! []
-  (set-project-attr! :quil false))
+  (set-project-attr! :quil false)
+  (when @quil-canvas
+    (set! (.-visibility (.-style @quil-canvas)) "hidden")))
 
 (defn quil-mode? []
   (boolean (project-attr :quil)))
@@ -27,4 +31,5 @@
   (reset! quil-canvas (js/document.createElement "canvas"))
   (set! (.-id @quil-canvas) "quil")
   (set! (.-position (.-style @quil-canvas)) "absolute")
+  (set! (.-visibility (.-style @quil-canvas)) "hidden")
   (js/document.body.appendChild @quil-canvas))
