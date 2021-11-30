@@ -186,7 +186,6 @@
 
 (defn update-app []
   (update-mouse-dragging)
-  (u/log (get-mouse-zone) (:dragging? @mouse))
   (let [delta (get-delta)]
     (when-not (zero? c/scroll-speed)
       (update-global-attr! :scroll-direction

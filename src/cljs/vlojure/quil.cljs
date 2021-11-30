@@ -6,11 +6,9 @@
 (defonce quil-canvas (atom nil))
 
 (defn activate-quil-mode! []
-  (u/log "activating")
   (set-project-attr! :quil true))
 
 (defn deactivate-quil-mode! []
-  (u/log "deactivating")
   (set-project-attr! :quil false))
 
 (defn quil-mode? []

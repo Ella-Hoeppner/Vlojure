@@ -1332,7 +1332,6 @@
                                      c/settings-saved-formbars-box-height)
                                 pos)))))
           nil))
-      (u/log "going into if")
       (if (:dragging? mouse)
         (cond
           (= (:down-zone mouse) :formbar)
