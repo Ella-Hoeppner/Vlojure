@@ -122,6 +122,14 @@
                       2 button-radius
                       (inc c/settings-project-buttons-x-spacing))))))))
 
+(defn settings-quil-mode-circle []
+  (let [center-circle (settings-circle c/settings-project-selector-page)
+        center-radius (:radius center-circle)]
+    (-> center-circle
+        (update :x (partial + (* center-radius c/settings-project-quil-mode-circle-x)))
+        (update :y (partial + (* center-radius c/settings-project-quil-mode-y)))
+        (update :radius (partial * c/settings-project-quil-mode-circle-radius)))))
+
 (defn settings-bar-scroll-circle []
   (let [center-circle (settings-circle c/settings-sliders-page)]
     (update (add-points center-circle
@@ -1021,7 +1029,22 @@
                                              modified-offset)
                                  width
                                  (:background (color-scheme))
-                                 :background)))))))))
+                                 :background))))))))
+        (draw-text "Quil Mode"
+                   (-> center-circle
+                       (update :x (partial + (* center-radius c/settings-project-quil-mode-text-x)))
+                       (update :y (partial + (* center-radius c/settings-project-quil-mode-y))))
+                   (* center-radius c/settings-project-quil-mode-text-size)
+                   (:text (color-scheme))
+                   :background)
+        
+        (draw-circle (settings-quil-mode-circle)
+                     (:background (color-scheme))
+                     :background)
+        (draw-circle (update (settings-quil-mode-circle)
+                             :radius (partial * (- 1 c/settings-project-quil-mode-circle-outline-factor)))
+                     (:highlight (color-scheme))
+                     :background))
 
      ;; Render scroll circle
       (let [scroll-circle (settings-bar-scroll-circle)
