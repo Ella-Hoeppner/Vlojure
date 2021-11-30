@@ -38,7 +38,7 @@
 ;;; together the pages and provides functionality for dealing with user input.
 
 (defonce pages (atom {}))
-(defonce active-page (atom nil))
+(defonce active-page (atom :code))
 (defonce mouse (atom nil))
 
 (defn register-page! [key page]
@@ -282,7 +282,6 @@
 
 (defn init []
   (u/log "App Initializing...")
-  (reset! active-page :code)
 
   (doseq [action [:refresh-html-colors :resize-html]]
     (all-pages-action action))
