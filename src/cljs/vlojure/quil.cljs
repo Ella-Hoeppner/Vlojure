@@ -2,7 +2,8 @@
   (:require [vlojure.util :as u]
             [vlojure.storage :refer [project-attr
                                      set-project-attr!]]
-            [quil.core :as q :include-macros true]))
+            [quil.core :as q :include-macros true]
+            [vlojure.evaluation :refer [eval-clj once-eval-ready]]))
 
 (defonce quil-div (atom nil))
 
@@ -28,13 +29,21 @@
     (set! (.-width @quil-div) width)
     (set! (.-height @quil-div) height)))
 
+(defn load-namespaces []
+  (eval-clj (str
+             '(do (require '[quil.core :as q])
+                  (require '[vlojure.quil :refer [start-sketch!]])))
+            #(u/log "Quil initialization success" %)
+            #(u/log "Quil initialization failure" %)))
+
 (defn init-quil []
   (reset! quil-div (js/document.createElement "div"))
   (set! (.-id @quil-div) "quil")
   (set! (.-position (.-style @quil-div)) "absolute")
-  (js/document.body.appendChild @quil-div))
+  (js/document.body.appendChild @quil-div)
+  (once-eval-ready load-namespaces))
 
-(defn start-sketch [draw-fn]
+(defn start-sketch! [draw-fn]
   (q/sketch
    :host "quil"
    :size [(.-width @quil-div) (.-height @quil-div)]
