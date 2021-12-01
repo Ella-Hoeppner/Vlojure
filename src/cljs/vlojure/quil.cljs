@@ -48,9 +48,3 @@
    :host "quil"
    :size [(.-width @quil-div) (.-height @quil-div)]
    :draw #(draw-fn (.-width @quil-div) (.-height @quil-div))))
-
-(defn test-draw [w h]
-  (q/background 0 0 0)
-  (q/no-stroke)
-  (q/fill 255 0 0)
-  (q/rect 0 0 (* w 0.5) (* h 0.5)))
