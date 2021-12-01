@@ -189,9 +189,14 @@
                   (.setAttribute element attribute rgb-string))))))))
     (reset! current-svg-color-scheme color-scheme)))
 
+(defn svgs-ready? []
+  (boolean
+   (js/document.getElementById "undo")))
+
 (defn render-svg [tool-name pos radius]
-  (swap! svg-queue #(conj % [tool-name pos radius]))
-  (update-svg-color-scheme (color-scheme)))
+  (when (svgs-ready?)
+    (swap! svg-queue #(conj % [tool-name pos radius]))
+    (update-svg-color-scheme (color-scheme))))
 
 (defn render-tool [tool-name tool-circle & [outline?]]
   (render-svg tool-name
