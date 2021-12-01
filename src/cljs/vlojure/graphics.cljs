@@ -13,8 +13,8 @@
                                       PI]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.quil :refer [quil-mode?
-                                  init-quil-canvas
-                                  resize-quil-canvas]]
+                                  init-quil
+                                  resize-quil]]
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
 
@@ -90,7 +90,7 @@
   (.resize (.-renderer @pixi-app)
            (app-width)
            (app-height))
-  (resize-quil-canvas (app-width) (app-height)))
+  (resize-quil (app-width) (app-height)))
 
 (defn draw-rect [[pos size] fill & [layer]]
   (let [graphics (get-graphics layer)]
@@ -341,7 +341,7 @@
                (u/log "Font loaded."))))
 
     (resize))
-  (init-quil-canvas))
+  (init-quil))
 
 (defn in-discard-corner? [pos]
   (let [[app-pos app-size] (app-rect)]
