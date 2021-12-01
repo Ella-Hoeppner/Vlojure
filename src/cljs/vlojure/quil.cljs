@@ -41,7 +41,11 @@
   (set! (.-id @quil-div) "quil")
   (set! (.-position (.-style @quil-div)) "absolute")
   (js/document.body.appendChild @quil-div)
-  (once-eval-ready load-namespaces))
+  (once-eval-ready load-namespaces)
+  (.addEventListener js/window "keydown"
+                     (fn [event]
+                       (when (= "F11" (.-key event))
+                         (.stopImmediatePropagation event)))))
 
 (defn start-sketch! [draw-fn]
   (q/sketch
