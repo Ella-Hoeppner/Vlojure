@@ -196,9 +196,14 @@
                   (.setAttribute element attribute rgb-string))))))))
     (reset! current-svg-color-scheme color-scheme)))
 
+(defn svgs-ready? []
+  (boolean
+   (js/document.getElementById "undo")))
+
 (defn render-svg [tool-name pos radius]
-  (swap! svg-queue #(conj % [tool-name pos radius]))
-  (update-svg-color-scheme (color-scheme)))
+  (when (svgs-ready?)
+    (swap! svg-queue #(conj % [tool-name pos radius]))
+    (update-svg-color-scheme (color-scheme))))
 
 (defn render-tool [tool-name tool-circle & [outline?]]
   (render-svg tool-name
@@ -310,6 +315,21 @@
         (set! (.-zIndex container) (+ 0.5 z))
         (.addChild stage container)))))
 
+(defn load-font []
+  (let [font (FaceFontObserver. c/font-name)]
+    (.then (.load font nil 500)
+           (fn []
+             (reset! font-loaded? true)
+             (.from pixi/BitmapFont c/font-name
+                    (clj->js
+                     {:fontFamily c/font-name
+                      :fill 0xffffff
+                      :fontSize 300})
+                    (clj->js
+                     {:chars pixi/BitmapFont.ASCII}))
+             (u/log "Font loaded."))
+           load-font)))
+
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
@@ -327,19 +347,7 @@
       (.on interaction "pointerdown" click-down-fn)
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
-    (let [font (FaceFontObserver. c/font-name)]
-      (.then (.load font)
-             (fn []
-               (reset! font-loaded? true)
-               (.from pixi/BitmapFont c/font-name
-                      (clj->js
-                       {:fontFamily c/font-name
-                        :fill 0xffffff
-                        :fontSize 300})
-                      (clj->js
-                       {:chars pixi/BitmapFont.ASCII}))
-               (u/log "Font loaded."))))
-
+    (load-font)
     (resize))
   (init-quil))
 

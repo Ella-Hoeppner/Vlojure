@@ -96,7 +96,7 @@
                   {:id name :class "base-svg" :width 100 :height 100}
                   [:defs
                    [:style {:type "text/css"}
-                    "@font-face {font-family: monoid-bold; src: url('../styles/monoid-bold.ttf');}"]]]
+                    "@font-face {font-family: monoid-bold; src: url('monoid-bold.ttf');}"]]]
                  doc-fragments))])
      [["undo"
        [(path {:stroke highlight-color
