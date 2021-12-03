@@ -1,0 +1,36 @@
+@font-face {
+  font-family: "monoid-bold";
+  src: url("./monoid-bold.ttf");
+}
+
+body {
+  color: #e7b78a;
+  background-color: #221d1d;
+  font-family: "monoid-bold";
+  text-align: center;
+  font-size: x-large;
+}
+
+a {
+  text-align: center;
+}
+
+a:link {
+  color: #e7b78a;
+}
+
+a:visited {
+  color: #e7b78a;
+}
+
+a:hover {
+  color: #6b3931;
+}
+
+a:active {
+  color: #6b3931;
+}
+
+.title {
+  font-size: xxx-large;
+}

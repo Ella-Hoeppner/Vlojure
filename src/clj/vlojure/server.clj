@@ -15,6 +15,7 @@
 (defn get-assets []
   (concat (assets/load-assets "public/styles"
                               ["/main.css"
+                               "/about.css"
                                "/monoid-bold.ttf"])
           (assets/load-assets "public/js"
                               ["/base.js"
@@ -44,9 +45,18 @@
                         [:script {:src "base.js" :type "text/javascript" :charset "utf-8"}]]
                        (inlined-svgs))
    "/about/" (html {:lang "en"}
-                   [:head]
+                   [:head
+                    [:meta {:charset "utf-8"}]
+                    (include-css "../about.css")
+                    [:title "Vlojure - about"]
+                    [:link {:rel "icon" :href "/favicon.png"}]]
                    [:body
-                    [:p "Coming soon."]])})
+                    [:a.title {:href "../"} "Vlojure"]
+                    [:p "Vlojure is a browser-based visual programming interface for ClojureScript."]
+                    [:p [:a {:href "../"}"Click here"] " to try Vlojure, or watch this video for an introduction:"]
+                    [:iframe {:width 560
+                              :height 315
+                              :src "https://www.youtube.com/embed/1OcAUhe3E1E"}]])})
 
 (def app
   (-> (stasis/serve-pages pages)
