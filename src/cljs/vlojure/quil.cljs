@@ -6,6 +6,7 @@
             [vlojure.evaluation :refer [eval-clj once-eval-ready]]))
 
 (defonce quil-div (atom nil))
+(defonce quil-canvas-size (atom nil))
 
 (defn activate-quil-mode! []
   (set-project-attr! :quil true)
@@ -25,9 +26,13 @@
              @quil-div)
     (let [style (.-style @quil-div)]
       (set! (.-left style) width)
-      (set! (.-top style) 0))
-    (set! (.-width @quil-div) width)
-    (set! (.-height @quil-div) height)))
+      (set! (.-top style) 0)
+      (set! (.-width style) (first @quil-canvas-size))
+      (set! (.-height style) height))
+    (let [canvas-style (.-style (.-firstChild @quil-div))]
+      (set! (.-position canvas-style) "relative")
+      (set! (.-top canvas-style) "50%")
+      (set! (.-transform canvas-style) "translateY(-50%)"))))
 
 (defn load-namespaces []
   (eval-clj (str
@@ -39,16 +44,22 @@
 (defn init-quil []
   (reset! quil-div (js/document.createElement "div"))
   (set! (.-id @quil-div) "quil")
-  (set! (.-position (.-style @quil-div)) "absolute")
+  (let [style ^js/CSS2Properties (.-style @quil-div)]
+    (set! (.-position style) "absolute")
+    (set! (.-position style) "absolute")
+    (set! (.-display style) "inline-flex"))
   (js/document.body.appendChild @quil-div)
   (once-eval-ready load-namespaces)
   (.addEventListener js/window "keydown"
                      (fn [event]
                        (when (= "F11" (.-key event))
-                         (.stopImmediatePropagation event)))))
+                         (.stopImmediatePropagation event))))
+  (deactivate-quil-mode!))
 
-(defn start-sketch! [draw-fn]
+(defn start-sketch! [size draw-fn]
+  (reset! quil-canvas-size size)
+  (activate-quil-mode!)
   (q/sketch
    :host "quil"
-   :size [(.-width @quil-div) (.-height @quil-div)]
+   :size size
    :draw #(draw-fn (.-width @quil-div) (.-height @quil-div))))
