@@ -16,7 +16,10 @@
 (defn deactivate-quil-mode! []
   (set-project-attr! :quil false)
   (when @quil-div
-    (set! (.-visibility (.-style @quil-div)) "hidden")))
+    (set! (.-visibility (.-style @quil-div)) "hidden"))
+  (while (.-firstChild @quil-div)
+    (.removeChild @quil-div
+                  (.-firstChild @quil-div))))
 
 (defn quil-mode? []
   (boolean (project-attr :quil)))
@@ -40,7 +43,8 @@
 (defn load-namespaces []
   (eval-clj (str
              '(do (require '[quil.core :as q])
-                  (require '[vlojure.quil :refer [start-quil!]])))
+                  (require '[vlojure.quil :refer [start-quil!
+                                                  stop-quil!]])))
             #(u/log "Quil initialization success" %)
             #(u/log "Quil initialization failure" %)))
 
@@ -66,3 +70,5 @@
    :host "quil"
    :size size
    :draw #(draw-fn (.-width @quil-div) (.-height @quil-div))))
+
+(def stop-quil! deactivate-quil-mode!)
