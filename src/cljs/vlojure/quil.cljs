@@ -69,6 +69,6 @@
   (q/sketch
    :host "quil"
    :size size
-   :draw #(draw-fn (.-width @quil-div) (.-height @quil-div))))
+   :draw #(draw-fn)))
 
 (def stop-quil! deactivate-quil-mode!)
