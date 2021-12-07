@@ -40,7 +40,7 @@
 (defn load-namespaces []
   (eval-clj (str
              '(do (require '[quil.core :as q])
-                  (require '[vlojure.quil :refer [start-sketch!]])))
+                  (require '[vlojure.quil :refer [start-quil!]])))
             #(u/log "Quil initialization success" %)
             #(u/log "Quil initialization failure" %)))
 
@@ -59,7 +59,7 @@
                          (.stopImmediatePropagation event))))
   (deactivate-quil-mode!))
 
-(defn start-sketch! [size draw-fn]
+(defn start-quil! [size draw-fn]
   (reset! quil-canvas-size size)
   (activate-quil-mode!)
   (q/sketch
