@@ -21,6 +21,9 @@
 (defn quil-mode? []
   (boolean (project-attr :quil)))
 
+(defn quil-width []
+  (first @quil-canvas-size))
+
 (defn resize-quil [width height]
   (when (and (quil-mode?)
              @quil-div)

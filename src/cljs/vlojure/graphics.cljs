@@ -13,6 +13,7 @@
                                       PI]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.quil :refer [quil-mode?
+                                  quil-width
                                   init-quil
                                   resize-quil]]
             [clojure.string :refer [index-of]]
@@ -48,7 +49,7 @@
 
 (defn app-width []
   (if (quil-mode?)
-    (/ (.-innerWidth js/window) 2)
+    (- (.-innerWidth js/window) (quil-width))
     (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
