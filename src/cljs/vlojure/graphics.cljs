@@ -16,7 +16,7 @@
                                   quil-width
                                   init-quil
                                   resize-quil]]
-            [clojure.string :refer [index-of]]
+            [clojure.string :refer [index-of split]]
             [clojure.set :refer [union]]))
 
 (defonce pixi-app (atom nil))
@@ -85,7 +85,7 @@
   (* (app-size)
      (min c/text-max-size
           (/ c/text-scale-factor
-             (count s)))))
+             (apply max (map count (split s "\n")))))))
 
 (defn resize []
   (.resize (.-renderer @pixi-app)
@@ -155,7 +155,7 @@
              (str s)
              (clj->js {:fontName c/font-name
                        :fontSize 10
-                       :align "right"
+                       :align "left"
                        :tint color}))
           scale (* size (text-size s))]
       (set! (.-x t)

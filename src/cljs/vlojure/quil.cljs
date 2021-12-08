@@ -3,7 +3,8 @@
             [vlojure.storage :refer [project-attr
                                      set-project-attr!]]
             [quil.core :as q :include-macros true]
-            [vlojure.evaluation :refer [eval-clj once-eval-ready]]))
+            [vlojure.evaluation :refer [eval-clj once-eval-ready]]
+            [vlojure.errors :refer [log-error!]]))
 
 (defonce quil-div (atom nil))
 (defonce quil-canvas-size (atom nil))
@@ -69,6 +70,10 @@
   (q/sketch
    :host "quil"
    :size size
-   :draw #(draw-fn)))
+   :draw #(try
+            (draw-fn)
+            (catch :default e
+              (log-error! (str e))
+              (throw e)))))
 
 (def stop-quil! deactivate-quil-mode!)
