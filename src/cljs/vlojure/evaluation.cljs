@@ -1,4 +1,5 @@
 (ns vlojure.evaluation
+  (:require [vlojure.errors :refer [log-error! clear-error!]])
   (:require [cljs.js :refer [empty-state js-eval eval-str]]
             [shadow.cljs.bootstrap.browser :as shadow.bootstrap]))
 
@@ -7,6 +8,7 @@
 (defonce on-ready-functions (atom []))
 
 (defn eval-clj [source success-callback failure-callback]
+  (clear-error!)
   (let [options {:eval js-eval
                  :load (partial shadow.bootstrap/load c-state)
                  :context :expr}
@@ -17,9 +19,15 @@
     (eval-str c-state
               (str source)
               nil
-              options f)))
+              options
+              f)))
 
 (defn init []
+  (let [old-error-fn js/console.error]
+    (set! (.-error js/console)
+          (fn [error]
+            (log-error! error)
+            (old-error-fn error))))
   (shadow.bootstrap/init c-state
                          {:path "/bootstrap"
                           :load-on-init '#{vlojure.quil quil.core}}

@@ -102,6 +102,13 @@
 (def eval-zone-underscore-y-offset 0.075)
 (def eval-zone-underscore-size 0.7)
 
+(def eval-error-symbol-size 0.5)
+(def eval-error-symbol-width 0.3)
+(def eval-error-symbol-offset {:x 0.3 :y -0.5})
+(def eval-error-text-offset {:x -0.1 :y 0.5})
+(def eval-error-text-size 1.3)
+(def eval-error-line-size 30)
+
 (def settings-zone-icon-radius-factor 0.5)
 (def settings-zone-icon-inner-radius-factor 0.5)
 (def settings-zone-icon-spokes 8)

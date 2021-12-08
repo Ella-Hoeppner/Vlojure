@@ -62,6 +62,8 @@
                                  render-top-left-button-background
                                  render-top-left-settings-button
                                  enter-page]]
+            [vlojure.errors :refer [log-error!
+                                    logged-error]]
             [clojure.string :as string]
             [vlojure.util :as u]
             [vlojure.constants :as c]))
@@ -306,15 +308,27 @@
                                             (str result))))))))
 
 (defn log-eval-error [error]
-  (js/console.error "Error during evaluation"
-                    (ex-cause error))
-  (update-project-attr! :eval-results
-                                #(conj %
-                                       :error)))
+  (log-error! (str (ex-cause (ex-cause error))))
+  (js/console.error (str (ex-cause (ex-cause error)))))
 
 (defn remove-form [path]
   (modify-code! #(remove-child % path))
   (fill-empty-project))
+
+(defn split-text-into-lines [text line-max-size]
+  (loop [remainder text
+         lines []]
+    (if (< (count remainder) line-max-size)
+      (apply str
+             (rest
+              (interleave (repeat "\n")
+                          (conj lines remainder))))
+      (let [space-index (string/last-index-of remainder " " line-max-size)]
+        (if space-index
+          (recur (subs remainder (inc space-index))
+                 (conj lines (subs remainder 0 space-index)))
+          (recur (subs remainder line-max-size)
+                 (conj lines (subs remainder 0 line-max-size))))))))
 
 (defn init []
   (u/log "Code Page Initializing...")
@@ -581,63 +595,73 @@
                                          @eval-zone-radius))
                        (:background (color-scheme))
                        :menu)
-          (let [last-eval-form (first (project-attr :eval-results))
-                radius (/ (* (- 1 c/corner-zone-bar-thickness)
+          (let [radius (/ (* (- 1 c/corner-zone-bar-thickness)
                              @eval-zone-radius)
                           (inc (Math/sqrt 2)))
                 base-circle-pos (subtract-points (add-points app-pos app-size)
                                                       (scale-point unit radius))]
-            (if last-eval-form
-              (if (= last-eval-form :error)
-                (let [base-offset (scale-point unit
-                                                    (* (Math/sqrt 0.5)
-                                                       c/new-icon-size
-                                                       radius))]
-                  (doseq [offset [base-offset (update base-offset :x -)]]
-                    (draw-line (add-points base-circle-pos
-                                                (scale-point offset -1))
-                               (add-points base-circle-pos
-                                                offset)
-                               (* radius c/new-icon-width)
-                               (:highlight (color-scheme))
-                               :menu)))
-                (render-sublayouts (form-layout last-eval-form
-                                                              (assoc base-circle-pos
-                                                                     :radius (* radius
-                                                                                c/eval-zone-form-radius-factor)))
-                                          :menu))
-              (let [caret-offset (scale-point
-                                  (angle-point (- c/eval-zone-icon-angle
-                                                       PI))
-                                  (* radius
-                                     c/eval-zone-caret-factor))]
-                (draw-polyline (mapv #(update %
-                                              :x (partial +
-                                                          (* radius
-                                                             c/eval-zone-caret-offset)))
-                                     [(add-points base-circle-pos
-                                                       caret-offset)
-                                      base-circle-pos
-                                      (add-points base-circle-pos
-                                                       (update caret-offset :y -))])
+            (if (logged-error)
+              (let [base-offset (scale-point unit
+                                             (* (Math/sqrt 0.5)
+                                                c/eval-error-symbol-size
+                                                radius))
+                    symbol-center (add-points base-circle-pos
+                                              (scale-point c/eval-error-symbol-offset
+                                                           radius))]
+                (doseq [offset [base-offset (update base-offset :x -)]]
+                  (draw-line (add-points symbol-center
+                                         (scale-point offset -1))
+                             (add-points symbol-center
+                                         offset)
+                             (* radius c/eval-error-symbol-width)
+                             (:highlight (color-scheme))
+                             :menu))
+                (draw-text (split-text-into-lines (logged-error) c/eval-error-line-size)
+                           (add-points base-circle-pos
+                                       (scale-point c/eval-error-text-offset
+                                                    radius))
+                           (* radius c/eval-error-text-size)
+                           (:text (color-scheme))
+                           :settings-overlay))
+              (if (empty? (project-attr :eval-results))
+                (let [caret-offset (scale-point
+                                    (angle-point (- c/eval-zone-icon-angle
+                                                    PI))
+                                    (* radius
+                                       c/eval-zone-caret-factor))]
+                  (draw-polyline (mapv #(update %
+                                                :x (partial +
+                                                            (* radius
+                                                               c/eval-zone-caret-offset)))
+                                       [(add-points base-circle-pos
+                                                    caret-offset)
+                                        base-circle-pos
+                                        (add-points base-circle-pos
+                                                    (update caret-offset :y -))])
+                                 (* radius c/eval-zone-icon-thickness)
+                                 (:foreground (color-scheme))
+                                 :menu)
+                  (let [underscore-base (-> base-circle-pos
+                                            (update :y (partial +
+                                                                (- (:y caret-offset))
+                                                                (* radius
+                                                                   c/eval-zone-underscore-y-offset)))
+                                            (update :x (partial +
+                                                                (* radius
+                                                                   c/eval-zone-underscore-x-offset))))]
+                    (draw-line underscore-base
+                               (update underscore-base
+                                       :x
+                                       (partial + (* radius c/eval-zone-underscore-size)))
                                (* radius c/eval-zone-icon-thickness)
                                (:foreground (color-scheme))
-                               :menu)
-                (let [underscore-base (-> base-circle-pos
-                                          (update :y (partial +
-                                                              (- (:y caret-offset))
-                                                              (* radius
-                                                                 c/eval-zone-underscore-y-offset)))
-                                          (update :x (partial +
-                                                              (* radius
-                                                                 c/eval-zone-underscore-x-offset))))]
-                  (draw-line underscore-base
-                             (update underscore-base
-                                     :x
-                                     (partial + (* radius c/eval-zone-underscore-size)))
-                             (* radius c/eval-zone-icon-thickness)
-                             (:foreground (color-scheme))
-                             :menu))))))
+                               :menu)))
+                (render-sublayouts (form-layout (or (first (project-attr :eval-results))
+                                                    {:type :literal :value "nil"})
+                                                (assoc base-circle-pos
+                                                       :radius (* radius
+                                                                  c/eval-zone-form-radius-factor)))
+                                   :menu)))))
 
        ;; Draw text-mode circle and icon
         (draw-circle (assoc (add-points app-pos
