@@ -1,6 +1,6 @@
 (ns vlojure.errors
   (:require [vlojure.util :as u])
-  (:require [clojure.string :refer [replace]]))
+  (:require [clojure.string :as string]))
 
 (defonce error-log (atom nil))
 
@@ -10,6 +10,6 @@
 
 (defn logged-error []
   (when @error-log
-    (replace @error-log
-             #" at line \d $"
-             "")))
+    (string/replace @error-log
+                    #" at line \d $"
+                    "")))
