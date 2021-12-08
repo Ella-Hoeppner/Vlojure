@@ -57,7 +57,10 @@
             [vlojure.app :refer [enter-page
                                  register-page!
                                  render-top-left-button-background
-                                 render-top-left-back-button]]))
+                                 render-top-left-back-button]]
+            [vlojure.quil :refer [quil-mode?
+                                  activate-quil-mode!
+                                  deactivate-quil-mode!]]))
 
 ;;; This file contains the logic for the "settings" page. This page lets the
 ;;; user create and delete projects as well as renaming and switching between
@@ -89,7 +92,7 @@
 
 (defn settings-circle-at [pos]
   (some #(when (in-circle? (settings-circle %)
-                                pos)
+                           pos)
            %)
         (range c/settings-pages)))
 
@@ -157,11 +160,11 @@
                               :y (* 2 (:radius slider-settings-circle)
                                     c/settings-slider-radius)}]]
             (when (or (in-circle? right
-                                       pos)
+                                  pos)
                       (in-circle? left
-                                       pos)
+                                  pos)
                       (in-rect? slider-rect
-                                     pos))
+                                pos))
               index)))
         (range (count c/settings-sliders))))
 
@@ -179,21 +182,21 @@
                              2
                              c/settings-color-width)]
                 (when (or (in-rect? [(-> center-circle
-                                              (update :y (partial + y (* -0.5 height)))
-                                              (update :x (partial + (* -0.5 width))))
-                                          {:x width
-                                           :y height}]
-                                         pos)
+                                         (update :y (partial + y (* -0.5 height)))
+                                         (update :x (partial + (* -0.5 width))))
+                                     {:x width
+                                      :y height}]
+                                    pos)
                           (in-circle? (-> center-circle
-                                               (update :y (partial + y))
-                                               (update :x (partial + (* -0.5 width)))
-                                               (assoc :radius (* 0.5 height)))
-                                           pos)
+                                          (update :y (partial + y))
+                                          (update :x (partial + (* -0.5 width)))
+                                          (assoc :radius (* 0.5 height)))
+                                      pos)
                           (in-circle? (-> center-circle
-                                               (update :y (partial + y))
-                                               (update :x (partial + (* 0.5 width)))
-                                               (assoc :radius (* 0.5 height)))
-                                           pos))
+                                          (update :y (partial + y))
+                                          (update :x (partial + (* 0.5 width)))
+                                          (assoc :radius (* 0.5 height)))
+                                      pos))
                   index)))
             (range (count c/color-schemes))))
     nil))
@@ -416,7 +419,7 @@
     (fn []
       (refresh-dropdown-names)
       (reset! scroll-pos @ideal-scroll-pos))
-
+    
     :exit
     (fn []
       (hide-rename)
@@ -514,7 +517,7 @@
         (or (when (on-stage? c/settings-project-selector-page)
               (some (fn [index]
                       (when (in-circle? (nth button-circles index)
-                                             mouse)
+                                        mouse)
                         (nth c/settings-project-buttons index)))
                     (range (count button-circles))))
             (cond
@@ -526,7 +529,7 @@
 
               (<= (point-magnitude
                    (subtract-points app-pos
-                                         mouse))
+                                    mouse))
                   c/upper-corner-zone-radius)
               :back-icon
 
@@ -1221,29 +1224,29 @@
                 adjusted-x-off (/ x-off (* (:radius settings-circle) c/settings-slider-width))]
             (when @down-settings-slider
               (set-global-attr! (second
-                                  (nth c/settings-sliders
-                                       @down-settings-slider))
-                                 (min 1
-                                      (max 0
-                                           (* 0.5
-                                              (inc adjusted-x-off))))))))
+                                 (nth c/settings-sliders
+                                      @down-settings-slider))
+                                (min 1
+                                     (max 0
+                                          (* 0.5
+                                             (inc adjusted-x-off))))))))
         (when (= (:down-zone mouse) :scroll-circle)
           (set-global-attr! :scroll-direction
-                             (angle-point
-                              (let [raw-angle (mod (point-angle
-                                                    (subtract-points mouse
-                                                                          (settings-circle c/settings-project-selector-page)))
-                                                   TAU)
-                                    snap-angle (some (fn [angle]
-                                                       (when (< (min (Math/abs (- angle raw-angle))
-                                                                     (- TAU
-                                                                        (Math/abs (- angle raw-angle))))
-                                                                c/scroll-angle-snap-distance)
-                                                         angle))
-                                                     (mapv (partial * TAU)
-                                                           (u/prop-range c/scroll-angle-snap-positions true)))]
-                                (or snap-angle
-                                    raw-angle))))))
+                            (angle-point
+                             (let [raw-angle (mod (point-angle
+                                                   (subtract-points mouse
+                                                                    (settings-circle c/settings-project-selector-page)))
+                                                  TAU)
+                                   snap-angle (some (fn [angle]
+                                                      (when (< (min (Math/abs (- angle raw-angle))
+                                                                    (- TAU
+                                                                       (Math/abs (- angle raw-angle))))
+                                                               c/scroll-angle-snap-distance)
+                                                        angle))
+                                                    (mapv (partial * TAU)
+                                                          (u/prop-range c/scroll-angle-snap-positions true)))]
+                               (or snap-angle
+                                   raw-angle))))))
       (swap! ideal-scroll-pos
              #(max 0
                    (min (dec c/settings-pages)
@@ -1312,9 +1315,9 @@
                                             (formbar-path-at (:down-pos mouse)))]
                 (when (not (:type dragged-formbar))
                   (add-saved-formbar! saved-formbar-insertion-index
-                                              (:forms
-                                               (get-in (project-attr :formbars)
-                                                       (formbar-path-at (:down-pos mouse))))))))
+                                      (:forms
+                                       (get-in (project-attr :formbars)
+                                               (formbar-path-at (:down-pos mouse))))))))
             (when (and (not saved-formbar-insertion-index)
                        formbar-placement-path)
               (let [dragged-formbar-path (formbar-path-at (:down-pos mouse))]
@@ -1330,7 +1333,7 @@
                                                 dragged-formbar-path)
                         create-new! (fn []
                                       (add-project-formbar-at formbar-placement-path
-                                                                      dragged-formbar))
+                                                              dragged-formbar))
                         delete-old! (fn []
                                       (delete-project-formbar-at dragged-formbar-path))]
                     (if (and (= (take 2 formbar-placement-path)
@@ -1346,9 +1349,9 @@
           (let [formbar-placement-path (formbar-insertion-path-at mouse)]
             (when formbar-placement-path
               (add-project-formbar-at formbar-placement-path
-                                              {:type :tool
-                                               :tool-type (tool-circle-at
-                                                           (:down-pos mouse))})))
+                                      {:type :tool
+                                       :tool-type (tool-circle-at
+                                                   (:down-pos mouse))})))
 
           (= (:down-zone mouse) :saved-formbar)
           (if (= mouse-zone :saved-formbar)
@@ -1361,11 +1364,11 @@
                          from-index to-index
                          (not= from-index to-index))
                 (add-saved-formbar! to-index
-                                            (nth saved-formbars (min (dec (count saved-formbars))
-                                                                     from-index)))
+                                    (nth saved-formbars (min (dec (count saved-formbars))
+                                                             from-index)))
                 (delete-saved-formbar! (if (> from-index to-index)
-                                                 (inc from-index)
-                                                 from-index))))
+                                         (inc from-index)
+                                         from-index))))
             (when (not (in-discard-corner? mouse))
               (let [formbar-placement-path (formbar-insertion-path-at mouse)
                     saved-formbars (saved-formbar-contents)]
@@ -1387,6 +1390,11 @@
           :new-project
           (do (new-project)
               (refresh-dropdown-names))
+
+          :quil-mode-circle
+          (if (quil-mode?)
+            (deactivate-quil-mode!)
+            (activate-quil-mode!))
 
           :duplicate-project
           (do (duplicate-project)

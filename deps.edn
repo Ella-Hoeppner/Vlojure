@@ -8,6 +8,7 @@
         optimus/optimus {:mvn/version "0.20.2"}
         dali/dali {:mvn/version "1.0.2"
                    :exclusions [xerces/xerces]}
-        xerces/xercesImpl {:mvn/version "2.12.1"}}
+        xerces/xercesImpl {:mvn/version "2.12.1"}
+        quil/quil {:mvn/version "4.0.0-SNAPSHOT-1"}}
  :aliases {:server {:main-opts ["-m" "vlojure.server"]}
            :export {:main-opts ["-m" "vlojure.server" "export"]}}}

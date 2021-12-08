@@ -17,6 +17,7 @@
                                      global-attr
                                      base-zoom
                                      project-attr
+                                     set-project-attr!
                                      undo!
                                      redo!
                                      add-project-formbar-at]]

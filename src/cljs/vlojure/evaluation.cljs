@@ -3,7 +3,8 @@
             [shadow.cljs.bootstrap.browser :as shadow.bootstrap]))
 
 (defonce c-state (empty-state))
-(defonce !eval-ready? (atom false))
+(defonce eval-ready? (atom false))
+(defonce on-ready-functions (atom []))
 
 (defn eval-clj [source success-callback failure-callback]
   (let [options {:eval js-eval
@@ -21,5 +22,11 @@
 (defn init []
   (shadow.bootstrap/init c-state
                          {:path "/bootstrap"
-                          :load-on-init '#{vlojure.user}}
-                         #(reset! !eval-ready? true)))
+                          :load-on-init '#{vlojure.quil quil.core}}
+                         #(do (reset! eval-ready? true)
+                              (doseq [f @on-ready-functions] (f)))))
+
+(defn once-eval-ready [f]
+  (if @eval-ready?
+    (f)
+    (swap! on-ready-functions conj f)))

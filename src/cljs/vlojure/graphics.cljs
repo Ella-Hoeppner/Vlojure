@@ -12,6 +12,10 @@
                                       unit-square
                                       PI]]
             [vlojure.storage :refer [color-scheme]]
+            [vlojure.quil :refer [quil-mode?
+                                  quil-width
+                                  init-quil
+                                  resize-quil]]
             [clojure.string :refer [index-of]]
             [clojure.set :refer [union]]))
 
@@ -43,7 +47,10 @@
                             num)))
                     (reverse (range 6))))))
 
-(defn app-width [] (.-innerWidth js/window))
+(defn app-width []
+  (if (quil-mode?)
+    (- (.-innerWidth js/window) (quil-width))
+    (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
@@ -81,9 +88,10 @@
              (count s)))))
 
 (defn resize []
-  (let [current-width (app-width)
-        current-height (app-height)]
-    (.resize (.-renderer @pixi-app) current-width current-height)))
+  (.resize (.-renderer @pixi-app)
+           (app-width)
+           (app-height))
+  (resize-quil (app-width) (app-height)))
 
 (defn draw-rect [[pos size] fill & [layer]]
   (let [graphics (get-graphics layer)]
@@ -341,7 +349,8 @@
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
-    (resize)))
+    (resize))
+  (init-quil))
 
 (defn in-discard-corner? [pos]
   (let [[app-pos app-size] (app-rect)]
