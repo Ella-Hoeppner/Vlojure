@@ -787,19 +787,19 @@
                    (if (u/in? encapsulator-types
                               (:type (get-child form layout-path)))
                      (replace-child form
-                                         (vec (concat layout-path '(0)))
-                                         current-placement-form)
+                                    (vec (concat layout-path '(0)))
+                                    current-placement-form)
                      (if (= (count layout-path) (count insertion-path))
                        (if (= :literal (:type (get-child form (vec insertion-path))))
                          (replace-child form
-                                             (vec layout-path)
-                                             current-placement-form)
+                                        (vec layout-path)
+                                        current-placement-form)
                          (insert-child form
-                                            (vec (concat layout-path '(0)))
-                                            current-placement-form))
+                                       (vec (concat layout-path '(0)))
+                                       current-placement-form))
                        (insert-child form
-                                          (vec insertion-path)
-                                          current-placement-form))))))
+                                     (vec insertion-path)
+                                     current-placement-form))))))
               (when current-dragged-tool
                 (apply-dragged-tool current-dragged-tool
                                     (layout-path-at layout mouse))))
@@ -816,7 +816,7 @@
                                  (= @selected-layout-path @down-path))
                         (swap! selected-layout-path pop))
                       (track-discard (get-child (project-attr :form)
-                                                             @down-path))
+                                                @down-path))
                       (remove-form @down-path))))
 
               :formbar
@@ -835,8 +835,8 @@
             (let [current-placement-form (placement-form mouse)]
               (when current-placement-form
                 (eval-clj (vedn->clj current-placement-form)
-                                     log-eval-result
-                                     log-eval-error)))
+                          log-eval-result
+                          log-eval-error)))
 
             :formbar
             (let [current-placement-form (placement-form mouse)]
@@ -846,8 +846,8 @@
                                       formbar-path)]
                   (when (not (:type formbar))
                     (add-project-formbar-form-at current-placement-form
-                                                         formbar-path
-                                                         (get-formbar-insertion-index mouse))))))
+                                                 formbar-path
+                                                 (get-formbar-insertion-index mouse))))))
 
             :empty
             (let [current-placement-form (placement-form mouse)
@@ -856,8 +856,8 @@
                          insertion-index)
                 (modify-code!
                  #(insert-child %
-                                     [insertion-index]
-                                     current-placement-form))))
+                                [insertion-index]
+                                current-placement-form))))
 
             nil)
           (case (:down-zone mouse)
