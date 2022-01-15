@@ -308,8 +308,8 @@
                                             (str result))))))))
 
 (defn log-eval-error [error]
-  (log-error! (str (ex-cause (ex-cause error))))
-  (js/console.error (str (ex-cause (ex-cause error)))))
+  (log-error! (str (ex-cause error)))
+  (js/console.error (str (ex-cause error))))
 
 (defn remove-form [path]
   (modify-code! #(remove-child % path))
