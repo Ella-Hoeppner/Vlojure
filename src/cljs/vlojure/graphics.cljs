@@ -56,7 +56,7 @@
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
   (rect-around unit-square
-                    (app-aspect-ratio)))
+               (app-aspect-ratio)))
 
 (defn screen-x [x]
   (let [w (app-width)
@@ -212,13 +212,13 @@
               (:radius tool-circle))
   (when outline?
     (draw-circle (update tool-circle
-                    :radius
-                    (partial * (inc c/formbar-outline-thickness)))
-            (:foreground (color-scheme))
-            :drag)
+                         :radius
+                         (partial * (inc c/formbar-outline-thickness)))
+                 (:foreground (color-scheme))
+                 :drag)
     (draw-circle tool-circle
-            (:background (color-scheme))
-            :drag)))
+                 (:background (color-scheme))
+                 :drag)))
 
 (defn new-svg-copy [name]
   (let [name-str (cond
@@ -356,25 +356,25 @@
   (let [[app-pos app-size] (app-rect)]
     (<= (point-magnitude
          (subtract-points (add-points app-pos
-                                                (select-keys app-size [:y]))
-                               pos))
+                                      (select-keys app-size [:y]))
+                          pos))
         c/lower-corner-zone-radius)))
 
 (defn render-discard-zone [& [highlighted? blank-symbol?]]
   (let [[app-pos app-size] (app-rect)]
     (draw-circle (assoc (add-points app-pos
                                     (select-keys app-size [:y]))
-                   :radius c/lower-corner-zone-radius)
-            (if highlighted?
-              (:highlight (color-scheme))
-              (:foreground (color-scheme)))
-            :menu)
+                        :radius c/lower-corner-zone-radius)
+                 (if highlighted?
+                   (:highlight (color-scheme))
+                   (:foreground (color-scheme)))
+                 :menu)
     (draw-circle (assoc (add-points app-pos
                                     (select-keys app-size [:y]))
-                   :radius (* (- 1 c/corner-zone-bar-thickness)
-                              c/lower-corner-zone-radius))
-            (:background (color-scheme))
-            :menu)
+                        :radius (* (- 1 c/corner-zone-bar-thickness)
+                                   c/lower-corner-zone-radius))
+                 (:background (color-scheme))
+                 :menu)
     (when blank-symbol?
       (let [radius (/ (* (- 1 c/corner-zone-bar-thickness)
                          c/lower-corner-zone-radius)
@@ -383,25 +383,25 @@
                                 (update :y (partial + (- (:y app-size) radius)))
                                 (update :x (partial + radius)))
             angle-offset (scale-point (angle-point (* 0.25 PI))
-                                           (* radius
-                                              c/discard-zone-icon-radius-factor))]
+                                      (* radius
+                                         c/discard-zone-icon-radius-factor))]
         (draw-circle (assoc base-circle-pos
-                       :radius (* radius
-                                  c/discard-zone-icon-radius-factor))
-                (:foreground (color-scheme))
-                :menu)
+                            :radius (* radius
+                                       c/discard-zone-icon-radius-factor))
+                     (:foreground (color-scheme))
+                     :menu)
         (draw-circle (assoc base-circle-pos
-                       :radius (* radius
-                                  c/discard-zone-icon-radius-factor
-                                  (- 1 c/discard-zone-icon-thickness)))
-                (:background (color-scheme))
-                :menu)
+                            :radius (* radius
+                                       c/discard-zone-icon-radius-factor
+                                       (- 1 c/discard-zone-icon-thickness)))
+                     (:background (color-scheme))
+                     :menu)
         (draw-line (add-points base-circle-pos
                                angle-offset)
-              (subtract-points base-circle-pos
+                   (subtract-points base-circle-pos
                                     angle-offset)
-              (* radius
-                 (* c/discard-zone-icon-radius-factor
-                    c/discard-zone-icon-thickness))
-              (:foreground (color-scheme))
-              :menu)))))
+                   (* radius
+                      (* c/discard-zone-icon-radius-factor
+                         c/discard-zone-icon-thickness))
+                   (:foreground (color-scheme))
+                   :menu)))))
