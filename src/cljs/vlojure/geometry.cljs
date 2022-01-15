@@ -144,3 +144,14 @@
 (defn in-circle? [circle pos]
   (< (point-square-magnitude (subtract-points circle pos))
      (Math/pow (:radius circle) 2)))
+
+(defn rects-overlap? [[pos1 size1] [pos2 size2]]
+  (let [l1 pos1
+        l2 pos2
+        r1 (add-points pos1 size1)
+        r2 (add-points pos2 size2)]
+    (not
+     (or (>= (:x l1) (:x r2))
+         (>= (:x l2) (:x r1))
+         (<= (:y r1) (:y l2))
+         (<= (:y r2) (:y l1))))))

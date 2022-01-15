@@ -1,13 +1,15 @@
 (ns vlojure.layout
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
-            [vlojure.graphics :refer [draw-circle
+            [vlojure.graphics :refer [app-rect
+                                      draw-circle
                                       draw-line
                                       draw-polyline
                                       draw-polygon
                                       draw-text]]
             [vlojure.storage :refer [color-scheme]]
-            [vlojure.geometry :refer [add-points
+            [vlojure.geometry :refer [rects-overlap?
+                                      add-points
                                       subtract-points
                                       scale-point
                                       unit
@@ -48,10 +50,10 @@
                                           (/ (* Math/PI 2 i) subform-count))]
                              (form-layout subform
                                           (assoc (add-points current-layout
-                                                                  (scale-point (angle-point angle)
-                                                                                    (- (* (:radius current-layout)
-                                                                                          (- 1 c/bubble-thickness))
-                                                                                       radius)))
+                                                             (scale-point (angle-point angle)
+                                                                          (- (* (:radius current-layout)
+                                                                                (- 1 c/bubble-thickness))
+                                                                             radius)))
                                                  :radius (* c/subform-shrink-factor radius)))))
                          children
                          (range)))))))))
@@ -63,216 +65,222 @@
           (dissoc layout :sublayouts))
     (list layout)))
 
+(defn should-render-layout? [{:keys [x y radius]}]
+  (rects-overlap? (app-rect)
+                  [{:x (- x radius) :y (- y radius)}
+                   {:x (* 2 radius) :y (* 2 radius)}]))
+
 (defn render-layout [layout & [layer]]
-  (let [center layout
-        radius (:radius layout)]
-    (when (#{:list :map :set :lit-fn :literal} (:type layout))
-      (draw-circle layout
-                       (:foreground (color-scheme))
-                       layer))
-    (when (#{:map :set} (:type layout))
-      (let [r (:radius layout)]
-        (doseq [base-angle [(* PI 0.25)
-                            (* PI 0.75)
-                            (* PI 1.25)
-                            (* PI 1.75)]]
-          (draw-polygon [(add-points layout
-                                              (scale-point (angle-point (- base-angle c/map-point-width))
-                                                                r))
-                             (add-points layout
-                                              (scale-point (angle-point base-angle)
-                                                                (* (inc c/map-point-height) r)))
-                             (add-points layout
-                                              (scale-point (angle-point (+ base-angle c/map-point-width))
-                                                                r))]
-                            (:foreground (color-scheme))
-                            layer))))
-    (when (#{:set :lit-fn} (:type layout))
-      (let [r (:radius layout)]
-        (doseq [angle [0
-                       (* PI 0.5)
-                       PI
-                       (* PI 1.5)]]
-          (let [base-offset (scale-point (angle-point (+ angle (* PI 0.5)))
-                                              (* r c/set-line-offset))]
-            (doseq [offset [base-offset (scale-point base-offset -1)]]
-              (draw-line (add-points offset layout)
-                             (add-points layout
-                                              offset
-                                              (scale-point (angle-point angle)
-                                                                (* (inc c/set-line-length) r)))
-                             (* r c/set-line-width)
-                             (:foreground (color-scheme))
-                             layer))))))
-    (when (#{:list :map :set :lit-fn} (:type layout))
-      (draw-circle (update layout
-                               :radius (partial *
-                                                (- 1 c/bubble-thickness)))
-                       (:background (color-scheme))
-                       layer))
-    (when (= (:type layout) :vector)
-      (draw-polygon (mapv #(add-points center
-                                                (scale-point %
-                                                                  (* radius
-                                                                     c/vector-size-factor)))
-                              (perfect-polygon 8
-                                       (* PI 0.125)))
-                        (:foreground (color-scheme))
-                        layer)
-      (draw-polygon (mapv #(add-points center
-                                                (scale-point %
-                                                                  (* radius
-                                                                     c/vector-size-factor
-                                                                     (- 1 c/bubble-thickness))))
-                              (perfect-polygon 8
-                                            (* PI 0.125)))
-                        (:background (color-scheme))
-                        layer))
-    (when (= (:type layout) :quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/quote-divs true))]
-          (let [[start end]
-                (map #(add-points layout
-                                       (scale-point (angle-point
-                                                          (+ angle
-                                                             (* % (/ TAU c/quote-divs 4))))
-                                                         radius))
-                     [-1 1])]
-            (draw-line start end
-                           (* radius
-                              c/bubble-thickness)
+  (when (should-render-layout? layout)
+    (let [center layout
+          radius (:radius layout)]
+      (when (#{:list :map :set :lit-fn :literal} (:type layout))
+        (draw-circle layout
+                     (:foreground (color-scheme))
+                     layer))
+      (when (#{:map :set} (:type layout))
+        (let [r (:radius layout)]
+          (doseq [base-angle [(* PI 0.25)
+                              (* PI 0.75)
+                              (* PI 1.25)
+                              (* PI 1.75)]]
+            (draw-polygon [(add-points layout
+                                       (scale-point (angle-point (- base-angle c/map-point-width))
+                                                    r))
+                           (add-points layout
+                                       (scale-point (angle-point base-angle)
+                                                    (* (inc c/map-point-height) r)))
+                           (add-points layout
+                                       (scale-point (angle-point (+ base-angle c/map-point-width))
+                                                    r))]
+                          (:foreground (color-scheme))
+                          layer))))
+      (when (#{:set :lit-fn} (:type layout))
+        (let [r (:radius layout)]
+          (doseq [angle [0
+                         (* PI 0.5)
+                         PI
+                         (* PI 1.5)]]
+            (let [base-offset (scale-point (angle-point (+ angle (* PI 0.5)))
+                                           (* r c/set-line-offset))]
+              (doseq [offset [base-offset (scale-point base-offset -1)]]
+                (draw-line (add-points offset layout)
+                           (add-points layout
+                                       offset
+                                       (scale-point (angle-point angle)
+                                                    (* (inc c/set-line-length) r)))
+                           (* r c/set-line-width)
                            (:foreground (color-scheme))
-                           layer)))))
-    (when (= (:type layout) :deref)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/deref-circles true))]
-          (draw-circle (update (add-points layout
-                                                    (scale-point (angle-point angle)
-                                                                      radius))
-                                   :radius
-                                   (partial * c/deref-circle-size-factor))
-                           (:foreground (color-scheme))
-                           layer))))
-    (when (= (:type layout) :syntax-quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/syntax-quote-divs true))]
-          (let [[start end]
-                (map #(add-points layout
-                                       (scale-point (angle-point
-                                                          (+ angle
-                                                             (* % (/ TAU c/syntax-quote-divs 4))))
-                                                         (* radius
-                                                            (+ 1
-                                                               (* % c/syntax-quote-offset-factor)))))
-                     [-1 1])]
-            (draw-line start end
-                           (* radius
-                              c/bubble-thickness)
-                           (:foreground (color-scheme))
-                           layer)))))
-    (when (= (:type layout) :comment)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/comment-divs true))]
-          (draw-line (add-points layout
-                                          (scale-point (angle-point angle)
-                                                            radius))
-                         (add-points layout
-                                          (scale-point (angle-point angle)
-                                                            (* radius (- 1 c/comment-length-factor))))
+                           layer))))))
+      (when (#{:list :map :set :lit-fn} (:type layout))
+        (draw-circle (update layout
+                             :radius (partial *
+                                              (- 1 c/bubble-thickness)))
+                     (:background (color-scheme))
+                     layer))
+      (when (= (:type layout) :vector)
+        (draw-polygon (mapv #(add-points center
+                                         (scale-point %
+                                                      (* radius
+                                                         c/vector-size-factor)))
+                            (perfect-polygon 8
+                                             (* PI 0.125)))
+                      (:foreground (color-scheme))
+                      layer)
+        (draw-polygon (mapv #(add-points center
+                                         (scale-point %
+                                                      (* radius
+                                                         c/vector-size-factor
+                                                         (- 1 c/bubble-thickness))))
+                            (perfect-polygon 8
+                                             (* PI 0.125)))
+                      (:background (color-scheme))
+                      layer))
+      (when (= (:type layout) :quote)
+        (let [radius (:radius layout)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/quote-divs true))]
+            (let [[start end]
+                  (map #(add-points layout
+                                    (scale-point (angle-point
+                                                  (+ angle
+                                                     (* % (/ TAU c/quote-divs 4))))
+                                                 radius))
+                       [-1 1])]
+              (draw-line start end
                          (* radius
                             c/bubble-thickness)
                          (:foreground (color-scheme))
+                         layer)))))
+      (when (= (:type layout) :deref)
+        (let [radius (:radius layout)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/deref-circles true))]
+            (draw-circle (update (add-points layout
+                                             (scale-point (angle-point angle)
+                                                          radius))
+                                 :radius
+                                 (partial * c/deref-circle-size-factor))
+                         (:foreground (color-scheme))
                          layer))))
-    (when (= (:type layout) :unquote)
-      (let [segment-angle (/ TAU 8)
-            angles (mapv #(+ (* segment-angle %)
-                             (/ TAU 16))
-                         (range 8))
-            points (mapv #(scale-point (angle-point %)
-                                            (* radius
-                                               c/vector-size-factor))
-                         angles)]
-        (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-size (/ 0.5 c/unquote-divs)
-                tween-starts (mapv #(* div-size (+ 0.5 (* 2 %)))
-                                   (range c/unquote-divs))]
-            (doseq [tween-start tween-starts]
-              (draw-line (add-points layout
-                                              (tween-points start-point end-point tween-start))
-                             (add-points layout
-                                              (tween-points start-point end-point (+ tween-start div-size)))
+      (when (= (:type layout) :syntax-quote)
+        (let [radius (:radius layout)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/syntax-quote-divs true))]
+            (let [[start end]
+                  (map #(add-points layout
+                                    (scale-point (angle-point
+                                                  (+ angle
+                                                     (* % (/ TAU c/syntax-quote-divs 4))))
+                                                 (* radius
+                                                    (+ 1
+                                                       (* % c/syntax-quote-offset-factor)))))
+                       [-1 1])]
+              (draw-line start end
+                         (* radius
+                            c/bubble-thickness)
+                         (:foreground (color-scheme))
+                         layer)))))
+      (when (= (:type layout) :comment)
+        (let [radius (:radius layout)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/comment-divs true))]
+            (draw-line (add-points layout
+                                   (scale-point (angle-point angle)
+                                                radius))
+                       (add-points layout
+                                   (scale-point (angle-point angle)
+                                                (* radius (- 1 c/comment-length-factor))))
+                       (* radius
+                          c/bubble-thickness)
+                       (:foreground (color-scheme))
+                       layer))))
+      (when (= (:type layout) :unquote)
+        (let [segment-angle (/ TAU 8)
+              angles (mapv #(+ (* segment-angle %)
+                               (/ TAU 16))
+                           (range 8))
+              points (mapv #(scale-point (angle-point %)
+                                         (* radius
+                                            c/vector-size-factor))
+                           angles)]
+          (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
+            (let [div-size (/ 0.5 c/unquote-divs)
+                  tween-starts (mapv #(* div-size (+ 0.5 (* 2 %)))
+                                     (range c/unquote-divs))]
+              (doseq [tween-start tween-starts]
+                (draw-line (add-points layout
+                                       (tween-points start-point end-point tween-start))
+                           (add-points layout
+                                       (tween-points start-point end-point (+ tween-start div-size)))
+                           (* radius
+                              c/bubble-thickness)
+                           (:foreground (color-scheme))
+                           layer))))))
+      (when (= (:type layout) :unquote-splice)
+        (let [segment-angle (/ TAU 8)
+              angles (mapv #(+ (* segment-angle %)
+                               (/ TAU 16))
+                           (range 8))
+              points (mapv #(scale-point (angle-point %)
+                                         (* radius
+                                            c/vector-size-factor))
+                           angles)]
+          (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
+            (let [div-spacing (/ 0.5 c/unquote-splice-circles)]
+              (doseq [t (u/prop-range c/unquote-splice-circles true)]
+                (draw-circle (update (add-points layout
+                                                 (tween-points start-point end-point t))
+                                     :radius
+                                     (partial * c/deref-circle-size-factor))
+                             (:foreground (color-scheme))
+                             layer))))))
+      (when (= (:type layout) :meta)
+        (let [radius (:radius layout)
+              angle-offset (/ PI 2 c/meta-divs)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/meta-divs true))]
+            (let [tip (add-points layout
+                                  (scale-point (angle-point angle)
+                                               radius))
+                  [start end]
+                  (mapv #(add-points layout
+                                     (scale-point (angle-point (+ angle (* % angle-offset)))
+                                                  (* radius (- 1 c/meta-length-factor))))
+                        [1 -1])]
+              (draw-polyline [start tip end]
                              (* radius
                                 c/bubble-thickness)
                              (:foreground (color-scheme))
-                             layer))))))
-    (when (= (:type layout) :unquote-splice)
-      (let [segment-angle (/ TAU 8)
-            angles (mapv #(+ (* segment-angle %)
-                             (/ TAU 16))
-                         (range 8))
-            points (mapv #(scale-point (angle-point %)
-                                            (* radius
-                                               c/vector-size-factor))
-                         angles)]
-        (doseq [[start-point end-point] (partition 2 1 (conj points (first points)))]
-          (let [div-spacing (/ 0.5 c/unquote-splice-circles)]
-            (doseq [t (u/prop-range c/unquote-splice-circles true)]
-              (draw-circle (update (add-points layout
-                                                        (tween-points start-point end-point t))
-                                       :radius
-                                       (partial * c/deref-circle-size-factor))
-                               (:foreground (color-scheme))
-                               layer))))))
-    (when (= (:type layout) :meta)
-      (let [radius (:radius layout)
-            angle-offset (/ PI 2 c/meta-divs)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/meta-divs true))]
-          (let [tip (add-points layout
-                                     (scale-point (angle-point angle)
-                                                       radius))
-                [start end]
-                (mapv #(add-points layout
-                                        (scale-point (angle-point (+ angle (* % angle-offset)))
-                                                          (* radius (- 1 c/meta-length-factor))))
-                      [1 -1])]
-            (draw-polyline [start tip end]
-                               (* radius
-                                  c/bubble-thickness)
-                               (:foreground (color-scheme))
-                               layer)))))
-    (when (= (:type layout) :var-quote)
-      (let [radius (:radius layout)]
-        (doseq [angle (mapv (partial * TAU) (u/prop-range c/var-quote-divs true))]
-          (let [[start end]
-                (map #(add-points layout
-                                       (scale-point (angle-point
-                                                          (+ angle
-                                                             (* % (/ TAU c/var-quote-divs 4))))
-                                                         radius))
-                     [-1 1])]
-            (draw-line start
-                           end
-                           (* radius
-                              c/bubble-thickness)
-                           (:foreground (color-scheme))
-                           layer))
-          (let [[start end]
-                (map #(add-points layout
-                                       (scale-point (angle-point angle)
-                                                         (* radius %)))
-                     [1 (inc c/var-quote-length)])]
-            (draw-line start
-                           end
-                           (* radius
-                              c/bubble-thickness)
-                           (:foreground (color-scheme))
-                           layer)))))
-    (when (= (:type layout) :literal)
-      (draw-text (:value layout)
-                     layout
-                     (:radius layout)
-                     (:text (color-scheme))
-                     layer))))
+                             layer)))))
+      (when (= (:type layout) :var-quote)
+        (let [radius (:radius layout)]
+          (doseq [angle (mapv (partial * TAU) (u/prop-range c/var-quote-divs true))]
+            (let [[start end]
+                  (map #(add-points layout
+                                    (scale-point (angle-point
+                                                  (+ angle
+                                                     (* % (/ TAU c/var-quote-divs 4))))
+                                                 radius))
+                       [-1 1])]
+              (draw-line start
+                         end
+                         (* radius
+                            c/bubble-thickness)
+                         (:foreground (color-scheme))
+                         layer))
+            (let [[start end]
+                  (map #(add-points layout
+                                    (scale-point (angle-point angle)
+                                                 (* radius %)))
+                       [1 (inc c/var-quote-length)])]
+              (draw-line start
+                         end
+                         (* radius
+                            c/bubble-thickness)
+                         (:foreground (color-scheme))
+                         layer)))))
+      (when (= (:type layout) :literal)
+        (draw-text (:value layout)
+                   layout
+                   (:radius layout)
+                   (:text (color-scheme))
+                   layer)))))
 
 (defn render-sublayouts [layout & [layer]]
   (doseq [sublayout (flatten-layout layout)]
