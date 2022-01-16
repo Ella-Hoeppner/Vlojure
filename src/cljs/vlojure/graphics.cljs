@@ -21,10 +21,12 @@
 
 (defonce pixi-app (atom nil))
 (defonce pixi-graphics (atom {}))
-(defonce texts (atom {}))
+(defonce text-containers (atom {}))
 (defonce svg-queue (atom ()))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
+(defonce layer-texts (atom {}))
+(defonce layer-used-text-counts (atom {}))
 
 (defn get-graphics [& [layer]]
   (get @pixi-graphics
@@ -149,29 +151,47 @@
                (screen-y (:y point))))
     (.lineStyle graphics 0)))
 
+(defn free-used-texts! []
+  (doseq [layer (keys @layer-used-text-counts)]
+    (swap! layer-used-text-counts
+           #(assoc % layer 0))
+    (doseq [kv-pair @layer-texts]
+      (doseq [t (second kv-pair)]
+        (set! (.-visible t) false)))))
+
+(defn get-unused-text! [layer]
+  (let [text-vector (or (get @layer-texts layer) [])
+        text-count (or (get @layer-used-text-counts layer) 0)]
+    (swap! layer-used-text-counts
+           #(update % layer inc))
+    (if (< text-count (count text-vector))
+      (text-vector text-count)
+      (let [t (pixi/BitmapText. ""
+                                (clj->js {:fontName c/font-name
+                                          :fontSize 10
+                                          :align "left"}))]
+        (swap! layer-texts
+               #(assoc % layer (conj text-vector t)))
+        (.addChild (get @text-containers layer) t)
+        t))))
+
 (defn draw-text [s pos size color & [layer]]
   (when @font-loaded?
-    (let [t (pixi/BitmapText.
-             (str s)
-             (clj->js {:fontName c/font-name
-                       :fontSize 10
-                       :align "left"
-                       :tint color}))
+    (let [t (get-unused-text! layer)
           scale (* size (text-size s))]
+      (set! (.-text t) (str s))
+      (set! (.-tint t) color)
+      (set! (.-visible t) true)
+      (set! (.-scale.x t) scale)
+      (set! (.-scale.y t) scale)
       (set! (.-x t)
-            (- (+ (screen-x (:x pos))
-                  (* scale c/text-x-offset))
-               (* (.-width t) scale 0.5)))
+            (+ (- (screen-x (:x pos))
+                  (* (.-width t) 0.5))
+               (* scale c/text-x-offset)))
       (set! (.-y t)
-            (- (+ (screen-y (:y pos))
-                  (* scale c/text-y-offset))
-               (* (.-height t) scale 0.5)))
-      (set! (.-x (.-scale t)) scale)
-      (set! (.-y (.-scale t)) scale)
-      (set! (.-resolution t) 10)
-      (.addChild (get @texts
-                      (or layer (first c/ui-layers)))
-                 t))))
+            (+ (- (screen-y (:y pos))
+                  (* (.-height t) 0.5))
+               (* scale c/text-y-offset))))))
 
 (defn get-delta []
   (/ (.-elapsedMS (.-ticker @pixi-app)) 1000))
@@ -304,17 +324,7 @@
   (resize)
   (doseq [layer c/ui-layers]
     (.clear (get-graphics layer)))
-  (let [stage (.-stage @pixi-app)]
-    (when @texts
-      (doseq [text-container (vals @texts)]
-        (.removeChild stage text-container)
-        (.destroy text-container (clj->js {:children true :texture true :baseTexture true}))))
-    (doseq [[layer z] (mapv vector c/ui-layers (range))]
-      (let [container (pixi/Container.)]
-        (swap! texts
-               #(assoc % layer container))
-        (set! (.-zIndex container) (+ 0.5 z))
-        (.addChild stage container)))))
+  (free-used-texts!))
 
 (defn load-font []
   (let [font (FaceFontObserver. c/font-name)]
@@ -349,6 +359,12 @@
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
+    (doseq [[layer z] (mapv vector c/ui-layers (range))]
+      (let [container (pixi/Container.)]
+        (swap! text-containers
+               #(assoc % layer container))
+        (set! (.-zIndex container) (+ 0.5 z))
+        (.addChild stage container)))
     (resize))
   (init-quil))
 
