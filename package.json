@@ -8,6 +8,7 @@
     "release": "shadow-cljs release bootstrap browser;"
   },
   "dependencies": {
+    "canvg": "^3.0.9",
     "fontfaceobserver": "^2.1.0",
     "p5": "^1.4.0",
     "pixi.js": "^6.1.2",

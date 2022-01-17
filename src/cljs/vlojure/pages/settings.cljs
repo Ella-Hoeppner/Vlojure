@@ -12,7 +12,8 @@
                                       render-discard-zone
                                       in-discard-corner?
                                       html-color
-                                      app-size]]
+                                      app-size
+                                      clear-svg-textures!]]
             [vlojure.storage :refer [color-scheme
                                      add-project-formbar-form-at
                                      load-project
@@ -636,9 +637,9 @@
             (draw-circle circle
                          (:background (color-scheme))
                          :background)
-            (when (on-stage? c/settings-formbar-tools-page)
-              (render-tool (:type circle)
-                           circle)))))
+            (render-tool (:type circle)
+                         circle
+                         :program))))
 
      ;; Render saved formbar page
       (let [center-circle (settings-circle c/settings-saved-formbars-page)
@@ -1132,6 +1133,7 @@
                          (formbar-insertion-circle formbar-insertion-path)
                          (assoc mouse
                                 :radius c/settings-formbar-drag-tool-radius))
+                       :program
                        true)))
 
      ;; Render new formbar circles
@@ -1385,7 +1387,8 @@
           (enter-page :code)
 
           :color-scheme
-          (set-global-attr! :color-scheme (color-scheme-index-at mouse))
+          (do (set-global-attr! :color-scheme (color-scheme-index-at mouse))
+              (clear-svg-textures!))
 
           :new-project
           (do (new-project)

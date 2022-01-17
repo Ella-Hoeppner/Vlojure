@@ -17,16 +17,19 @@
                                   init-quil
                                   resize-quil]]
             [clojure.string :refer [index-of split]]
-            [clojure.set :refer [union]]))
+            [clojure.set :refer [union]]
+            ["canvg" :refer [Canvg] :rename {Canvg canvg}]))
 
 (defonce pixi-app (atom nil))
 (defonce pixi-graphics (atom {}))
 (defonce text-containers (atom {}))
+(defonce svg-image-containers (atom {}))
 (defonce svg-queue (atom ()))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
 (defonce layer-texts (atom {}))
 (defonce layer-used-text-counts (atom {}))
+(defonce svg-textures (atom {}))
 
 (defn get-graphics [& [layer]]
   (get @pixi-graphics
@@ -221,24 +224,80 @@
   (boolean
    (js/document.getElementById "undo")))
 
-(defn render-svg [tool-name pos radius]
-  (when (svgs-ready?)
-    (swap! svg-queue #(conj % [tool-name pos radius]))
-    (update-svg-color-scheme (color-scheme))))
+(defn create-svg-texture! [svg-name resolution]
+  (update-svg-color-scheme (color-scheme))
+  (let [canvas (js/document.createElement "canvas")
+        context (.getContext canvas "2d")
+        svg (js/document.getElementById svg-name)]
+    (.setAttribute svg "width" (str resolution "px"))
+    (.setAttribute svg "height" (str resolution "px"))
+    (let [blob->img
+          (fn [blob]
+            (let [url (.createObjectURL js/URL blob)
+                  img (js/Image.)]
+              (.addEventListener img
+                                 "load"
+                                 (fn [event]
+                                   (.revokeObjectURL js/URL
+                                                     url)))
+              (set! (.-src img) url)
+              (let [texture (pixi/Texture. (pixi/BaseTexture. img))]
+                (swap! svg-textures
+                       #(assoc % svg-name texture)))))]
+      (.then (.from canvg context (.-outerHTML svg))
+             (fn [canvg-result]
+               (.then (.render canvg-result)
+                      (fn [& _]
+                        (.toBlob canvas
+                                 blob->img))))))))
 
-(defn render-tool [tool-name tool-circle & [outline?]]
-  (render-svg tool-name
-              tool-circle
-              (:radius tool-circle))
+(defn clear-svg-textures! []
+  (reset! svg-textures {}))
+
+(defn get-svg-sprite [svg-name]
+  (let [texture (get @svg-textures svg-name)]
+    (when texture
+      (pixi/Sprite. texture))))
+
+(defn free-used-svg-images! []
+  (doseq [[_ container] @svg-image-containers]
+    (while (pos? (.-children.length container))
+      (let [child (.getChildAt container 0)]
+        (.removeChild container child)))))
+
+(defn draw-svg [name {:keys [x y]} size layer]
+  (let [name (if (keyword? name)
+               (subs (str name) 1)
+               name)]
+    (when (svgs-ready?)
+      (when (not (get @svg-textures name))
+        (create-svg-texture! name 100))
+      (let [sprite (get-svg-sprite name)
+            svg-size (* (app-size) size)]
+        (when sprite
+          (set! (.-width sprite) svg-size)
+          (set! (.-height sprite) svg-size)
+          (set! (.-x sprite) (screen-x (- x (* 0.5 size))))
+          (set! (.-y sprite) (screen-y (- y (* 0.5 size))))
+          (.addChild (get @svg-image-containers layer) sprite))))))
+
+(defn render-tool [tool-name
+                   {:keys [radius] :as tool-circle}
+                   layer
+                   & [outline?]]
+  (draw-svg tool-name
+            tool-circle
+            (* 2 radius)
+            layer)
   (when outline?
     (draw-circle (update tool-circle
                          :radius
                          (partial * (inc c/formbar-outline-thickness)))
                  (:foreground (color-scheme))
-                 :drag)
+                 layer)
     (draw-circle tool-circle
                  (:background (color-scheme))
-                 :drag)))
+                 layer)))
 
 (defn new-svg-copy [name]
   (let [name-str (cond
@@ -324,7 +383,8 @@
   (resize)
   (doseq [layer c/ui-layers]
     (.clear (get-graphics layer)))
-  (free-used-texts!))
+  (free-used-texts!)
+  (free-used-svg-images!))
 
 (defn load-font []
   (let [font (FaceFontObserver. c/font-name)]
@@ -347,11 +407,21 @@
   (let [stage (.-stage @pixi-app)]
     (set! (.-sortableChildren stage) true)
     (doseq [[layer z] (mapv vector c/ui-layers (range))]
-      (swap! pixi-graphics
-             #(let [graphics (pixi/Graphics.)]
-                (set! (.-zIndex graphics) z)
-                (.addChild stage graphics)
-                (assoc % layer graphics))))
+      (let [graphics (pixi/Graphics.)]
+        (set! (.-zIndex graphics) z)
+        (.addChild stage graphics)
+        (swap! pixi-graphics
+               #(assoc % layer graphics)))
+      (let [image-container (pixi/Container.)]
+        (set! (.-zIndex image-container) (+ z 0.5))
+        (.addChild stage image-container)
+        (swap! svg-image-containers
+               #(assoc % layer image-container)))
+      (let [text-container (pixi/Container.)]
+        (set! (.-zIndex text-container) (+ z 0.75))
+        (.addChild stage text-container)
+        (swap! text-containers
+               #(assoc % layer text-container))))
     (js/document.body.appendChild (.-view @pixi-app))
     (.add (.-ticker @pixi-app) update-fn)
     (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app))) "interaction")]
@@ -359,12 +429,6 @@
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
-    (doseq [[layer z] (mapv vector c/ui-layers (range))]
-      (let [container (pixi/Container.)]
-        (swap! text-containers
-               #(assoc % layer container))
-        (set! (.-zIndex container) (+ 0.5 z))
-        (.addChild stage container)))
     (resize))
   (init-quil))
 

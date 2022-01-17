@@ -442,9 +442,10 @@
             (if (= (:type bar) :tool)
               (do (draw-circle (first (:circles bar))
                                (:background (color-scheme))
-                               :settings-overlay)
+                               :formbar)
                   (render-tool (:tool-type bar)
-                               (first (:circles bar))))
+                               (first (:circles bar))
+                               :formbar))
               (doseq [bar-circle (:circles bar)]
                 (render-sublayouts (form-layout (:form bar-circle)
                                                               bar-circle)
