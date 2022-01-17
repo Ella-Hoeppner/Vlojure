@@ -6,7 +6,6 @@
                                       draw-rect
                                       draw-line
                                       draw-polyline
-                                      update-svgs
                                       get-delta
                                       html-color
                                       app-width
@@ -181,8 +180,7 @@
     (page-action @active-page
                  :render
                  @mouse
-                 mouse-zone)
-    (update-svgs)))
+                 mouse-zone)))
 
 (defn update-app []
   (update-mouse-dragging)
