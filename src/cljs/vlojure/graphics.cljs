@@ -268,12 +268,16 @@
 (defn draw-svg [name {:keys [x y]} size layer]
   (let [name (if (keyword? name)
                (subs (str name) 1)
-               name)]
+               name)
+        svg-size (* (app-size) size)]
     (when (svgs-ready?)
-      (when (not (get @svg-textures name))
-        (create-svg-texture! name 100))
-      (let [sprite (get-svg-sprite name)
-            svg-size (* (app-size) size)]
+      (let [existing-texture (get @svg-textures name)
+            int-svg-size (Math/ceil svg-size)]
+        (when (or (not existing-texture)
+                  (and (> (.-width existing-texture) 1)
+                       (> int-svg-size (.-width existing-texture))))
+          (create-svg-texture! name int-svg-size)))
+      (let [sprite (get-svg-sprite name)]
         (when sprite
           (set! (.-width sprite) svg-size)
           (set! (.-height sprite) svg-size)
