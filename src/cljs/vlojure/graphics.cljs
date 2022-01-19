@@ -24,12 +24,13 @@
 (defonce pixi-graphics (atom {}))
 (defonce text-containers (atom {}))
 (defonce svg-image-containers (atom {}))
-(defonce svg-queue (atom ()))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
 (defonce layer-texts (atom {}))
 (defonce layer-used-text-counts (atom {}))
 (defonce svg-textures (atom {}))
+(defonce svg-sprites (atom {}))
+(defonce svg-sprite-active-counts (atom {}))
 
 (defn get-graphics [& [layer]]
   (get @pixi-graphics
@@ -225,6 +226,10 @@
    (js/document.getElementById "undo")))
 
 (defn create-svg-texture! [svg-name resolution]
+  (swap! svg-sprites
+         #(dissoc % svg-name))
+  (swap! svg-sprite-active-counts
+         #(dissoc % svg-name))
   (update-svg-color-scheme (color-scheme))
   (let [canvas (js/document.createElement "canvas")
         context (.getContext canvas "2d")
@@ -255,11 +260,30 @@
   (reset! svg-textures {}))
 
 (defn get-svg-sprite [svg-name]
+  (when (not (get @svg-sprites svg-name))
+    (swap! svg-sprites
+           #(assoc % svg-name []))
+    (swap! svg-sprite-active-counts
+           #(assoc % svg-name 0)))
   (let [texture (get @svg-textures svg-name)]
     (when texture
-      (pixi/Sprite. texture))))
+      (let [existing-sprites (get @svg-sprites svg-name)
+            active-count (get @svg-sprite-active-counts svg-name)]
+        (swap! svg-sprite-active-counts
+               #(update % svg-name inc))
+        (if (< active-count (count existing-sprites))
+          (existing-sprites active-count)
+          (let [new-sprite (pixi/Sprite. texture)]
+            (swap! svg-sprites
+                   #(update % svg-name conj new-sprite))
+            new-sprite))))))
 
 (defn free-used-svg-images! []
+  (swap! svg-sprite-active-counts
+         #(reduce (fn [active-counts key]
+                    (assoc active-counts key 0))
+                  %
+                  (keys %)))
   (doseq [[_ container] @svg-image-containers]
     (while (pos? (.-children.length container))
       (let [child (.getChildAt container 0)]
