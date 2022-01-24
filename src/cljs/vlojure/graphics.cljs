@@ -31,10 +31,15 @@
 (defonce svg-textures (atom {}))
 (defonce svg-sprites (atom {}))
 (defonce svg-sprite-active-counts (atom {}))
+(defonce form-canvas (atom nil))
+(defonce form-canvas-graphics (atom nil))
+(defonce form-canvas-app (atom nil))
 
 (defn get-graphics [& [layer]]
-  (get @pixi-graphics
-       (or layer (first c/ui-layers))))
+  (if (= layer :form-icon)
+    @form-canvas-graphics
+    (get @pixi-graphics
+         (or layer (first c/ui-layers)))))
 
 (defn html-color [color]
   (str "#"
@@ -59,36 +64,30 @@
     (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
+(defn layer-size [layer] (if (= layer :form-icon) (.-width @form-canvas) (app-size)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
   (rect-around unit-square
                (app-aspect-ratio)))
 
-(defn screen-x [x]
-  (let [w (app-width)
-        h (app-height)
-        s (min w h)]
-    (+ (* 0.5 (- w s)) (* x s))))
+(defn screen-x [x & [layer]]
+  (if (= layer :form-icon)
+    (* x (.-width @form-canvas))
+    (let [w (app-width)
+          h (app-height)
+          s (min w h)]
+      (+ (* 0.5 (- w s)) (* x s)))))
 
-(defn screen-y [y]
-  (let [w (app-width)
-        h (app-height)
-        s (min w h)]
-    (+ (* 0.5 (- h s)) (* y s))))
+(defn screen-y [y & [layer]]
+  (if (= layer :form-icon)
+    (* y (.-height @form-canvas))
+    (let [w (app-width)
+          h (app-height)
+          s (min w h)]
+      (+ (* 0.5 (- h s)) (* y s)))))
 
-(defn get-mouse-pos []
-  (let [plugins (.-plugins (.-renderer @pixi-app))
-        raw-pos (clj->js (.-global (.-mouse (get (js->clj plugins) "interaction"))))
-        x (.-x raw-pos)
-        y (.-y raw-pos)
-        width (app-width)
-        height (app-height)
-        size (app-size)]
-    {:x (/ (- x (* 0.5 (- width size))) size)
-     :y (/ (- y (* 0.5 (- height size))) size)}))
-
-(defn text-size [s]
-  (* (app-size)
+(defn text-size [s & [layer]]
+  (* (layer-size layer)
      (min c/text-max-size
           (/ c/text-scale-factor
              (apply max (map count (split s "\n")))))))
@@ -103,65 +102,66 @@
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawRect graphics
-               (screen-x (:x pos))
-               (screen-y (:y pos))
-               (* (:x size) (app-size))
-               (* (:y size) (app-size)))
+               (screen-x (:x pos) layer)
+               (screen-y (:y pos) layer)
+               (* (:x size) (layer-size layer))
+               (* (:y size) (layer-size layer)))
     (.endFill graphics)))
 
 (defn draw-circle [{:keys [x y radius]} fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawCircle graphics
-                 (screen-x x)
-                 (screen-y y)
-                 (* radius (app-size)))
+                 (screen-x x layer)
+                 (screen-y y layer)
+                 (* radius (layer-size layer)))
     (.endFill graphics)))
 
 (defn draw-polygon [points fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawPolygon graphics
-                  (clj->js (mapv #(pixi/Point. (screen-x (:x %))
-                                               (screen-y (:y %)))
+                  (clj->js (mapv #(pixi/Point. (screen-x (:x %) layer)
+                                               (screen-y (:y %) layer))
                                  points)))
     (.endFill graphics)))
 
 (defn draw-line [start end width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
-                (* width (app-size))
+                (* width (layer-size layer))
                 color)
     (.moveTo graphics
-             (screen-x (:x start))
-             (screen-y (:y start)))
+             (screen-x (:x start) layer)
+             (screen-y (:y start) layer))
     (.lineTo graphics
-             (screen-x (:x end))
-             (screen-y (:y end)))
+             (screen-x (:x end) layer)
+             (screen-y (:y end) layer))
     (.lineStyle graphics 0)))
 
 (defn draw-polyline [points width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
-                (* width (app-size))
+                (* width (layer-size layer))
                 color)
     (let [start (first points)]
       (.moveTo graphics
-               (screen-x (:x start))
-               (screen-y (:y start))))
+               (screen-x (:x start) layer)
+               (screen-y (:y start) layer)))
     (doseq [point (rest points)]
       (.lineTo graphics
-               (screen-x (:x point))
-               (screen-y (:y point))))
+               (screen-x (:x point) layer)
+               (screen-y (:y point) layer)))
     (.lineStyle graphics 0)))
 
 (defn free-used-texts! []
   (doseq [layer (keys @layer-used-text-counts)]
     (swap! layer-used-text-counts
            #(assoc % layer 0))
-    (doseq [kv-pair @layer-texts]
-      (doseq [t (second kv-pair)]
-        (set! (.-visible t) false)))))
+    (doseq [[layer texts] @layer-texts]
+      (when (not= layer :form-icon)
+        (doseq [t texts]
+          (set! (.-visible t) false))))))
 
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
@@ -182,18 +182,18 @@
 (defn draw-text [s pos size color & [layer]]
   (when @font-loaded?
     (let [t (get-unused-text! layer)
-          scale (* size (text-size s))]
+          scale (* size (text-size s layer))]
       (set! (.-text t) (str s))
       (set! (.-tint t) color)
       (set! (.-visible t) true)
       (set! (.-scale.x t) scale)
       (set! (.-scale.y t) scale)
       (set! (.-x t)
-            (+ (- (screen-x (:x pos))
+            (+ (- (screen-x (:x pos) layer)
                   (* (.-width t) 0.5))
                (* scale c/text-x-offset)))
       (set! (.-y t)
-            (+ (- (screen-y (:y pos))
+            (+ (- (screen-y (:y pos) layer)
                   (* (.-height t) 0.5))
                (* scale c/text-y-offset))))))
 
@@ -349,9 +349,25 @@
              (u/log "Font loaded."))
            load-font)))
 
+(defn resize-form-canvas [size]
+  (set! (.-width @form-canvas) size)
+  (set! (.-height @form-canvas) size))
+
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
+  (reset! form-canvas
+          (js/document.createElement "canvas"))
+  (reset! form-canvas-app
+          (pixi/Application. (clj->js {:view @form-canvas})))
+  (reset! form-canvas-graphics
+          (pixi/Graphics.))
+  (let [form-icon-text-container (pixi/Container.)
+        form-canvas-stage (.-stage @form-canvas-app)]
+    (.addChild form-canvas-stage @form-canvas-graphics)
+    (.addChild form-canvas-stage form-icon-text-container)
+    (swap! text-containers
+           #(assoc % :form-icon form-icon-text-container)))
   (let [stage (.-stage @pixi-app)]
     (set! (.-sortableChildren stage) true)
     (doseq [[layer z] (mapv vector c/ui-layers (range))]
@@ -378,6 +394,7 @@
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
     (resize))
+  (js/document.body.appendChild @form-canvas)
   (init-quil))
 
 (defn in-discard-corner? [pos]

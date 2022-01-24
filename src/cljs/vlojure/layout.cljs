@@ -6,7 +6,9 @@
                                       draw-line
                                       draw-polyline
                                       draw-polygon
-                                      draw-text]]
+                                      draw-text
+                                      draw-rect
+                                      resize-form-canvas]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.geometry :refer [rects-overlap?
                                       add-points
@@ -19,7 +21,8 @@
                                       PI
                                       perfect-polygon
                                       tween-points
-                                      in-circle?]]
+                                      in-circle?
+                                      unit-square]]
             [vlojure.vedn :refer [encapsulator-types]]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -286,6 +289,13 @@
   (doseq [sublayout (flatten-layout layout)]
     (render-layout sublayout layer)))
 
+(defn create-form-icon [form size]
+  (resize-form-canvas size)
+  (draw-rect unit-square (:background (color-scheme)) :form-icon)
+  #_(draw-circle {:x 0.5 :y 0.5 :radius 0.5} 0xff0000 :form-icon)
+  (render-sublayouts (form-layout form {:x 0.5 :y 0.5 :radius 0.5})
+                     :form-icon))
+
 (defn shift-layout [layout offset]
   (-> layout
       (add-points offset)
@@ -373,3 +383,7 @@
                                  (mod (- angle-offset)
                                       TAU))
                               TAU))))))))))
+(comment
+  (create-form-icon {:type :vector, :children [{:type :literal, :value "1"} {:type :literal, :value "2"} {:type :literal, :value "3"}]}
+                    200)
+  )
