@@ -198,6 +198,8 @@
 (def saved-formbar-zone-corner-radius 0.04)
 (def saved-formbar-spacing 0.25)
 
+(def form-icon-canvas-overflow-factor 1.2)
+
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)
 (def settings-button-line-width 0.1)

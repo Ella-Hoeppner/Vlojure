@@ -163,6 +163,12 @@
         (doseq [t texts]
           (set! (.-visible t) false))))))
 
+(defn clear-form-icon-canvas! []
+  (.clear @form-canvas-graphics)
+  (let [texts (:form-icon @layer-texts)]
+    (doseq [t texts]
+      (set! (.-visible t) false))))
+
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
         text-count (or (get @layer-used-text-counts layer) 0)]
@@ -359,7 +365,8 @@
   (reset! form-canvas
           (js/document.createElement "canvas"))
   (reset! form-canvas-app
-          (pixi/Application. (clj->js {:view @form-canvas})))
+          (pixi/Application. (clj->js {:view @form-canvas
+                                       :transparent true})))
   (reset! form-canvas-graphics
           (pixi/Graphics.))
   (let [form-icon-text-container (pixi/Container.)

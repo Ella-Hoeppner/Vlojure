@@ -8,7 +8,8 @@
                                       draw-polygon
                                       draw-text
                                       draw-rect
-                                      resize-form-canvas]]
+                                      resize-form-canvas
+                                      clear-form-icon-canvas!]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.geometry :refer [rects-overlap?
                                       add-points
@@ -290,11 +291,14 @@
     (render-layout sublayout layer)))
 
 (defn create-form-icon [form size]
-  (resize-form-canvas size)
-  (draw-rect unit-square (:background (color-scheme)) :form-icon)
-  #_(draw-circle {:x 0.5 :y 0.5 :radius 0.5} 0xff0000 :form-icon)
-  (render-sublayouts (form-layout form {:x 0.5 :y 0.5 :radius 0.5})
-                     :form-icon))
+  (let [overflow-size (Math/ceil (* size c/form-icon-canvas-overflow-factor))]
+    (clear-form-icon-canvas!)
+    (resize-form-canvas overflow-size)
+    (render-sublayouts (form-layout form {:x 0.5
+                                          :y 0.5
+                                          :radius (* 0.5
+                                                     (/ size overflow-size))})
+                       :form-icon)))
 
 (defn shift-layout [layout offset]
   (-> layout
@@ -384,6 +388,8 @@
                                       TAU))
                               TAU))))))))))
 (comment
-  (create-form-icon {:type :vector, :children [{:type :literal, :value "1"} {:type :literal, :value "2"} {:type :literal, :value "3"}]}
-                    200)
+  (create-form-icon {:type :vector, :children [{:type :literal, :value "1"}
+                                               {:type :literal, :value "2"}
+                                               {:type :literal, :value "3"}]}
+                    300)
   )
