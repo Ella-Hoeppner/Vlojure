@@ -34,6 +34,7 @@
 (defonce form-canvas (atom nil))
 (defonce form-canvas-graphics (atom nil))
 (defonce form-canvas-app (atom nil))
+(defonce form-icon-textures (atom {}))
 
 (defn get-graphics [& [layer]]
   (if (= layer :form-icon)
@@ -169,6 +170,17 @@
     (doseq [t texts]
       (set! (.-visible t) false))))
 
+(defn after-form-canvas-render [callback]
+  (let [ticker (.-ticker @form-canvas-app)
+        delay (atom 1)
+        ticker-fn (fn ticker-fn []
+                    (if (zero? @delay)
+                      (do (.remove ticker ticker-fn)
+                          (callback))
+                      (do (swap! delay dec)
+                          (u/log @delay))))]
+    (.add ticker ticker-fn)))
+
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
         text-count (or (get @layer-used-text-counts layer) 0)]
@@ -231,6 +243,17 @@
   (boolean
    (js/document.getElementById "undo")))
 
+(defn blob->img [blob]
+  (let [url (.createObjectURL js/URL blob)
+        img (js/Image.)]
+    (.addEventListener img
+                       "load"
+                       (fn [event]
+                         (.revokeObjectURL js/URL
+                                           url)))
+    (set! (.-src img) url)
+    img))
+
 (defn create-svg-texture! [svg-name resolution]
   (swap! svg-sprites
          #(dissoc % svg-name))
@@ -242,25 +265,17 @@
         svg (js/document.getElementById svg-name)]
     (.setAttribute svg "width" (str resolution "px"))
     (.setAttribute svg "height" (str resolution "px"))
-    (let [blob->img
-          (fn [blob]
-            (let [url (.createObjectURL js/URL blob)
-                  img (js/Image.)]
-              (.addEventListener img
-                                 "load"
-                                 (fn [event]
-                                   (.revokeObjectURL js/URL
-                                                     url)))
-              (set! (.-src img) url)
-              (let [texture (pixi/Texture. (pixi/BaseTexture. img))]
-                (swap! svg-textures
-                       #(assoc % svg-name texture)))))]
-      (.then (.from canvg context (.-outerHTML svg))
-             (fn [canvg-result]
-               (.then (.render canvg-result)
-                      (fn [& _]
-                        (.toBlob canvas
-                                 blob->img))))))))
+    (.then (.from canvg context (.-outerHTML svg))
+           (fn [canvg-result]
+             (.then (.render canvg-result)
+                    (fn [& _]
+                      (.toBlob canvas
+                               (fn [blob]
+                                 (let [texture (pixi/Texture.
+                                                (pixi/BaseTexture.
+                                                 (blob->img blob)))]
+                                   (swap! svg-textures
+                                          #(assoc % svg-name texture)))))))))))
 
 (defn clear-svg-textures! []
   (reset! svg-textures {}))
@@ -359,6 +374,17 @@
   (set! (.-width @form-canvas) size)
   (set! (.-height @form-canvas) size))
 
+(defn create-form-canvas-image! [form]
+  (.toBlob @form-canvas
+           (fn [blob]
+             (let [img (blob->img blob)]
+               (swap! form-icon-textures
+                      assoc
+                      form
+                      (pixi/Texture.
+                       (pixi/BaseTexture.
+                        img)))))))
+
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
@@ -366,7 +392,8 @@
           (js/document.createElement "canvas"))
   (reset! form-canvas-app
           (pixi/Application. (clj->js {:view @form-canvas
-                                       :transparent true})))
+                                       :backgroundAlpha 0
+                                       :preserveDrawingBuffer true})))
   (reset! form-canvas-graphics
           (pixi/Graphics.))
   (let [form-icon-text-container (pixi/Container.)
@@ -401,7 +428,7 @@
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
     (resize))
-  (js/document.body.appendChild @form-canvas)
+  #_(js/document.body.appendChild @form-canvas)
   (init-quil))
 
 (defn in-discard-corner? [pos]

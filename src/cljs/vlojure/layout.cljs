@@ -9,7 +9,9 @@
                                       draw-text
                                       draw-rect
                                       resize-form-canvas
-                                      clear-form-icon-canvas!]]
+                                      clear-form-icon-canvas!
+                                      create-form-canvas-image!
+                                      after-form-canvas-render]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.geometry :refer [rects-overlap?
                                       add-points
@@ -298,7 +300,8 @@
                                           :y 0.5
                                           :radius (* 0.5
                                                      (/ size overflow-size))})
-                       :form-icon)))
+                       :form-icon)
+    (after-form-canvas-render #(create-form-canvas-image! form))))
 
 (defn shift-layout [layout offset]
   (-> layout
