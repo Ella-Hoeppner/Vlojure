@@ -16,7 +16,7 @@
                                       point-magnitude
                                       in-circle?
                                       in-rect?]]
-            [vlojure.layout :refer [render-sublayouts
+            [vlojure.layout :refer [render-total-layout
                                     form-layout]]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -519,6 +519,6 @@
                                (first (:circles bar))
                                :formbar))
               (doseq [bar-circle (:circles bar)]
-                (render-sublayouts (form-layout (:form bar-circle)
-                                                              bar-circle)
-                                          :formbar)))))))))
+                (render-total-layout (form-layout (:form bar-circle)
+                                                  bar-circle)
+                                     :formbar)))))))))

@@ -323,7 +323,7 @@
                    (:text (color-scheme))
                    layer)))))
 
-(defn render-sublayouts [layout & [layer]]
+(defn render-total-layout [layout & [layer]]
   (doseq [sublayout (flatten-layout layout)]
     (render-layout sublayout layer)))
 
@@ -331,11 +331,12 @@
   (let [overflow-size (Math/ceil (* size c/form-icon-canvas-overflow-factor))]
     (clear-form-icon-canvas!)
     (resize-form-canvas overflow-size)
-    (render-sublayouts (form-layout form {:x 0.5
-                                          :y 0.5
-                                          :radius (* 0.5
-                                                     (/ size overflow-size))})
-                       :form-icon)
+    (render-total-layout
+     (form-layout form {:x 0.5
+                        :y 0.5
+                        :radius (* 0.5
+                                   (/ size overflow-size))})
+     :form-icon)
     (take-form-canvas!)
     (after-form-canvas-render #(create-form-canvas-image! form))))
 

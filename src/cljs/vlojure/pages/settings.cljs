@@ -30,7 +30,7 @@
                                      base-zoom
                                      project-attr]]
             [vlojure.util :as u]
-            [vlojure.layout :refer [render-sublayouts
+            [vlojure.layout :refer [render-total-layout
                                     form-layout]]
             [vlojure.formbar :refer [new-formbar-circle-path-at
                                      saved-formbar-contents
@@ -831,7 +831,7 @@
                           :program)
                 (doseq [form-index (range (count formbar-forms))]
                   (when (< form-index c/settings-saved-formbars-box-width)
-                    (render-sublayouts
+                    (render-total-layout
                      (form-layout
                       (nth formbar-forms form-index)
                       (-> formbar-zone-corner

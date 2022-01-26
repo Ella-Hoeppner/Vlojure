@@ -31,7 +31,7 @@
                                     map-layout
                                     adjust-layout
                                     get-sublayout
-                                    render-sublayouts
+                                    render-total-layout
                                     expand-layout
                                     shift-layout
                                     layout-insertion-path-at
@@ -463,8 +463,8 @@
                                                 mouse-zone)
             current-placement-form (placement-form mouse)
             current-dragged-tool (dragged-tool mouse)]
-        (render-sublayouts (adjusted-form-layouts)
-                           :program)
+        (render-total-layout (adjusted-form-layouts)
+                             :program)
         (when (and dragging?
                    (or current-dragged-tool
                        current-placement-form))
@@ -501,9 +501,9 @@
                      (partial * c/drop-form-outline-radius-factor))
              (:background (color-scheme))
              :drag)
-            (render-sublayouts (form-layout current-placement-form
-                                            base-circle)
-                               :drag)))
+            (render-total-layout (form-layout current-placement-form
+                                              base-circle)
+                                 :drag)))
         (let [layout-path (layout-path-at (adjusted-form-layouts)
                                           mouse)
               insertion-path (layout-insertion-path-at (adjusted-form-layouts)
@@ -557,7 +557,7 @@
                     (let [base-sublayout (form-layout (placement-form mouse)
                                                       (assoc origin :radius 1))]
                       (if literal?
-                        (render-sublayouts
+                        (render-total-layout
                          (adjust-layout base-sublayout
                                         (scale-point sublayout
                                                      (/ (:radius sublayout)))
@@ -567,7 +567,7 @@
                           (let [encapsulated-sublayout
                                 (get-sublayout (adjusted-form-layouts)
                                                layout-path)]
-                            (render-sublayouts
+                            (render-total-layout
                              (adjust-layout
                               base-sublayout
                               (scale-point encapsulated-sublayout
@@ -579,7 +579,7 @@
                                  (count
                                   (:children (get-child (project-attr :form)
                                                         layout-path))))
-                            (render-sublayouts
+                            (render-total-layout
                              (adjust-layout
                               base-sublayout
                               (scale-point sublayout
@@ -600,8 +600,8 @@
                                 (partial * c/drop-form-outline-radius-factor))
                                (:background (color-scheme))
                                :program-overlay)
-                              (render-sublayouts adjusted-layout
-                                                 :program-overlay))))))))))))
+                              (render-total-layout adjusted-layout
+                                                   :program-overlay))))))))))))
         (render-formbars mouse)
 
         ;; Draw discard circle, icon, and last discarded form
@@ -615,7 +615,7 @@
           (render-discard-zone (= mouse-zone :discard)
                                last-discard)
           (when last-discard
-            (render-sublayouts
+            (render-total-layout
              (form-layout
               last-discard
               (assoc base-circle-pos
@@ -707,7 +707,7 @@
                      (* radius c/eval-zone-icon-thickness)
                      (:foreground (color-scheme))
                      :menu)))
-                (render-sublayouts
+                (render-total-layout
                  (form-layout
                   (or (first (project-attr :eval-results))
                       {:type :literal :value "nil"})
@@ -769,9 +769,9 @@
                                       %
                                       (* form-spacing
                                          c/formbar-form-placement-offset))))))]
-                (render-sublayouts (form-layout (placement-form mouse)
-                                                placement-circle)
-                                   :formbar)))))
+                (render-total-layout (form-layout (placement-form mouse)
+                                                  placement-circle)
+                                     :formbar)))))
         (render-top-left-button-background (= mouse-zone :settings-icon))
         (render-top-left-settings-button)))
 
