@@ -35,6 +35,7 @@
 (defonce form-canvas-graphics (atom nil))
 (defonce form-canvas-app (atom nil))
 (defonce form-icon-textures (atom {}))
+(defonce form-canvas-busy? (atom false))
 
 (defn get-graphics [& [layer]]
   (if (= layer :form-icon)
@@ -177,9 +178,14 @@
                     (if (zero? @delay)
                       (do (.remove ticker ticker-fn)
                           (callback))
-                      (do (swap! delay dec)
-                          (u/log @delay))))]
+                      (swap! delay dec)))]
     (.add ticker ticker-fn)))
+
+(defn take-form-canvas! []
+  (reset! form-canvas-busy? true))
+
+(defn free-form-canvas! []
+  (reset! form-canvas-busy? false))
 
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
@@ -383,7 +389,8 @@
                       form
                       (pixi/Texture.
                        (pixi/BaseTexture.
-                        img)))))))
+                        img)))
+               (free-form-canvas!)))))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
