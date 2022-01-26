@@ -66,7 +66,8 @@
     (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
-(defn layer-size [layer] (if (= layer :form-icon) (.-width @form-canvas) (app-size)))
+(defn layer-size [layer]
+  (if (= layer :form-icon) (.-width @form-canvas) (app-size)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
   (rect-around unit-square
@@ -231,10 +232,11 @@
             color (color-scheme class)
             rgb-string (str "#"
                             (apply str
-                                   (map #(.toString (mod (quot color
-                                                               (Math/pow 256 %))
-                                                         256)
-                                                    16)
+                                   (map #(.toString
+                                          (mod (quot color
+                                                     (Math/pow 256 %))
+                                               256)
+                                          16)
                                         (reverse (range 3)))))]
         (doseq [i (range (.-length elements))]
           (let [element (.item elements i)]
@@ -429,7 +431,8 @@
                #(assoc % layer text-container))))
     (js/document.body.appendChild (.-view @pixi-app))
     (.add (.-ticker @pixi-app) update-fn)
-    (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app))) "interaction")]
+    (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app)))
+                           "interaction")]
       (.on interaction "pointerdown" click-down-fn)
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
@@ -466,7 +469,8 @@
                          c/lower-corner-zone-radius)
                       (inc (Math/sqrt 2)))
             base-circle-pos (-> app-pos
-                                (update :y (partial + (- (:y app-size) radius)))
+                                (update :y (partial + (- (:y app-size)
+                                                         radius)))
                                 (update :x (partial + radius)))
             angle-offset (scale-point (angle-point (* 0.25 PI))
                                       (* radius

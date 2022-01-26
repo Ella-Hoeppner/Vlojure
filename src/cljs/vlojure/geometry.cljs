@@ -117,7 +117,11 @@
                          from-max (+ from-min (dim from-size))
                          to-min (dim to-pos)
                          to-max (+ to-min (dim to-size))]
-                     (u/map-range from-min from-max to-min to-max (dim point)))))
+                     (u/map-range from-min
+                                  from-max
+                                  to-min
+                                  to-max
+                                  (dim point)))))
           {}
           [:x :y]))
 
