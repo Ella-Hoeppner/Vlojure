@@ -265,3 +265,5 @@
 (def scroll-angle-snap-distance 0.1)
 
 (def max-undo-history 100)
+
+(def max-form-icon-size 0.5)

@@ -1,18 +1,23 @@
 (ns vlojure.layout
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
+            [clojure.set :refer [union]]
             [vlojure.graphics :refer [app-rect
                                       draw-circle
                                       draw-line
                                       draw-polyline
                                       draw-polygon
                                       draw-text
+                                      app-size
                                       draw-rect
                                       resize-form-canvas
                                       clear-form-icon-canvas!
                                       create-form-canvas-image!
                                       after-form-canvas-render
-                                      take-form-canvas!]]
+                                      take-form-canvas!
+                                      is-form-canvas-busy?
+                                      icon-texture-size
+                                      draw-form-icon]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.geometry :refer [rects-overlap?
                                       add-points
@@ -33,6 +38,29 @@
 ;;; layouts. A "layout" is a structure that defines the size and location of
 ;;; the elements within a ClojureScript expression. Layouts are displayed in
 ;;; the body of the "code" page, and also within formbars.
+
+(defonce queued-form-icon-forms (atom {}))
+
+(defn request-form-icon! [form size]
+  (when (< size c/max-form-icon-size)
+    (or (let [existing-size (icon-texture-size form)]
+          (when (>= existing-size
+                    (* size
+                       (app-size)
+                       c/form-icon-canvas-overflow-factor))
+            existing-size))
+        (do (swap! queued-form-icon-forms
+                   update form (partial max size))
+            nil))))
+
+(defn get-requested-icon-form []
+  (let [forms (keys @queued-form-icon-forms)
+        all-children (apply union
+                            (map (comp set :children)
+                                 forms))]
+    (or (some all-children
+              forms)
+        (first forms))))
 
 (defn form-layout [form starting-layout]
   (let [current-layout starting-layout
@@ -72,12 +100,14 @@
                          children
                          (range)))))))))
 
-(defn flatten-layout [layout]
-  (if (:sublayouts layout)
-    (conj (mapcat flatten-layout
-                  (:sublayouts layout))
-          (dissoc layout :sublayouts))
-    (list layout)))
+(defn layout->form [{:keys [sublayouts]
+                     :as layout}]
+  (let [stripped-layout (select-keys layout [:type :value])]
+    (if sublayouts
+      (assoc stripped-layout
+             :children
+             (mapv layout->form sublayouts))
+      stripped-layout)))
 
 (defn should-render-layout? [{:keys [x y radius]}]
   (rects-overlap? (app-rect)
@@ -323,22 +353,60 @@
                    (:text (color-scheme))
                    layer)))))
 
-(defn render-total-layout [layout & [layer]]
-  (doseq [sublayout (flatten-layout layout)]
-    (render-layout sublayout layer)))
+(defn render-total-layout [{:keys [radius] :as layout} & [layer]]
+  (let [form (layout->form layout)
+        icon-size (request-form-icon! form (* 2 radius))]
+    (if (and icon-size
+             (>= icon-size
+                 (* (app-size)
+                    2 radius
+                    c/form-icon-canvas-overflow-factor))
+             (not= layer :form-icon))
+      (draw-form-icon form layout layer)
+      (do (render-layout layout layer)
+          (doseq [sublayout (:sublayouts layout)]
+            (render-total-layout sublayout layer))))))
 
-(defn create-form-icon [form size]
-  (let [overflow-size (Math/ceil (* size c/form-icon-canvas-overflow-factor))]
+(defn create-form-icon! [form size]
+  (let [adjusted-size (* size (app-size))
+        overflow-size (Math/ceil (* adjusted-size
+                                    c/form-icon-canvas-overflow-factor))]
+    (take-form-canvas!)
     (clear-form-icon-canvas!)
     (resize-form-canvas overflow-size)
+    #_(let [border 0.05]
+      (draw-rect [{:x 0 :y 0} {:x 1 :y border}]
+                 0xff0000
+                 :form-icon)
+      (draw-rect [{:x 0 :y 0} {:x border :y 1}]
+                 0xff0000
+                 :form-icon)
+      (draw-rect [{:x 0 :y (- 1 border)} {:x 1 :y border}]
+                 0xff0000
+                 :form-icon)
+      (draw-rect [{:x (- 1 border) :y 0} {:x border :y 1}]
+                 0xff0000
+                 :form-icon))
     (render-total-layout
      (form-layout form {:x 0.5
                         :y 0.5
                         :radius (* 0.5
-                                   (/ size overflow-size))})
+                                   (/ adjusted-size
+                                      overflow-size))})
      :form-icon)
-    (take-form-canvas!)
-    (after-form-canvas-render #(create-form-canvas-image! form))))
+    (after-form-canvas-render
+     (fn []
+       (create-form-canvas-image!
+        form
+        #(swap! queued-form-icon-forms
+                dissoc
+                form))))))
+
+(defn update-form-icons []
+  (when (not (is-form-canvas-busy?))
+    (let [form (get-requested-icon-form)]
+      (when form
+        (create-form-icon! form (@queued-form-icon-forms form))))))
 
 (defn shift-layout [layout offset]
   (-> layout

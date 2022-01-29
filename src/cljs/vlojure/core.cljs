@@ -6,6 +6,7 @@
             [vlojure.evaluation :as evaluation]
             [vlojure.pages.code :as code-page]
             [vlojure.pages.settings :as settings-page]
+            [vlojure.layout :as layout]
             [vlojure.pages.text :as text-page]))
 
 (defn init []
@@ -17,7 +18,8 @@
   (text-page/init)
   (graphics/init (fn []
                    (graphics/update-graphics)
-                   (app/update-app))
+                   (app/update-app)
+                   (layout/update-form-icons))
                  app/on-click-down
                  app/on-click-up
                  app/update-mouse-pos)

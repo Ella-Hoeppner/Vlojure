@@ -24,6 +24,7 @@
 (defonce pixi-graphics (atom {}))
 (defonce text-containers (atom {}))
 (defonce svg-image-containers (atom {}))
+(defonce form-icon-image-containers (atom {}))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
 (defonce layer-texts (atom {}))
@@ -188,6 +189,9 @@
 (defn free-form-canvas! []
   (reset! form-canvas-busy? false))
 
+(defn is-form-canvas-busy? []
+  @form-canvas-busy?)
+
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
         text-count (or (get @layer-used-text-counts layer) 0)]
@@ -318,6 +322,25 @@
       (let [child (.getChildAt container 0)]
         (.removeChild container child)))))
 
+(defn get-form-icon-sprite [form]
+  (pixi/Sprite. (@form-icon-textures form)))
+
+(defn free-used-form-icon-images! []
+  (doseq [[_ container] @form-icon-image-containers]
+    (while (pos? (.-children.length container))
+      (let [child (.getChildAt container 0)]
+        (.removeChild container child)))))
+
+(defn draw-form-icon [form {:keys [x y radius]} layer]
+  (let [size (* 2 radius c/form-icon-canvas-overflow-factor)
+        sprite (get-form-icon-sprite form)
+        sprite-size (* (layer-size layer) size)]
+    (set! (.-width sprite) sprite-size)
+    (set! (.-height sprite) sprite-size)
+    (set! (.-x sprite) (screen-x (- x (* 0.5 size))))
+    (set! (.-y sprite) (screen-y (- y (* 0.5 size))))
+    (.addChild (get @form-icon-image-containers layer) sprite)))
+
 (defn draw-svg [name {:keys [x y]} size layer]
   (let [name (if (keyword? name)
                (subs (str name) 1)
@@ -361,7 +384,8 @@
   (doseq [layer c/ui-layers]
     (.clear (get-graphics layer)))
   (free-used-texts!)
-  (free-used-svg-images!))
+  (free-used-svg-images!)
+  (free-used-form-icon-images!))
 
 (defn load-font []
   (let [font (FaceFontObserver. c/font-name)]
@@ -382,17 +406,23 @@
   (set! (.-width @form-canvas) size)
   (set! (.-height @form-canvas) size))
 
-(defn create-form-canvas-image! [form]
+(defn create-form-canvas-image! [layout finish-callback]
   (.toBlob @form-canvas
            (fn [blob]
              (let [img (blob->img blob)]
-               (swap! form-icon-textures
-                      assoc
-                      form
-                      (pixi/Texture.
-                       (pixi/BaseTexture.
-                        img)))
-               (free-form-canvas!)))))
+               (.addEventListener
+                img
+                "load"
+                (fn []
+                  (swap! form-icon-textures
+                         assoc
+                         layout
+                         (let [texture (pixi/Texture.
+                                        (pixi/BaseTexture.
+                                         img))]
+                           texture))
+                  (free-form-canvas!)
+                  (finish-callback)))))))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
@@ -410,7 +440,9 @@
     (.addChild form-canvas-stage @form-canvas-graphics)
     (.addChild form-canvas-stage form-icon-text-container)
     (swap! text-containers
-           #(assoc % :form-icon form-icon-text-container)))
+           assoc
+           :form-icon
+           form-icon-text-container))
   (let [stage (.-stage @pixi-app)]
     (set! (.-sortableChildren stage) true)
     (doseq [[layer z] (mapv vector c/ui-layers (range))]
@@ -423,6 +455,11 @@
         (set! (.-zIndex image-container) (+ z 0.5))
         (.addChild stage image-container)
         (swap! svg-image-containers
+               #(assoc % layer image-container)))
+      (let [image-container (pixi/Container.)]
+        (set! (.-zIndex image-container) (+ z 0.5))
+        (.addChild stage image-container)
+        (swap! form-icon-image-containers
                #(assoc % layer image-container)))
       (let [text-container (pixi/Container.)]
         (set! (.-zIndex text-container) (+ z 0.75))
@@ -438,7 +475,6 @@
       (.on interaction "pointermove" update-mouse-fn))
     (load-font)
     (resize))
-  #_(js/document.body.appendChild @form-canvas)
   (init-quil))
 
 (defn in-discard-corner? [pos]
@@ -495,3 +531,7 @@
                          c/discard-zone-icon-thickness))
                    (:foreground (color-scheme))
                    :menu)))))
+
+(defn icon-texture-size [form]
+  (let [texture (@form-icon-textures form)]
+    (when texture (.-width texture))))
