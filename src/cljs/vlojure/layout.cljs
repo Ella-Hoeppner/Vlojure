@@ -31,7 +31,8 @@
                                       perfect-polygon
                                       tween-points
                                       in-circle?
-                                      unit-square]]
+                                      unit-square
+                                      rect-in-circle?]]
             [vlojure.vedn :refer [encapsulator-types]]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -110,10 +111,12 @@
              (mapv layout->form sublayouts))
       stripped-layout)))
 
-(defn should-render-layout? [{:keys [x y radius]}]
-  (rects-overlap? (app-rect)
-                  [{:x (- x radius) :y (- y radius)}
-                   {:x (* 2 radius) :y (* 2 radius)}]))
+(defn should-render-layout? [{:keys [x y radius] :as circle}]
+  (and (rects-overlap? (app-rect)
+                       [{:x (- x radius) :y (- y radius)}
+                        {:x (* 2 radius) :y (* 2 radius)}])
+       (not (rect-in-circle? (app-rect)
+                             circle))))
 
 (defn render-layout [layout & [layer]]
   (when (should-render-layout? layout)
