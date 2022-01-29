@@ -558,13 +558,3 @@
 (defn icon-texture-size [form]
   (let [texture (@form-icon-textures form)]
     (when texture (.-width texture))))
-
-(defn draw-form-highlight [{:keys [x y radius]}]
-  (let [g (get-graphics :program-overlay)]
-    (.lineStyle g
-                (* (app-size) radius c/form-highlight-outline-size)
-                (:highlight (color-scheme)))
-    (.drawCircle g
-                 (screen-x x)
-                 (screen-y y)
-                 (* (app-size) radius))))

@@ -10,8 +10,7 @@
                                       render-discard-zone
                                       in-discard-corner?
                                       html-color
-                                      app-size
-                                      draw-form-highlight]]
+                                      app-size]]
             [vlojure.storage :refer [color-scheme
                                      add-project-formbar-form-at
                                      modify-code!
@@ -516,8 +515,16 @@
                                     (adjusted-form-layouts)
                                     insertion-path)]
           (when (and layout-path (not dragging?) literal?)
-            (draw-form-highlight (get-sublayout (adjusted-form-layouts)
-                                                layout-path)))
+            (let [layout (get-sublayout (adjusted-form-layouts)
+                                        layout-path)]
+              (draw-circle layout
+                           (:highlight (color-scheme))
+                           :program-overlay)
+              (draw-text (:value layout)
+                         layout
+                         (:radius layout)
+                         (:text (color-scheme))
+                         :program-overlay)))
           (when (and layout-path current-placement-form)
             (let [sublayout (get-sublayout (adjusted-form-layouts)
                                            layout-path)]
