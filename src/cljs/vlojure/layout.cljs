@@ -58,7 +58,8 @@
         all-children (apply union
                             (map (comp set :children)
                                  forms))]
-    (or (some all-children
+    (or (some #(when (not (all-children %))
+                 %)
               forms)
         (first forms))))
 
