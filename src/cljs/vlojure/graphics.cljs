@@ -333,7 +333,7 @@
   (let [texture (get @form-icon-textures form)]
     (when texture
       (let [existing-sprites (get @form-icon-sprites form)
-            active-count (get @form-icon-sprite-active-counts form-icon-sprites)]
+            active-count (get @form-icon-sprite-active-counts form)]
         (swap! form-icon-sprite-active-counts
                #(update % form inc))
         (if (< active-count (count existing-sprites))
@@ -475,14 +475,14 @@
         (swap! pixi-graphics
                #(assoc % layer graphics)))
       (let [image-container (pixi/Container.)]
-        (set! (.-zIndex image-container) (+ z 0.5))
+        (set! (.-zIndex image-container) (+ z 0.25))
         (.addChild stage image-container)
-        (swap! svg-image-containers
+        (swap! form-icon-image-containers
                #(assoc % layer image-container)))
       (let [image-container (pixi/Container.)]
         (set! (.-zIndex image-container) (+ z 0.5))
         (.addChild stage image-container)
-        (swap! form-icon-image-containers
+        (swap! svg-image-containers
                #(assoc % layer image-container)))
       (let [text-container (pixi/Container.)]
         (set! (.-zIndex text-container) (+ z 0.75))
