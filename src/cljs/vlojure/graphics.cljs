@@ -31,7 +31,9 @@
 (defonce layer-used-text-counts (atom {}))
 (defonce svg-textures (atom {}))
 (defonce svg-sprites (atom {}))
+(defonce form-icon-sprites (atom {}))
 (defonce svg-sprite-active-counts (atom {}))
+(defonce form-icon-sprite-active-counts (atom {}))
 (defonce form-canvas (atom nil))
 (defonce form-canvas-graphics (atom nil))
 (defonce form-canvas-app (atom nil))
@@ -323,9 +325,30 @@
         (.removeChild container child)))))
 
 (defn get-form-icon-sprite [form]
-  (pixi/Sprite. (@form-icon-textures form)))
+  (when (not (get @form-icon-sprites form))
+    (swap! form-icon-sprites
+           #(assoc % form []))
+    (swap! form-icon-sprite-active-counts
+           #(assoc % form 0)))
+  (let [texture (get @form-icon-textures form)]
+    (when texture
+      (let [existing-sprites (get @form-icon-sprites form)
+            active-count (get @form-icon-sprite-active-counts form-icon-sprites)]
+        (swap! form-icon-sprite-active-counts
+               #(update % form inc))
+        (if (< active-count (count existing-sprites))
+          (existing-sprites active-count)
+          (let [new-sprite (pixi/Sprite. texture)]
+            (swap! form-icon-sprites
+                   #(update % form conj new-sprite))
+            new-sprite))))))
 
 (defn free-used-form-icon-images! []
+  (swap! form-icon-sprite-active-counts
+         #(reduce (fn [active-counts key]
+                    (assoc active-counts key 0))
+                  %
+                  (keys %)))
   (doseq [[_ container] @form-icon-image-containers]
     (while (pos? (.-children.length container))
       (let [child (.getChildAt container 0)]
@@ -406,7 +429,7 @@
   (set! (.-width @form-canvas) size)
   (set! (.-height @form-canvas) size))
 
-(defn create-form-canvas-image! [layout finish-callback]
+(defn create-form-canvas-image! [form finish-callback]
   (.toBlob @form-canvas
            (fn [blob]
              (let [img (blob->img blob)]
@@ -416,7 +439,7 @@
                 (fn []
                   (swap! form-icon-textures
                          assoc
-                         layout
+                         form
                          (let [texture (pixi/Texture.
                                         (pixi/BaseTexture.
                                          img))]
