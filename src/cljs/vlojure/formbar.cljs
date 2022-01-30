@@ -16,7 +16,7 @@
                                       point-magnitude
                                       in-circle?
                                       in-rect?]]
-            [vlojure.layout :refer [render-sublayouts
+            [vlojure.layout :refer [render-total-layout
                                     form-layout]]))
 
 ;;; This file defines functionality for rendering and interacting with
@@ -46,24 +46,27 @@
                 horizontal? (#{:top :bottom} side)
                 bar-stages (get formbars side)]
             (mapv (fn [stage stage-index]
-                    (let [sizes (mapv (fn [bar]
-                                        (case (:type bar)
-                                          :tool 0
-                                          :bindings (* (dec (:max-size bar))
-                                                       2
-                                                       (formbar-radius)
-                                                       (- 1 c/formbar-outline-thickness))
+                    (let [sizes
+                          (mapv
+                           (fn [bar]
+                             (case (:type bar)
+                               :tool 0
+                               :bindings
+                               (* (dec (:max-size bar))
+                                  2
+                                  (formbar-radius)
+                                  (- 1 c/formbar-outline-thickness))
 
-                                          (max 0
-                                               (let [bar-type (:type bar)
-                                                     size (case bar-type
-                                                            :tool 0
-                                                            (count (:forms bar)))]
-                                                 (* (dec size)
-                                                    2
-                                                    (formbar-radius)
-                                                    (- 1 c/formbar-outline-thickness))))))
-                                      stage)
+                               (max 0
+                                    (let [bar-type (:type bar)
+                                          size (case bar-type
+                                                 :tool 0
+                                                 (count (:forms bar)))]
+                                      (* (dec size)
+                                         2
+                                         (formbar-radius)
+                                         (- 1 c/formbar-outline-thickness))))))
+                           stage)
                           total-size (+ (apply + sizes)
                                         (* (inc c/formbar-spacing)
                                            (formbar-radius)
@@ -80,51 +83,76 @@
                       (mapv (fn [bar size bar-offset]
                               (let [bar-type (:type bar)
                                     bar-pos (case side
-                                              :bottom {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
-                                                       :y (- (+ (:y app-pos) (:y app-size)) edge-offset)}
-                                              :top {:x (+ (:x app-pos) (* 0.5 (:x app-size)) bar-offset)
-                                                    :y (+ (:y app-pos) edge-offset)}
-                                              :left {:x (+ (:x app-pos) edge-offset)
-                                                     :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)}
-                                              :right {:x (- (+ (:x app-pos) (:x app-size)) edge-offset)
-                                                      :y (+ (:y app-pos) (* 0.5 (:y app-size)) bar-offset)})
+                                              :bottom
+                                              {:x (+ (:x app-pos)
+                                                     (* 0.5 (:x app-size))
+                                                     bar-offset)
+                                               :y (- (+ (:y app-pos)
+                                                        (:y app-size))
+                                                     edge-offset)}
+                                              :top
+                                              {:x (+ (:x app-pos)
+                                                     (* 0.5 (:x app-size))
+                                                     bar-offset)
+                                               :y (+ (:y app-pos) edge-offset)}
+                                              :left
+                                              {:x (+ (:x app-pos) edge-offset)
+                                               :y (+ (:y app-pos)
+                                                     (* 0.5 (:y app-size))
+                                                     bar-offset)}
+                                              :right
+                                              {:x (- (+ (:x app-pos)
+                                                        (:x app-size))
+                                                     edge-offset)
+                                               :y (+ (:y app-pos)
+                                                     (* 0.5 (:y app-size))
+                                                     bar-offset)})
                                     radius (* (formbar-radius)
                                               (- 1 c/formbar-outline-thickness)
                                               c/formbar-form-size)]
-                                (merge bar-pos
-                                       {:width (if horizontal? size 0)
-                                        :height (if horizontal? 0 size)
-                                        :type bar-type
-                                        :circles
-                                        (case bar-type
-                                          :tool [(assoc bar-pos
-                                                        :radius radius)]
-                                          :bindings (mapv (fn [name form-index]
-                                                            (assoc (add-points bar-pos
-                                                                                    (scale-point
-                                                                                     {(if horizontal? :x :y)
-                                                                                      (* 2
-                                                                                         (- 1 c/formbar-outline-thickness)
-                                                                                         (formbar-radius))}
-                                                                                     form-index))
-                                                                   :radius radius
-                                                                   :form {:type :literal :value name}))
-                                                          []
-                                                          (range))
-                                          (mapv (fn [form form-index]
-                                                  (assoc (add-points bar-pos
-                                                                          (scale-point
-                                                                           {(if horizontal? :x :y)
-                                                                            (* 2
-                                                                               (- 1 c/formbar-outline-thickness)
-                                                                               (formbar-radius))}
-                                                                           form-index))
-                                                         :radius radius
-                                                         :form form))
-                                                (:forms bar)
-                                                (range)))}
-                                       (when (= bar-type :tool)
-                                         {:tool-type (:tool-type bar)}))))
+                                (merge
+                                 bar-pos
+                                 {:width (if horizontal? size 0)
+                                  :height (if horizontal? 0 size)
+                                  :type bar-type
+                                  :circles
+                                  (case bar-type
+                                    :tool
+                                    [(assoc bar-pos
+                                            :radius radius)]
+                                    :bindings
+                                    (mapv
+                                     (fn [name form-index]
+                                       (assoc
+                                        (add-points
+                                         bar-pos
+                                         (scale-point
+                                          {(if horizontal? :x :y)
+                                           (* 2
+                                              (- 1 c/formbar-outline-thickness)
+                                              (formbar-radius))}
+                                          form-index))
+                                        :radius radius
+                                        :form {:type :literal :value name}))
+                                     []
+                                     (range))
+                                    (mapv
+                                     (fn [form form-index]
+                                       (assoc
+                                        (add-points
+                                         bar-pos
+                                         (scale-point
+                                          {(if horizontal? :x :y)
+                                           (* 2
+                                              (- 1 c/formbar-outline-thickness)
+                                              (formbar-radius))}
+                                          form-index))
+                                        :radius radius
+                                        :form form))
+                                     (:forms bar)
+                                     (range)))}
+                                 (when (= bar-type :tool)
+                                   {:tool-type (:tool-type bar)}))))
                             stage
                             sizes
                             offsets)))
@@ -142,9 +170,14 @@
                                 (let [bar (nth stage bar-index)
                                       {:keys [circles]} bar]
                                   (some (fn [circle-index]
-                                          (let [bar-circle (nth circles circle-index)]
+                                          (let [bar-circle (nth circles
+                                                                circle-index)]
                                             (when (in-circle? bar-circle pos)
-                                              [side stage-index bar-index :circles circle-index :form])))
+                                              [side
+                                               stage-index bar-index
+                                               :circles
+                                               circle-index
+                                               :form])))
                                         (range (count circles)))))
                               (range (count stage)))))
                     (range (count arrangement)))))
@@ -152,38 +185,44 @@
 
 (defn formbar-path-at [pos]
   (let [full-arrangement (formbar-arrangement)]
-    (some (fn [side]
-            (let [arrangement (get full-arrangement side)
-                  horizontal? (#{:top :bottom} side)]
-              (some (fn [stage-index]
-                      (let [stage (nth arrangement stage-index)]
-                        (some (fn [bar-index]
-                                (let [bar (nth stage bar-index)]
-                                  (when (or (<= (point-magnitude
-                                                 (subtract-points pos
-                                                                       bar))
-                                                (formbar-radius))
-                                            (<= (point-magnitude
-                                                 (subtract-points pos
-                                                                       (add-points bar
-                                                                                        (if horizontal?
-                                                                                          {:x (:width bar)}
-                                                                                          {:y (:height bar)}))))
-                                                (formbar-radius))
-                                            (in-rect? (if horizontal?
-                                                             [(subtract-points bar
-                                                                                    {:y (formbar-radius)})
-                                                              {:x (:width bar)
-                                                               :y (* 2 (formbar-radius))}]
-                                                             [(subtract-points bar
-                                                                                    {:x (formbar-radius)})
-                                                              {:x (* 2 (formbar-radius))
-                                                               :y (:height bar)}])
-                                                           pos))
-                                    [side stage-index bar-index])))
-                              (range (count stage)))))
-                    (range (count arrangement)))))
-          c/screen-sides)))
+    (some
+     (fn [side]
+       (let [arrangement (get full-arrangement side)
+             horizontal? (#{:top :bottom} side)]
+         (some
+          (fn [stage-index]
+            (let [stage (nth arrangement stage-index)]
+              (some (fn [bar-index]
+                      (let [bar (nth stage bar-index)]
+                        (when (or
+                               (<= (point-magnitude
+                                    (subtract-points pos
+                                                     bar))
+                                   (formbar-radius))
+                               (<= (point-magnitude
+                                    (subtract-points pos
+                                                     (add-points
+                                                      bar
+                                                      (if horizontal?
+                                                        {:x (:width bar)}
+                                                        {:y (:height bar)}))))
+                                   (formbar-radius))
+                               (in-rect? (if horizontal?
+                                           [(subtract-points
+                                             bar
+                                             {:y (formbar-radius)})
+                                            {:x (:width bar)
+                                             :y (* 2 (formbar-radius))}]
+                                           [(subtract-points
+                                             bar
+                                             {:x (formbar-radius)})
+                                            {:x (* 2 (formbar-radius))
+                                             :y (:height bar)}])
+                                         pos))
+                          [side stage-index bar-index])))
+                    (range (count stage)))))
+          (range (count arrangement)))))
+     c/screen-sides)))
 
 (defn formbar-insertion-path-at [pos]
   (let [arrangement (formbar-arrangement)
@@ -215,49 +254,58 @@
                                     (and (= rounded-layer-index layer-count)
                                          (< (mod layer-index 1)
                                             0.5)))
-                            (let [layer-bars (if (= rounded-layer-index layer-count)
+                            (let [layer-bars (if (= rounded-layer-index
+                                                    layer-count)
                                                []
-                                               (nth side-layers rounded-layer-index))
+                                               (nth side-layers
+                                                    rounded-layer-index))
                                   bar-centers (mapv (fn [bar]
-                                                      (add-points bar
-                                                                       (scale-point
-                                                                        {:x (:width bar)
-                                                                         :y (:height bar)}
-                                                                        0.5)))
+                                                      (add-points
+                                                       bar
+                                                       (scale-point
+                                                        {:x (:width bar)
+                                                         :y (:height bar)}
+                                                        0.5)))
                                                     layer-bars)
                                   perpendicular-dim (if (#{:top :bottom} side)
                                                       :x :y)
                                   perpendicular-pos (get pos perpendicular-dim)
                                   bar-positions (mapv #(get % perpendicular-dim)
                                                       bar-centers)
-                                  insertion-index (if (empty? bar-centers)
-                                                    0
-                                                    (or (some #(when (< perpendicular-pos
-                                                                        (nth bar-positions %))
-                                                                 %)
-                                                              (range (count bar-centers)))
-                                                        (count bar-centers)))
-                                  error (cond (empty? layer-bars)
-                                              (Math/abs
-                                               (- perpendicular-pos 0.5))
+                                  insertion-index
+                                  (if (empty? bar-centers)
+                                    0
+                                    (or (some #(when (< perpendicular-pos
+                                                        (nth bar-positions %))
+                                                 %)
+                                              (range (count bar-centers)))
+                                        (count bar-centers)))
+                                  error
+                                  (cond (empty? layer-bars)
+                                        (Math/abs
+                                         (- perpendicular-pos 0.5))
 
-                                              (= insertion-index 0)
-                                              (let [bar (first layer-bars)]
-                                                (max 0
-                                                     (- (Math/abs (- perpendicular-pos
-                                                                     (get bar perpendicular-dim)))
-                                                        (formbar-radius))))
+                                        (= insertion-index 0)
+                                        (let [bar (first layer-bars)]
+                                          (max 0
+                                               (- (Math/abs
+                                                   (- perpendicular-pos
+                                                      (get bar
+                                                           perpendicular-dim)))
+                                                  (formbar-radius))))
 
-                                              (>= insertion-index (count layer-bars))
-                                              (let [bar (last layer-bars)]
-                                                (max 0
-                                                     (- (Math/abs (- perpendicular-pos
-                                                                     (get bar perpendicular-dim)))
-                                                        (+ (formbar-radius)
-                                                           (max (:width bar)
-                                                                (:height bar))))))
+                                        (>= insertion-index (count layer-bars))
+                                        (let [bar (last layer-bars)]
+                                          (max 0
+                                               (- (Math/abs
+                                                   (- perpendicular-pos
+                                                      (get bar
+                                                           perpendicular-dim)))
+                                                  (+ (formbar-radius)
+                                                     (max (:width bar)
+                                                          (:height bar))))))
 
-                                              :else 0)]
+                                        :else 0)]
                               {:path [side
                                       rounded-layer-index
                                       insertion-index]
@@ -278,25 +326,29 @@
         layer-count (count layer)]
     (assoc (if (empty? layer)
              (add-points app-pos
-                              (let [outer-layer-spacing (* 2
-                                                           (formbar-radius)
-                                                           (+ 0.5 layer-index)
-                                                           c/formbar-spacing)]
-                                (case bar-side
-                                  :left (-> app-size
-                                            (update :y (partial * 0.5))
-                                            (assoc :x outer-layer-spacing))
-                                  :right (-> app-size
-                                             (update :y (partial * 0.5))
-                                             (update :x
-                                                     #(- % outer-layer-spacing)))
-                                  :top (-> app-size
-                                           (update :x (partial * 0.5))
-                                           (assoc :y outer-layer-spacing))
-                                  :bottom (-> app-size
-                                              (update :x (partial * 0.5))
-                                              (update :y
-                                                      #(- % outer-layer-spacing))))))
+                         (let [outer-layer-spacing (* 2
+                                                      (formbar-radius)
+                                                      (+ 0.5 layer-index)
+                                                      c/formbar-spacing)]
+                           (case bar-side
+                             :left
+                             (-> app-size
+                                 (update :y (partial * 0.5))
+                                 (assoc :x outer-layer-spacing))
+                             :right
+                             (-> app-size
+                                 (update :y (partial * 0.5))
+                                 (update :x
+                                         #(- % outer-layer-spacing)))
+                             :top
+                             (-> app-size
+                                 (update :x (partial * 0.5))
+                                 (assoc :y outer-layer-spacing))
+                             :bottom
+                             (-> app-size
+                                 (update :x (partial * 0.5))
+                                 (update :y
+                                         #(- % outer-layer-spacing))))))
              (let [vertical? (#{:left :right} bar-side)
                    start-offset (* (formbar-radius)
                                    (inc c/formbar-spacing)
@@ -316,61 +368,66 @@
 (defn new-formbar-circles []
   (let [[app-pos app-size] (app-rect)
         arrangement (formbar-arrangement)]
-    (apply hash-map
-           (mapcat (fn [side]
-                     (concat
-                      (let [side-formbars (get arrangement side)]
-                        (mapcat (fn [stage-index]
-                                  (let [stage (nth side-formbars stage-index)
-                                        dim (if (#{:left :right} side)
-                                              :y
-                                              :x)
-                                        size-attribute (if (#{:left :right} side)
-                                                         :height
-                                                         :width)]
-                                    (list
-                                     (assoc (update (first stage)
-                                                    dim
-                                                    #(- %
-                                                        (* (formbar-radius)
-                                                           (inc c/new-formbar-circle-radius)
-                                                           c/formbar-spacing)))
-                                            :radius (* c/new-formbar-circle-radius
-                                                       (formbar-radius)))
-                                     [side stage-index 0]
-                                     (assoc (update (last stage)
-                                                    dim
-                                                    #(+ %
-                                                        (size-attribute (last stage))
-                                                        (* (formbar-radius)
-                                                           (inc c/new-formbar-circle-radius)
-                                                           c/formbar-spacing)))
-                                            :radius (* c/new-formbar-circle-radius
-                                                       (formbar-radius)))
-                                     [side stage-index (count stage)])))
-                                (range (count side-formbars))))
-                      (let [side-center (add-points app-pos
-                                                         (case side
-                                                           :top {:x (* 0.5 (:x app-size))}
-                                                           :bottom (update app-size :x (partial * 0.5))
-                                                           :left {:y (* 0.5 (:y app-size))}
-                                                           :right (update app-size :y (partial * 0.5))))
-                            perpendicular-direction (case side
-                                                      :top {:y 1}
-                                                      :bottom {:y -1}
-                                                      :left {:x 1}
-                                                      :right {:x -1})
-                            arrangement-side (get arrangement side)]
-                        [(assoc (add-points side-center
-                                                 (scale-point perpendicular-direction
-                                                                   (- (+ (* c/new-formbar-circle-radius
-                                                                            (formbar-radius))
-                                                                         (formbar-offset (count arrangement-side)))
-                                                                      (formbar-radius))))
-                                :radius (* c/new-formbar-circle-radius
-                                           (formbar-radius)))
-                         [side (count arrangement-side) 0]])))
-                   c/screen-sides))))
+    (apply
+     hash-map
+     (mapcat
+      (fn [side]
+        (concat
+         (let [side-formbars (get arrangement side)]
+           (mapcat (fn [stage-index]
+                     (let [stage (nth side-formbars stage-index)
+                           dim (if (#{:left :right} side)
+                                 :y
+                                 :x)
+                           size-attribute (if (#{:left :right} side)
+                                            :height
+                                            :width)]
+                       (list
+                        (assoc (update (first stage)
+                                       dim
+                                       #(- %
+                                           (* (formbar-radius)
+                                              (inc c/new-formbar-circle-radius)
+                                              c/formbar-spacing)))
+                               :radius (* c/new-formbar-circle-radius
+                                          (formbar-radius)))
+                        [side stage-index 0]
+                        (assoc (update (last stage)
+                                       dim
+                                       #(+ %
+                                           (size-attribute (last stage))
+                                           (* (formbar-radius)
+                                              (inc c/new-formbar-circle-radius)
+                                              c/formbar-spacing)))
+                               :radius (* c/new-formbar-circle-radius
+                                          (formbar-radius)))
+                        [side stage-index (count stage)])))
+                   (range (count side-formbars))))
+         (let [side-center
+               (add-points app-pos
+                           (case side
+                             :top {:x (* 0.5 (:x app-size))}
+                             :bottom (update app-size :x (partial * 0.5))
+                             :left {:y (* 0.5 (:y app-size))}
+                             :right (update app-size :y (partial * 0.5))))
+               perpendicular-direction (case side
+                                         :top {:y 1}
+                                         :bottom {:y -1}
+                                         :left {:x 1}
+                                         :right {:x -1})
+               arrangement-side (get arrangement side)]
+           [(assoc (add-points
+                    side-center
+                    (scale-point perpendicular-direction
+                                 (- (+ (* c/new-formbar-circle-radius
+                                          (formbar-radius))
+                                       (formbar-offset
+                                        (count arrangement-side)))
+                                    (formbar-radius))))
+                   :radius (* c/new-formbar-circle-radius
+                              (formbar-radius)))
+            [side (count arrangement-side) 0]])))
+      c/screen-sides))))
 
 (defn new-formbar-circle-path-at [pos]
   (let [circles (new-formbar-circles)]
@@ -391,7 +448,9 @@
                                (fn [saved-formbars]
                                  (if (>= index (count saved-formbars))
                                    (conj saved-formbars formbar)
-                                   (u/vector-insert saved-formbars index formbar)))))
+                                   (u/vector-insert saved-formbars
+                                                    index
+                                                    formbar)))))
 
 (defn render-formbars [mouse]
   (let [arrangement (formbar-arrangement)
@@ -403,8 +462,12 @@
           (doseq [bar stage]
             (let [bar-type (:type bar)]
               (doseq [[color radius-factor]
-                      [[(:foreground (color-scheme)) 1]
-                       [(:background (color-scheme)) (- 1 c/formbar-outline-thickness)]]]
+                      [[(:foreground
+                         (color-scheme))
+                        1]
+                       [(:background
+                         (color-scheme))
+                        (- 1 c/formbar-outline-thickness)]]]
                 (let [[primary-dim secondary-dim size-key]
                       (if horizontal?
                         [:x :y :width]
@@ -412,22 +475,31 @@
                   (when (not= bar-type :bindings)
                     (doseq [center [bar
                                     (add-points bar
-                                                     {primary-dim (size-key bar)})]]
+                                                {primary-dim (size-key bar)})]]
                       (draw-circle (assoc center
-                                          :radius (* (formbar-radius) radius-factor))
+                                          :radius
+                                          (* (formbar-radius) radius-factor))
                                    color
                                    :formbar)))
                   (draw-rect (if (= bar-type :bindings)
-                               [(subtract-points bar
-                                                      {primary-dim (* (formbar-radius) radius-factor)
-                                                       secondary-dim (* (formbar-radius) radius-factor)})
+                               [(subtract-points
+                                 bar
+                                 {primary-dim (* (formbar-radius)
+                                                 radius-factor)
+                                  secondary-dim (* (formbar-radius)
+                                                   radius-factor)})
                                 {primary-dim (+ (size-key bar)
-                                                (* 2 (formbar-radius) radius-factor))
-                                 secondary-dim (* 2 (formbar-radius) radius-factor)}]
-                               [(subtract-points bar
-                                                      {secondary-dim (* (formbar-radius) radius-factor)})
+                                                (* 2 (formbar-radius)
+                                                   radius-factor))
+                                 secondary-dim (* 2 (formbar-radius)
+                                                  radius-factor)}]
+                               [(subtract-points
+                                 bar
+                                 {secondary-dim (* (formbar-radius)
+                                                   radius-factor)})
                                 {primary-dim (size-key bar)
-                                 secondary-dim (* 2 (formbar-radius) radius-factor)}])
+                                 secondary-dim (* 2 (formbar-radius)
+                                                  radius-factor)}])
                              color
                              :formbar))))))
         (when (and formbar-form-path
@@ -447,6 +519,6 @@
                                (first (:circles bar))
                                :formbar))
               (doseq [bar-circle (:circles bar)]
-                (render-sublayouts (form-layout (:form bar-circle)
-                                                              bar-circle)
-                                          :formbar)))))))))
+                (render-total-layout (form-layout (:form bar-circle)
+                                                  bar-circle)
+                                     :formbar)))))))))

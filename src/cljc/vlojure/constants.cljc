@@ -1,6 +1,12 @@
 (ns vlojure.constants)
 
-(def char-escape-string {\newline "\\n" \tab "\\t" \return "\\r" \" "\\\"" \\ "\\\\" \formfeed "\\f" \backspace "\\b"})
+(def char-escape-string {\newline "\\n"
+                         \tab "\\t"
+                         \return "\\r"
+                         \" "\\\""
+                         \\ "\\\\"
+                         \formfeed "\\f"
+                         \backspace "\\b"})
 
 (def color-schemes
   [{:name "Espresso"
@@ -38,7 +44,13 @@
 
 (def screen-sides [:bottom :right :top :left])
 
-(def ui-layers [:background :program :program-overlay :formbar :menu :drag :settings-overlay])
+(def ui-layers [:background
+                :program
+                :program-overlay
+                :formbar
+                :menu
+                :drag
+                :settings-overlay])
 
 (def subform-shrink-factor 0.95)
 (def sole-subform-shrink-factor 0.75)
@@ -127,9 +139,10 @@
 (def settings-slider-text-y -0.18)
 (def settings-slider-text-size 0.06)
 
-(def settings-formbar-tool-types [[:undo :redo]
-                                  [:comment :quote-enclose :enclose :vector-enclose]
-                                  [:literal-fn-replace :fn-enclose :let-enclose]])
+(def settings-formbar-tool-types
+  [[:undo :redo]
+   [:comment :quote-enclose :enclose :vector-enclose]
+   [:literal-fn-replace :fn-enclose :let-enclose]])
 (def settings-formbar-tool-text-y -0.675)
 (def settings-formbar-tool-text-size 0.55)
 (def settings-formbar-tool-y -0.3)
@@ -138,7 +151,13 @@
 (def settings-formbar-tool-x-spacing 1.1)
 (def settings-formbar-tool-y-spacing 1.1)
 
-(def draggable-tools #{:comment :quote-enclose :enclose :vector-enclose :literal-fn-replace :fn-enclose :let-enclose})
+(def draggable-tools #{:comment
+                       :quote-enclose
+                       :enclose
+                       :vector-enclose
+                       :literal-fn-replace
+                       :fn-enclose
+                       :let-enclose})
 
 (def settings-saved-formbars-text-y -0.65)
 (def settings-saved-formbars-text-size 0.8)
@@ -160,7 +179,8 @@
 (def settings-project-text-size 0.9)
 (def settings-project-name-size 0.08)
 
-(def settings-project-buttons [:new-project :duplicate-project :rename-project :delete-project])
+(def settings-project-buttons
+  [:new-project :duplicate-project :rename-project :delete-project])
 
 (def settings-project-button-radius 0.11)
 (def settings-project-buttons-y-spacing 1.1)
@@ -197,6 +217,8 @@
 
 (def saved-formbar-zone-corner-radius 0.04)
 (def saved-formbar-spacing 0.25)
+
+(def form-icon-canvas-overflow-factor 1.2)
 
 (def rename-icon-size 0.7)
 (def rename-icon-width 0.6)
@@ -243,3 +265,5 @@
 (def scroll-angle-snap-distance 0.1)
 
 (def max-undo-history 100)
+
+(def max-form-icon-size 0.5)

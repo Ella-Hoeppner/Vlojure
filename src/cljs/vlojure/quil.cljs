@@ -46,7 +46,7 @@
              '(do (require '[quil.core :as q])
                   (require '[vlojure.quil :refer [start-quil!
                                                   stop-quil!]])))
-            #(u/log "Quil initialization success" %)
+            #(u/log "Quil initialization success")
             #(u/log "Quil initialization failure" %)))
 
 (defn init-quil []

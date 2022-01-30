@@ -125,12 +125,14 @@
     :render
     (fn [mouse mouse-zone]
       (draw-rect (let [[app-pos app-size] (app-rect)]
-                            [(reduce #(update %1 %2 (partial + c/text-page-border))
-                                     app-pos
-                                     [:x :y])
-                             (reduce #(update %1 %2 (fn [v] (- v (* 2 c/text-page-border))))
-                                     app-size
-                                     [:x :y])])
+                   [(reduce #(update %1 %2
+                                     (partial + c/text-page-border))
+                            app-pos
+                            [:x :y])
+                    (reduce #(update %1 %2
+                                     (fn [v] (- v (* 2 c/text-page-border))))
+                            app-size
+                            [:x :y])])
                           (:foreground (color-scheme))
                           :background)
 

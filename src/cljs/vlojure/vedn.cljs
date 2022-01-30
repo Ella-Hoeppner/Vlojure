@@ -68,11 +68,14 @@
                     in-string? false]
                (if (>= index size)
                  (conj subtokens (subs token subtoken-start))
-                 (let [special-token (some (fn [special-token]
-                                             (when (= special-token
-                                                      (subs token index (+ index (count special-token))))
-                                               special-token))
-                                           special-tokens)
+                 (let [special-token
+                       (some (fn [special-token]
+                               (when (= special-token
+                                        (subs token
+                                              index
+                                              (+ index (count special-token))))
+                                 special-token))
+                             special-tokens)
                        quote? (and (= (nth token index) \")
                                    (not= (subs token (dec index) index) \\))]
                    (if in-string?
@@ -89,13 +92,16 @@
                               subtoken-start
                               true))
                      (if special-token
-                       (if (= (subs token subtoken-start (inc index)) "#object[")
+                       (if (= (subs token subtoken-start (inc index))
+                              "#object[")
                          (let [closing-index (some #(when (= (nth token %) \])
                                                           (inc %))
                                                        (range index ##Inf))]
                                (recur closing-index
                                       (conj subtokens
-                                            (subs token subtoken-start closing-index))
+                                            (subs token
+                                                  subtoken-start
+                                                  closing-index))
                                       closing-index
                                       false))
                          (let [special-token-size (count special-token)]
@@ -154,7 +160,9 @@
                 (recur (inc str-index)
                        (if token-start
                          (concat past-tokens
-                                 (break-token (subs clj-str token-start (inc str-index))))
+                                 (break-token (subs clj-str
+                                                    token-start
+                                                    (inc str-index))))
                          past-tokens)
                        nil
                        false))
@@ -172,7 +180,9 @@
                 (recur (inc str-index)
                        (if token-start
                          (concat past-tokens
-                                 (break-token (subs clj-str token-start str-index)))
+                                 (break-token (subs clj-str
+                                                    token-start
+                                                    str-index)))
                          past-tokens)
                        nil
                        false)

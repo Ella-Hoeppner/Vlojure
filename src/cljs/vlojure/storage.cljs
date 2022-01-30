@@ -112,7 +112,13 @@
     (swap! app-state
            (fn [state]
              (update-in state
-                        [:projects (active-project) :formbars side stage substage :forms]
+                        [:projects
+                         (active-project)
+                         :formbars
+                         side
+                         stage
+                         substage
+                         :forms]
                         #(u/vector-remove % form-index)))))
   (save-state!))
 
@@ -120,7 +126,9 @@
   (swap! app-state
          (fn [state]
            (update-in state
-                      (concat [:projects (active-project) :formbars] formbar-path [:forms])
+                      (concat [:projects (active-project) :formbars]
+                              formbar-path
+                              [:forms])
                       #(u/vector-insert % insertion-index form))))
   (save-state!))
 
@@ -137,19 +145,22 @@
                                       #(u/vector-remove % (second path))))))))
 
 (defn add-project-formbar-at [path & [starting-value]]
-  (update-project-attr! :formbars
-                        (fn [formbars]
-                          (let [new-formbar (merge {:forms []}
-                                                   starting-value)
-                                [side stage-index formbar-index] path]
-                            (update formbars
-                                    side
-                                    (fn [side-formbars]
-                                      (if (>= stage-index (count side-formbars))
-                                        (conj side-formbars [new-formbar])
-                                        (update side-formbars
-                                                stage-index
-                                                #(u/vector-insert % formbar-index new-formbar)))))))))
+  (update-project-attr!
+   :formbars
+   (fn [formbars]
+     (let [new-formbar (merge {:forms []}
+                              starting-value)
+           [side stage-index formbar-index] path]
+       (update formbars
+               side
+               (fn [side-formbars]
+                 (if (>= stage-index (count side-formbars))
+                   (conj side-formbars [new-formbar])
+                   (update side-formbars
+                           stage-index
+                           #(u/vector-insert %
+                                             formbar-index
+                                             new-formbar)))))))))
 
 (defn camera-speed [diff]
   (let [speed-param (global-attr :camera-speed)
@@ -186,26 +197,29 @@
                                                        index))))))
 
 (defn duplicate-project []
-  (update-global-attr! :projects
-                       (fn [projects]
-                         (vec (conj (seq projects)
-                                    (update (first projects)
-                                            :name
-                                            (let [names (set (mapv :name projects))]
-                                              (fn [name]
-                                                (let [is-copy? (re-matches #".* copy($| \d+)$" name)]
-                                                  (some (fn [index]
-                                                          (let [suffix (if (zero? index)
-                                                                         " copy"
-                                                                         (str " copy " index))
-                                                                new-name (if is-copy?
-                                                                           (string/replace name
-                                                                                           #" copy($| \d+)$"
-                                                                                           suffix)
-                                                                           (str name suffix))]
-                                                            (when-not (names new-name)
-                                                              new-name)))
-                                                        (range)))))))))))
+  (update-global-attr!
+   :projects
+   (fn [projects]
+     (vec (conj (seq projects)
+                (update (first projects)
+                        :name
+                        (let [names (set (mapv :name projects))]
+                          (fn [name]
+                            (let [is-copy? (re-matches #".* copy($| \d+)$"
+                                                       name)]
+                              (some (fn [index]
+                                      (let [suffix (if (zero? index)
+                                                     " copy"
+                                                     (str " copy " index))
+                                            new-name (if is-copy?
+                                                       (string/replace
+                                                        name
+                                                        #" copy($| \d+)$"
+                                                        suffix)
+                                                       (str name suffix))]
+                                        (when-not (names new-name)
+                                          new-name)))
+                                    (range)))))))))))
 
 (defn blank-project []
   (let [project-names (mapv :name (global-attr :projects))
@@ -297,99 +311,113 @@
    {:active-project 0
     :color-scheme 0
     :scroll-direction {:x 1}
-    :saved-formbars [[{:type :literal, :value "+"} {:type :literal, :value "-"} {:type :literal, :value "*"} {:type :literal, :value "/"} {:type :literal, :value "mod"}]
-                     [{:type :literal, :value "conj"} {:type :literal, :value "first"} {:type :literal, :value "last"} {:type :literal, :value "concat"}]
-                     [{:type :list, :children [{:type :literal, :value "fn"} {:type :vector, :children []} {:type :list, :children []}]}
-                      {:type :list, :children [{:type :literal, :value "let"} {:type :vector, :children []} {:type :list, :children []}]}]]
-    :projects [{:name "Calculator"
+    :saved-formbars
+    [[{:type :literal, :value "+"}
+      {:type :literal, :value "-"}
+      {:type :literal, :value "*"}
+      {:type :literal, :value "/"}
+      {:type :literal, :value "mod"}]
+     [{:type :literal, :value "conj"}
+      {:type :literal, :value "first"}
+      {:type :literal, :value "last"}
+      {:type :literal, :value "concat"}]
+     [{:type :list, :children [{:type :literal, :value "fn"}
+                               {:type :vector, :children []}
+                               {:type :list, :children []}]}
+      {:type :list, :children [{:type :literal, :value "let"}
+                               {:type :vector, :children []}
+                               {:type :list, :children []}]}]]
+    :projects
+    [{:name "Calculator"
 
-                :form
-                (clj->vedn "(+ 1 (* 5 10))")
+      :form
+      (clj->vedn "(+ 1 (* 5 10))")
 
-                :formbars
-                (let [primary [[{:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["()"
-                                               "[]"
-                                               "{}"])}
-                                {:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["#()"
-                                               "%"
-                                               "(fn [x] ())"
-                                               "(let [] ())"])}]
-                               [{:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["apply"
-                                               "map"
-                                               "mapv"
-                                               "reduce"
-                                               "some"
-                                               "filter"
-                                               "nth"
-                                               "range"
-                                               "count"])}]]
-                      secondary [[{:forms (mapv (comp first
-                                                      :children
-                                                      clj->vedn)
-                                                ["Math/pow"
-                                                 "Math/sqrt"
-                                                 "Math/PI"])}]
-                                 [{:forms (mapv (comp first
-                                                      :children
-                                                      clj->vedn)
-                                                ["1"
-                                                 "10"])}
-                                  {:forms (mapv (comp first
-                                                      :children
-                                                      clj->vedn)
-                                                ["+"
-                                                 "-"
-                                                 "*"
-                                                 "/"
-                                                 "mod"])}]]]
-                  {:top primary
-                   :bottom secondary
-                   :right []
-                   :left []})}
-               {:name "Fibonacci"
+      :formbars
+      (let [primary [[{:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["()"
+                                     "[]"
+                                     "{}"])}
+                      {:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["#()"
+                                     "%"
+                                     "(fn [x] ())"
+                                     "(let [] ())"])}]
+                     [{:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["apply"
+                                     "map"
+                                     "mapv"
+                                     "reduce"
+                                     "some"
+                                     "filter"
+                                     "nth"
+                                     "range"
+                                     "count"])}]]
+            secondary [[{:forms (mapv (comp first
+                                            :children
+                                            clj->vedn)
+                                      ["Math/pow"
+                                       "Math/sqrt"
+                                       "Math/PI"])}]
+                       [{:forms (mapv (comp first
+                                            :children
+                                            clj->vedn)
+                                      ["1"
+                                       "10"])}
+                        {:forms (mapv (comp first
+                                            :children
+                                            clj->vedn)
+                                      ["+"
+                                       "-"
+                                       "*"
+                                       "/"
+                                       "mod"])}]]]
+        {:top primary
+         :bottom secondary
+         :right []
+         :left []})}
+     {:name "Fibonacci"
 
-                :form
-                (clj->vedn "(nth (iterate (fn [f] (conj f (+ (last f) (last (butlast f))))) [0 1]) 10)")
+      :form
+      (clj->vedn
+       "(nth (iterate (fn [f] (conj f (+ (last f) (last (butlast f))))) [0 1]) 10)")
 
-                :formbars
-                (let [primary [[{:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["()"
-                                               "[]"
-                                               "{}"
-                                               "#()"
-                                               "#{}"])}]
-                               [{:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["mapv"
-                                               "reduce"])}
-                                {:forms (mapv (comp first
-                                                    :children
-                                                    clj->vedn)
-                                              ["(let [] ())"])}]]
-                      secondary [[{:forms (mapv (comp first
-                                                      :children
-                                                      clj->vedn)
-                                                ["+"
-                                                 "-"
-                                                 "*"
-                                                 "/"
-                                                 "mod"])}]]]
-                  {:bottom primary
-                   :top secondary
-                   :left []
-                   :right []})}]}))
+      :formbars
+      (let [primary [[{:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["()"
+                                     "[]"
+                                     "{}"
+                                     "#()"
+                                     "#{}"])}]
+                     [{:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["mapv"
+                                     "reduce"])}
+                      {:forms (mapv (comp first
+                                          :children
+                                          clj->vedn)
+                                    ["(let [] ())"])}]]
+            secondary [[{:forms (mapv (comp first
+                                            :children
+                                            clj->vedn)
+                                      ["+"
+                                       "-"
+                                       "*"
+                                       "/"
+                                       "mod"])}]]]
+        {:bottom primary
+         :top secondary
+         :left []
+         :right []})}]}))
 
 (defn ensure-saved-state-updated! []
   (when (not

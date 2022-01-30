@@ -100,9 +100,10 @@
                        (u/prop-range c/settings-zone-icon-spokes true))]
       (draw-line base-circle-pos
                  (add-points base-circle-pos
-                             (scale-point (angle-point angle)
-                                          (* radius
-                                             c/settings-zone-icon-spoke-length-factor)))
+                             (scale-point
+                              (angle-point angle)
+                              (* radius
+                                 c/settings-zone-icon-spoke-length-factor)))
                  (* radius
                     c/settings-zone-icon-spoke-width-factor)
                  (:text (color-scheme))
@@ -195,9 +196,10 @@
                (= (:down-zone @mouse) :empty))
       (page-action @active-page :scroll
                    (-
-                    (/ (scalar-point-projection (subtract-points @mouse
-                                                                 (:last-pos @mouse))
-                                                (global-attr :scroll-direction))
+                    (/ (scalar-point-projection
+                        (subtract-points @mouse
+                                         (:last-pos @mouse))
+                        (global-attr :scroll-direction))
                        (* (base-zoom)
                           c/outer-form-spacing)))
                    @mouse))
@@ -236,7 +238,8 @@
                     :down-pos (select-keys mouse-state [:x :y])
                     :down? true
                     :down-zone zone
-                    :down-formbar-form-path (formbar-form-path-at mouse-state))))
+                    :down-formbar-form-path (formbar-form-path-at
+                                             mouse-state))))
     (page-action @active-page :click-down @mouse zone)))
 
 (defn refresh-html-colors []

@@ -31,7 +31,7 @@
                                     map-layout
                                     adjust-layout
                                     get-sublayout
-                                    render-sublayouts
+                                    render-total-layout
                                     expand-layout
                                     shift-layout
                                     layout-insertion-path-at
@@ -125,15 +125,17 @@
 
 (defn current-form-layouts []
   (assoc origin
-         :sublayouts (mapv (fn [child index]
-                             (form-layout child
-                                          (assoc (scale-point (global-attr :scroll-direction)
-                                                              (* c/outer-form-spacing
-                                                                 index
-                                                                 2))
-                                                 :radius 1)))
-                           (:children (project-attr :form))
-                           (range))
+         :sublayouts
+         (mapv (fn [child index]
+                 (form-layout child
+                              (assoc (scale-point
+                                      (global-attr :scroll-direction)
+                                      (* c/outer-form-spacing
+                                         index
+                                         2))
+                                     :radius 1)))
+               (:children (project-attr :form))
+               (range))
          :radius ##Inf))
 
 (defn adjusted-form-layouts []
@@ -227,24 +229,31 @@
   (modify-code!
    (fn [form]
      (let [child-form (get-child form path)]
-       (if (or (#{:comment :quote-enclose :enclose :vector-enclose :fn-enclose :let-enclose} tool)
+       (if (or (#{:comment
+                  :quote-enclose
+                  :enclose
+                  :vector-enclose
+                  :fn-enclose
+                  :let-enclose}
+                tool)
                (and (#{:literal-fn-replace} tool)
                     (= :list (:type child-form))))
-         (replace-child form
-                        path
-                        (case tool
-                          :comment {:type :comment :children [child-form]}
-                          :quote-enclose {:type :quote :children [child-form]}
-                          :enclose {:type :list :children [child-form]}
-                          :vector-enclose {:type :vector :children [child-form]}
-                          :literal-fn-replace {:type :lit-fn
-                                               :children (:children child-form)}
-                          :fn-enclose {:type :list :children [{:type :literal :value "fn"}
-                                                              {:type :vector :children []}
-                                                              child-form]}
-                          :let-enclose {:type :list :children [{:type :literal :value "let"}
-                                                               {:type :vector :children []}
-                                                               child-form]}))
+         (replace-child
+          form
+          path
+          (case tool
+            :comment {:type :comment :children [child-form]}
+            :quote-enclose {:type :quote :children [child-form]}
+            :enclose {:type :list :children [child-form]}
+            :vector-enclose {:type :vector :children [child-form]}
+            :literal-fn-replace {:type :lit-fn
+                                 :children (:children child-form)}
+            :fn-enclose {:type :list :children [{:type :literal :value "fn"}
+                                                {:type :vector :children []}
+                                                child-form]}
+            :let-enclose {:type :list :children [{:type :literal :value "let"}
+                                                 {:type :vector :children []}
+                                                 child-form]}))
          form)))))
 
 (defn get-formbar-insertion-index [mouse]
@@ -271,12 +280,14 @@
                          (:sublayouts
                           (adjusted-form-layouts)))]
     (when (= mouse-zone :empty)
-      (let [projection (scalar-point-projection (subtract-points mouse
-                                                                 first-sublayout)
-                                                (global-attr :scroll-direction))
-            rejection (scalar-point-rejection (subtract-points mouse
-                                                               first-sublayout)
-                                              (global-attr :scroll-direction))
+      (let [projection (scalar-point-projection
+                        (subtract-points mouse
+                                         first-sublayout)
+                        (global-attr :scroll-direction))
+            rejection (scalar-point-rejection
+                       (subtract-points mouse
+                                        first-sublayout)
+                       (global-attr :scroll-direction))
             pos (/ projection
                    (* (base-zoom)
                       c/outer-form-spacing))]
@@ -290,22 +301,23 @@
   (reset! camera-move-diff val))
 
 (defn log-eval-result [result]
-  (update-project-attr! :eval-results
-                        #(conj %
-                               (first
-                                (:children
-                                 (clj->vedn
-                                  (cond
-                                    (string? result)
-                                    (str \"
-                                         (string/escape result c/char-escape-string)
-                                         \")
+  (update-project-attr!
+   :eval-results
+   #(conj %
+          (first
+           (:children
+            (clj->vedn
+             (cond
+               (string? result)
+               (str \"
+                    (string/escape result c/char-escape-string)
+                    \")
 
-                                    (fn? result)
-                                    (apply str (rest (butlast (str [result]))))
+               (fn? result)
+               (apply str (rest (butlast (str [result]))))
 
-                                    :else
-                                    (str result))))))))
+               :else
+               (str result))))))))
 
 (defn log-eval-error [error]
   (log-error! (str (ex-cause error)))
@@ -361,9 +373,10 @@
     (fn []
       (let [current-size (app-size)]
         (when literal-text-input
-          (let [{:keys [x y radius]} (when @literal-text-input-path
-                                       (get-sublayout (adjusted-form-layouts)
-                                                      @literal-text-input-path))
+          (let [{:keys [x y radius]}
+                (when @literal-text-input-path
+                  (get-sublayout (adjusted-form-layouts)
+                                 @literal-text-input-path))
                 text-input-str (.-value @literal-text-input)
                 length (count text-input-str)
                 new-text-size (* c/html-text-size-factor
@@ -445,11 +458,13 @@
 
       (let [{:keys [dragging?]} mouse
             [app-pos app-size] (app-rect)
-            current-outer-form-insertion-index (outer-form-insertion-index mouse mouse-zone)
+            current-outer-form-insertion-index (outer-form-insertion-index
+                                                mouse
+                                                mouse-zone)
             current-placement-form (placement-form mouse)
             current-dragged-tool (dragged-tool mouse)]
-        (render-sublayouts (adjusted-form-layouts)
-                           :program)
+        (render-total-layout (adjusted-form-layouts)
+                             :program)
         (when (and dragging?
                    (or current-dragged-tool
                        current-placement-form))
@@ -463,27 +478,32 @@
           (let [sublayouts (:sublayouts
                             (adjusted-form-layouts))
                 start? (= current-outer-form-insertion-index -1)
-                adjusted-form-layout (if start?
-                                       (first sublayouts)
-                                       (nth sublayouts
-                                            (min current-outer-form-insertion-index
-                                                 (dec (count sublayouts)))))
+                adjusted-form-layout
+                (if start?
+                  (first sublayouts)
+                  (nth sublayouts
+                       (min current-outer-form-insertion-index
+                            (dec (count sublayouts)))))
                 {:keys [radius]} adjusted-form-layout
                 scroll-direction (global-attr :scroll-direction)
-                base-circle (select-keys (expand-layout
-                                          (shift-layout adjusted-form-layout
-                                                        (scale-point scroll-direction
-                                                                     (* (if start? -1 1)
-                                                                        c/outer-form-spacing
-                                                                        radius)))
-                                          c/drop-form-radius-factor)
-                                         [:x :y :radius])]
-            (draw-circle (update base-circle :radius (partial * c/drop-form-outline-radius-factor))
-                         (:background (color-scheme))
-                         :drag)
-            (render-sublayouts (form-layout current-placement-form
-                                            base-circle)
-                               :drag)))
+                base-circle
+                (select-keys (expand-layout
+                              (shift-layout adjusted-form-layout
+                                            (scale-point
+                                             scroll-direction
+                                             (* (if start? -1 1)
+                                                c/outer-form-spacing
+                                                radius)))
+                              c/drop-form-radius-factor)
+                             [:x :y :radius])]
+            (draw-circle
+             (update base-circle :radius
+                     (partial * c/drop-form-outline-radius-factor))
+             (:background (color-scheme))
+             :drag)
+            (render-total-layout (form-layout current-placement-form
+                                              base-circle)
+                                 :drag)))
         (let [layout-path (layout-path-at (adjusted-form-layouts)
                                           mouse)
               insertion-path (layout-insertion-path-at (adjusted-form-layouts)
@@ -491,37 +511,49 @@
               literal? (and (= (count layout-path) (count insertion-path))
                             (= :literal (:type (get-child (project-attr :form)
                                                           insertion-path))))
-              layout-encapsulated? (layout-path-encapsulated? (adjusted-form-layouts)
-                                                              insertion-path)]
+              layout-encapsulated? (layout-path-encapsulated?
+                                    (adjusted-form-layouts)
+                                    insertion-path)]
           (when (and layout-path (not dragging?) literal?)
-            (draw-circle (get-sublayout (adjusted-form-layouts)
-                                        layout-path)
-                         (:highlight (color-scheme))
-                         :program))
+            (let [layout (get-sublayout (adjusted-form-layouts)
+                                        layout-path)]
+              (draw-circle layout
+                           (:highlight (color-scheme))
+                           :program-overlay)
+              (draw-text (:value layout)
+                         layout
+                         (:radius layout)
+                         (:text (color-scheme))
+                         :program-overlay)))
           (when (and layout-path current-placement-form)
-            (let [sublayout (get-sublayout (adjusted-form-layouts) layout-path)]
+            (let [sublayout (get-sublayout (adjusted-form-layouts)
+                                           layout-path)]
               (when dragging?
                 (let [parent-radius (:radius sublayout)
                       radius (* c/drop-form-radius-factor
                                 (:radius (first (:sublayouts sublayout))))
                       child-count (count (:sublayouts sublayout))
                       last-insertion-index (last insertion-path)
-                      placement-pos (if (and (not literal?)
-                                             layout-encapsulated?)
-                                      (get-sublayout (adjusted-form-layouts) layout-path)
-                                      (if (= last-insertion-index -1)
-                                        (add-points sublayout
-                                                    {:y (- radius
-                                                           (:radius sublayout))})
-                                        (add-points sublayout
-                                                    (scale-point (angle-point
-                                                                  (- (* (+ (/ (+ last-insertion-index 0.5)
-                                                                              child-count)
-                                                                           0.25)
-                                                                        TAU)))
-                                                                 (- parent-radius
-                                                                    (* c/drop-form-offset-factor
-                                                                       radius))))))]
+                      placement-pos
+                      (if (and (not literal?)
+                               layout-encapsulated?)
+                        (get-sublayout (adjusted-form-layouts) layout-path)
+                        (if (= last-insertion-index -1)
+                          (add-points
+                           sublayout
+                           {:y (- radius
+                                  (:radius sublayout))})
+                          (add-points
+                           sublayout
+                           (scale-point
+                            (angle-point
+                             (- (* (+ (/ (+ last-insertion-index 0.5)
+                                         child-count)
+                                      0.25)
+                                   TAU)))
+                            (- parent-radius
+                               (* c/drop-form-offset-factor
+                                  radius))))))]
                   (when (= mouse-zone :program)
                     (draw-line mouse
                                placement-pos
@@ -531,38 +563,51 @@
                     (let [base-sublayout (form-layout (placement-form mouse)
                                                       (assoc origin :radius 1))]
                       (if literal?
-                        (render-sublayouts (adjust-layout base-sublayout
-                                                          (scale-point sublayout
-                                                                       (/ (:radius sublayout)))
-                                                          (:radius sublayout))
-                                           :program-overlay)
+                        (render-total-layout
+                         (adjust-layout base-sublayout
+                                        (scale-point sublayout
+                                                     (/ (:radius sublayout)))
+                                        (:radius sublayout))
+                         :program-overlay)
                         (if layout-encapsulated?
-                          (let [encapsulated-sublayout (get-sublayout (adjusted-form-layouts) layout-path)]
-                            (render-sublayouts (adjust-layout base-sublayout
-                                                              (scale-point encapsulated-sublayout
-                                                                           (/ (:radius encapsulated-sublayout)))
-                                                              (:radius encapsulated-sublayout))
-                                               :program-overlay))
-                          (if (= 0 (count (:children (get-child (project-attr :form)
-                                                                layout-path))))
-                            (render-sublayouts (adjust-layout base-sublayout
-                                                              (scale-point sublayout
-                                                                           (/ (* c/drop-form-radius-factor
-                                                                                 (:radius sublayout))))
-                                                              (* c/drop-form-radius-factor
-                                                                 (:radius sublayout)))
-                                               :program-overlay)
-                            (let [adjusted-layout (adjust-layout base-sublayout
-                                                                 (scale-point placement-pos
-                                                                              (/ radius))
-                                                                 radius)]
-                              (draw-circle (update adjusted-layout
-                                                   :radius
-                                                   (partial * c/drop-form-outline-radius-factor))
-                                           (:background (color-scheme))
-                                           :program-overlay)
-                              (render-sublayouts adjusted-layout
-                                                 :program-overlay))))))))))))
+                          (let [encapsulated-sublayout
+                                (get-sublayout (adjusted-form-layouts)
+                                               layout-path)]
+                            (render-total-layout
+                             (adjust-layout
+                              base-sublayout
+                              (scale-point encapsulated-sublayout
+                                           (/ (:radius
+                                               encapsulated-sublayout)))
+                              (:radius encapsulated-sublayout))
+                             :program-overlay))
+                          (if (= 0
+                                 (count
+                                  (:children (get-child (project-attr :form)
+                                                        layout-path))))
+                            (render-total-layout
+                             (adjust-layout
+                              base-sublayout
+                              (scale-point sublayout
+                                           (/ (* c/drop-form-radius-factor
+                                                 (:radius sublayout))))
+                              (* c/drop-form-radius-factor
+                                 (:radius sublayout)))
+                             :program-overlay)
+                            (let [adjusted-layout
+                                  (adjust-layout base-sublayout
+                                                 (scale-point placement-pos
+                                                              (/ radius))
+                                                 radius)]
+                              (draw-circle
+                               (update
+                                adjusted-layout
+                                :radius
+                                (partial * c/drop-form-outline-radius-factor))
+                               (:background (color-scheme))
+                               :program-overlay)
+                              (render-total-layout adjusted-layout
+                                                   :program-overlay))))))))))))
         (render-formbars mouse)
 
         ;; Draw discard circle, icon, and last discarded form
@@ -576,11 +621,13 @@
           (render-discard-zone (= mouse-zone :discard)
                                last-discard)
           (when last-discard
-            (render-sublayouts (form-layout last-discard
-                                            (assoc base-circle-pos
-                                                   :radius (* radius
-                                                              c/discard-zone-form-radius-factor)))
-                               :menu)))
+            (render-total-layout
+             (form-layout
+              last-discard
+              (assoc base-circle-pos
+                     :radius (* radius
+                                c/discard-zone-form-radius-factor)))
+             :menu)))
 
         ;; Draw eval circle, icon, and last evaluation result
         (let []
@@ -605,9 +652,10 @@
                                              (* (Math/sqrt 0.5)
                                                 c/eval-error-symbol-size
                                                 radius))
-                    symbol-center (add-points base-circle-pos
-                                              (scale-point c/eval-error-symbol-offset
-                                                           radius))]
+                    symbol-center (add-points
+                                   base-circle-pos
+                                   (scale-point c/eval-error-symbol-offset
+                                                radius))]
                 (doseq [offset [base-offset (update base-offset :x -)]]
                   (draw-line (add-points symbol-center
                                          (scale-point offset -1))
@@ -616,7 +664,8 @@
                              (* radius c/eval-error-symbol-width)
                              (:highlight (color-scheme))
                              :menu))
-                (draw-text (split-text-into-lines (logged-error) c/eval-error-line-size)
+                (draw-text (split-text-into-lines (logged-error)
+                                                  c/eval-error-line-size)
                            (add-points base-circle-pos
                                        (scale-point c/eval-error-text-offset
                                                     radius))
@@ -629,39 +678,49 @@
                                                     PI))
                                     (* radius
                                        c/eval-zone-caret-factor))]
-                  (draw-polyline (mapv #(update %
-                                                :x (partial +
-                                                            (* radius
-                                                               c/eval-zone-caret-offset)))
-                                       [(add-points base-circle-pos
-                                                    caret-offset)
-                                        base-circle-pos
-                                        (add-points base-circle-pos
-                                                    (update caret-offset :y -))])
-                                 (* radius c/eval-zone-icon-thickness)
-                                 (:foreground (color-scheme))
-                                 :menu)
-                  (let [underscore-base (-> base-circle-pos
-                                            (update :y (partial +
-                                                                (- (:y caret-offset))
-                                                                (* radius
-                                                                   c/eval-zone-underscore-y-offset)))
-                                            (update :x (partial +
-                                                                (* radius
-                                                                   c/eval-zone-underscore-x-offset))))]
-                    (draw-line underscore-base
-                               (update underscore-base
-                                       :x
-                                       (partial + (* radius c/eval-zone-underscore-size)))
-                               (* radius c/eval-zone-icon-thickness)
-                               (:foreground (color-scheme))
-                               :menu)))
-                (render-sublayouts (form-layout (or (first (project-attr :eval-results))
-                                                    {:type :literal :value "nil"})
-                                                (assoc base-circle-pos
-                                                       :radius (* radius
-                                                                  c/eval-zone-form-radius-factor)))
-                                   :menu)))))
+                  (draw-polyline
+                   (mapv #(update %
+                                  :x (partial +
+                                              (* radius
+                                                 c/eval-zone-caret-offset)))
+                         [(add-points base-circle-pos
+                                      caret-offset)
+                          base-circle-pos
+                          (add-points base-circle-pos
+                                      (update caret-offset :y -))])
+                   (* radius c/eval-zone-icon-thickness)
+                   (:foreground (color-scheme))
+                   :menu)
+                  (let [underscore-base
+                        (-> base-circle-pos
+                            (update
+                             :y
+                             (partial +
+                                      (- (:y caret-offset))
+                                      (* radius
+                                         c/eval-zone-underscore-y-offset)))
+                            (update
+                             :x
+                             (partial +
+                                      (* radius
+                                         c/eval-zone-underscore-x-offset))))]
+                    (draw-line
+                     underscore-base
+                     (update
+                      underscore-base
+                      :x
+                      (partial + (* radius c/eval-zone-underscore-size)))
+                     (* radius c/eval-zone-icon-thickness)
+                     (:foreground (color-scheme))
+                     :menu)))
+                (render-total-layout
+                 (form-layout
+                  (or (first (project-attr :eval-results))
+                      {:type :literal :value "nil"})
+                  (assoc base-circle-pos
+                         :radius (* radius
+                                    c/eval-zone-form-radius-factor)))
+                 :menu)))))
 
         ;; Draw text-mode circle and icon
         (draw-circle (assoc (add-points app-pos
@@ -675,7 +734,8 @@
                            c/upper-corner-zone-radius)
                         (inc (Math/sqrt 2)))
               base-circle-pos (add-points (add-points app-pos
-                                                      (select-keys app-size [:x]))
+                                                      (select-keys app-size
+                                                                   [:x]))
                                           (update (scale-point unit radius)
                                                   :x -))]
           (draw-text "txt"
@@ -707,14 +767,17 @@
                                    (* form-spacing
                                       c/formbar-form-placement-size))
                             (update (if horizontal? :x :y)
-                                    #(+ % (* (- insertion-index 0.5) 2 form-spacing)))
+                                    #(+ % (* (- insertion-index 0.5)
+                                             2
+                                             form-spacing)))
                             (update (if horizontal? :y :x)
                                     #((if (#{:top :left} screen-side) + -)
                                       %
                                       (* form-spacing
                                          c/formbar-form-placement-offset))))))]
-                (render-sublayouts (form-layout (placement-form mouse) placement-circle)
-                                   :formbar)))))
+                (render-total-layout (form-layout (placement-form mouse)
+                                                  placement-circle)
+                                     :formbar)))))
         (render-top-left-button-background (= mouse-zone :settings-icon))
         (render-top-left-settings-button)))
 
@@ -790,7 +853,8 @@
                                     (vec (concat layout-path '(0)))
                                     current-placement-form)
                      (if (= (count layout-path) (count insertion-path))
-                       (if (= :literal (:type (get-child form (vec insertion-path))))
+                       (if (= :literal
+                              (:type (get-child form (vec insertion-path))))
                          (replace-child form
                                         (vec layout-path)
                                         current-placement-form)
@@ -810,7 +874,10 @@
               (when @down-path
                 (if (empty? @down-path)
                   (do (track-discard (first (:children (project-attr :form))))
-                      (set-project-attr! :form {:type :vector :children [{:type :list :children []}]})
+                      (set-project-attr! :form
+                                         {:type :vector
+                                          :children [{:type :list
+                                                      :children []}]})
                       (reset! selected-layout-path nil))
                   (do (when (and (pos? (count @selected-layout-path))
                                  (= @selected-layout-path @down-path))
@@ -822,8 +889,9 @@
               :formbar
               (let [{:keys [down-formbar-form-path]} mouse]
                 (when (and down-formbar-form-path
-                           (not (:type (get-in (project-attr :formbars)
-                                               (formbar-path-at (:down-pos mouse))))))
+                           (not (:type (get-in
+                                        (project-attr :formbars)
+                                        (formbar-path-at (:down-pos mouse))))))
                   (let [arrangement (formbar-arrangement)]
                     (track-discard
                      (get-in arrangement down-formbar-form-path))
@@ -845,13 +913,15 @@
                       formbar (get-in (project-attr :formbars)
                                       formbar-path)]
                   (when (not (:type formbar))
-                    (add-project-formbar-form-at current-placement-form
-                                                 formbar-path
-                                                 (get-formbar-insertion-index mouse))))))
+                    (add-project-formbar-form-at
+                     current-placement-form
+                     formbar-path
+                     (get-formbar-insertion-index mouse))))))
 
             :empty
             (let [current-placement-form (placement-form mouse)
-                  insertion-index (outer-form-insertion-index mouse mouse-zone)]
+                  insertion-index (outer-form-insertion-index mouse
+                                                              mouse-zone)]
               (when (and current-placement-form
                          insertion-index)
                 (modify-code!

@@ -117,7 +117,11 @@
                          from-max (+ from-min (dim from-size))
                          to-min (dim to-pos)
                          to-max (+ to-min (dim to-size))]
-                     (u/map-range from-min from-max to-min to-max (dim point)))))
+                     (u/map-range from-min
+                                  from-max
+                                  to-min
+                                  to-max
+                                  (dim point)))))
           {}
           [:x :y]))
 
@@ -141,9 +145,9 @@
   (/ (- (* (:y a) (:x b)) (* (:x a) (:y b)))
      (point-magnitude b)))
 
-(defn in-circle? [circle pos]
+(defn in-circle? [{:keys [radius] :as circle} pos]
   (< (point-square-magnitude (subtract-points circle pos))
-     (Math/pow (:radius circle) 2)))
+     (* radius radius)))
 
 (defn rects-overlap? [[pos1 size1] [pos2 size2]]
   (let [l1 pos1
@@ -155,3 +159,13 @@
          (>= (:x l2) (:x r1))
          (<= (:y r1) (:y l2))
          (<= (:y r2) (:y l1))))))
+
+(defn rect-in-circle? [[rect-pos rect-size]
+                       {:keys [x y radius]}]
+  (let [square-radius (* radius radius)]
+    (not (some #(> (point-square-magnitude %)
+                   square-radius)
+               [rect-pos
+                (add-points rect-pos rect-size)
+                (add-points rect-pos (dissoc rect-size :x))
+                (add-points rect-pos (dissoc rect-size :y))]))))

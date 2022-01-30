@@ -24,17 +24,28 @@
 (defonce pixi-graphics (atom {}))
 (defonce text-containers (atom {}))
 (defonce svg-image-containers (atom {}))
+(defonce form-icon-image-containers (atom {}))
 (defonce current-svg-color-scheme (atom nil))
 (defonce font-loaded? (atom false))
 (defonce layer-texts (atom {}))
 (defonce layer-used-text-counts (atom {}))
 (defonce svg-textures (atom {}))
 (defonce svg-sprites (atom {}))
+(defonce form-icon-sprites (atom {}))
 (defonce svg-sprite-active-counts (atom {}))
+(defonce form-icon-sprite-active-counts (atom {}))
+(defonce form-icon-container (atom nil))
+(defonce form-icon-graphics (atom nil))
+(defonce form-icon-size (atom 0))
+(defonce form-icon-textures (atom {}))
+(defonce form-icon-texture-sizes (atom {}))
+(defonce form-renderer-busy? (atom false))
 
 (defn get-graphics [& [layer]]
-  (get @pixi-graphics
-       (or layer (first c/ui-layers))))
+  (if (= layer :form-icon)
+    @form-icon-graphics
+    (get @pixi-graphics
+         (or layer (first c/ui-layers)))))
 
 (defn html-color [color]
   (str "#"
@@ -59,36 +70,31 @@
     (.-innerWidth js/window)))
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
+(defn layer-size [layer]
+  (if (= layer :form-icon) @form-icon-size (app-size)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
   (rect-around unit-square
                (app-aspect-ratio)))
 
-(defn screen-x [x]
-  (let [w (app-width)
-        h (app-height)
-        s (min w h)]
-    (+ (* 0.5 (- w s)) (* x s))))
+(defn screen-x [x & [layer]]
+  (if (= layer :form-icon)
+    (* x @form-icon-size)
+    (let [w (app-width)
+          h (app-height)
+          s (min w h)]
+      (+ (* 0.5 (- w s)) (* x s)))))
 
-(defn screen-y [y]
-  (let [w (app-width)
-        h (app-height)
-        s (min w h)]
-    (+ (* 0.5 (- h s)) (* y s))))
+(defn screen-y [y & [layer]]
+  (if (= layer :form-icon)
+    (* y @form-icon-size)
+    (let [w (app-width)
+          h (app-height)
+          s (min w h)]
+      (+ (* 0.5 (- h s)) (* y s)))))
 
-(defn get-mouse-pos []
-  (let [plugins (.-plugins (.-renderer @pixi-app))
-        raw-pos (clj->js (.-global (.-mouse (get (js->clj plugins) "interaction"))))
-        x (.-x raw-pos)
-        y (.-y raw-pos)
-        width (app-width)
-        height (app-height)
-        size (app-size)]
-    {:x (/ (- x (* 0.5 (- width size))) size)
-     :y (/ (- y (* 0.5 (- height size))) size)}))
-
-(defn text-size [s]
-  (* (app-size)
+(defn text-size [s & [layer]]
+  (* (layer-size layer)
      (min c/text-max-size
           (/ c/text-scale-factor
              (apply max (map count (split s "\n")))))))
@@ -103,65 +109,91 @@
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawRect graphics
-               (screen-x (:x pos))
-               (screen-y (:y pos))
-               (* (:x size) (app-size))
-               (* (:y size) (app-size)))
+               (screen-x (:x pos) layer)
+               (screen-y (:y pos) layer)
+               (* (:x size) (layer-size layer))
+               (* (:y size) (layer-size layer)))
     (.endFill graphics)))
 
 (defn draw-circle [{:keys [x y radius]} fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawCircle graphics
-                 (screen-x x)
-                 (screen-y y)
-                 (* radius (app-size)))
+                 (screen-x x layer)
+                 (screen-y y layer)
+                 (* radius (layer-size layer)))
     (.endFill graphics)))
 
 (defn draw-polygon [points fill & [layer]]
   (let [graphics (get-graphics layer)]
     (.beginFill graphics fill)
     (.drawPolygon graphics
-                  (clj->js (mapv #(pixi/Point. (screen-x (:x %))
-                                               (screen-y (:y %)))
+                  (clj->js (mapv #(pixi/Point. (screen-x (:x %) layer)
+                                               (screen-y (:y %) layer))
                                  points)))
     (.endFill graphics)))
 
 (defn draw-line [start end width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
-                (* width (app-size))
+                (* width (layer-size layer))
                 color)
     (.moveTo graphics
-             (screen-x (:x start))
-             (screen-y (:y start)))
+             (screen-x (:x start) layer)
+             (screen-y (:y start) layer))
     (.lineTo graphics
-             (screen-x (:x end))
-             (screen-y (:y end)))
+             (screen-x (:x end) layer)
+             (screen-y (:y end) layer))
     (.lineStyle graphics 0)))
 
 (defn draw-polyline [points width color & [layer]]
   (let [graphics (get-graphics layer)]
     (.lineStyle graphics
-                (* width (app-size))
+                (* width (layer-size layer))
                 color)
     (let [start (first points)]
       (.moveTo graphics
-               (screen-x (:x start))
-               (screen-y (:y start))))
+               (screen-x (:x start) layer)
+               (screen-y (:y start) layer)))
     (doseq [point (rest points)]
       (.lineTo graphics
-               (screen-x (:x point))
-               (screen-y (:y point))))
+               (screen-x (:x point) layer)
+               (screen-y (:y point) layer)))
     (.lineStyle graphics 0)))
 
 (defn free-used-texts! []
   (doseq [layer (keys @layer-used-text-counts)]
     (swap! layer-used-text-counts
            #(assoc % layer 0))
-    (doseq [kv-pair @layer-texts]
-      (doseq [t (second kv-pair)]
-        (set! (.-visible t) false)))))
+    (doseq [[layer texts] @layer-texts]
+      (when (not= layer :form-icon)
+        (doseq [t texts]
+          (set! (.-visible t) false))))))
+
+(defn clear-form-icon-canvas! []
+  (.clear @form-icon-graphics)
+  (let [texts (:form-icon @layer-texts)]
+    (doseq [t texts]
+      (set! (.-visible t) false))))
+
+(defn after-render [callback]
+  (let [ticker (.-ticker @pixi-app)
+        delay (atom 1)
+        ticker-fn (fn ticker-fn []
+                    (if (zero? @delay)
+                      (do (.remove ticker ticker-fn)
+                          (callback))
+                      (swap! delay dec)))]
+    (.add ticker ticker-fn)))
+
+(defn take-form-icon-renderer! []
+  (reset! form-renderer-busy? true))
+
+(defn free-form-icon-renderer! []
+  (reset! form-renderer-busy? false))
+
+(defn is-form-icon-renderer-busy? []
+  @form-renderer-busy?)
 
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
@@ -182,18 +214,18 @@
 (defn draw-text [s pos size color & [layer]]
   (when @font-loaded?
     (let [t (get-unused-text! layer)
-          scale (* size (text-size s))]
+          scale (* size (text-size s layer))]
       (set! (.-text t) (str s))
       (set! (.-tint t) color)
       (set! (.-visible t) true)
       (set! (.-scale.x t) scale)
       (set! (.-scale.y t) scale)
       (set! (.-x t)
-            (+ (- (screen-x (:x pos))
+            (+ (- (screen-x (:x pos) layer)
                   (* (.-width t) 0.5))
                (* scale c/text-x-offset)))
       (set! (.-y t)
-            (+ (- (screen-y (:y pos))
+            (+ (- (screen-y (:y pos) layer)
                   (* (.-height t) 0.5))
                (* scale c/text-y-offset))))))
 
@@ -207,10 +239,11 @@
             color (color-scheme class)
             rgb-string (str "#"
                             (apply str
-                                   (map #(.toString (mod (quot color
-                                                               (Math/pow 256 %))
-                                                         256)
-                                                    16)
+                                   (map #(.toString
+                                          (mod (quot color
+                                                     (Math/pow 256 %))
+                                               256)
+                                          16)
                                         (reverse (range 3)))))]
         (doseq [i (range (.-length elements))]
           (let [element (.item elements i)]
@@ -225,6 +258,17 @@
   (boolean
    (js/document.getElementById "undo")))
 
+(defn blob->img [blob]
+  (let [url (.createObjectURL js/URL blob)
+        img (js/Image.)]
+    (.addEventListener img
+                       "load"
+                       (fn [event]
+                         (.revokeObjectURL js/URL
+                                           url)))
+    (set! (.-src img) url)
+    img))
+
 (defn create-svg-texture! [svg-name resolution]
   (swap! svg-sprites
          #(dissoc % svg-name))
@@ -236,25 +280,17 @@
         svg (js/document.getElementById svg-name)]
     (.setAttribute svg "width" (str resolution "px"))
     (.setAttribute svg "height" (str resolution "px"))
-    (let [blob->img
-          (fn [blob]
-            (let [url (.createObjectURL js/URL blob)
-                  img (js/Image.)]
-              (.addEventListener img
-                                 "load"
-                                 (fn [event]
-                                   (.revokeObjectURL js/URL
-                                                     url)))
-              (set! (.-src img) url)
-              (let [texture (pixi/Texture. (pixi/BaseTexture. img))]
-                (swap! svg-textures
-                       #(assoc % svg-name texture)))))]
-      (.then (.from canvg context (.-outerHTML svg))
-             (fn [canvg-result]
-               (.then (.render canvg-result)
-                      (fn [& _]
-                        (.toBlob canvas
-                                 blob->img))))))))
+    (.then (.from canvg context (.-outerHTML svg))
+           (fn [canvg-result]
+             (.then (.render canvg-result)
+                    (fn [& _]
+                      (.toBlob canvas
+                               (fn [blob]
+                                 (let [texture (pixi/Texture.
+                                                (pixi/BaseTexture.
+                                                 (blob->img blob)))]
+                                   (swap! svg-textures
+                                          #(assoc % svg-name texture)))))))))))
 
 (defn clear-svg-textures! []
   (reset! svg-textures {}))
@@ -288,6 +324,53 @@
     (while (pos? (.-children.length container))
       (let [child (.getChildAt container 0)]
         (.removeChild container child)))))
+
+(defn get-form-icon-sprite [form]
+  (when (not (get @form-icon-sprites form))
+    (swap! form-icon-sprites
+           #(assoc % form []))
+    (swap! form-icon-sprite-active-counts
+           #(assoc % form 0)))
+  (let [texture (get @form-icon-textures form)]
+    (when texture
+      (let [existing-sprites (get @form-icon-sprites form)
+            active-count (get @form-icon-sprite-active-counts form)]
+        (swap! form-icon-sprite-active-counts
+               #(update % form inc))
+        (if (< active-count (count existing-sprites))
+          (existing-sprites active-count)
+          (let [new-sprite (pixi/Sprite. texture)]
+            (swap! form-icon-sprites
+                   #(update % form conj new-sprite))
+            new-sprite))))))
+
+(defn free-used-form-icon-images! []
+  (swap! form-icon-sprite-active-counts
+         #(reduce (fn [active-counts key]
+                    (assoc active-counts key 0))
+                  %
+                  (keys %)))
+  (doseq [[_ container] @form-icon-image-containers]
+    (while (pos? (.-children.length container))
+      (let [child (.getChildAt container 0)]
+        (.removeChild container child)))))
+
+(defn icon-texture-size [form]
+  (@form-icon-texture-sizes form))
+
+(defn draw-form-icon [form {:keys [x y radius]} layer]
+  (let [size (* 2 radius
+                c/form-icon-canvas-overflow-factor
+                (/ (.-width (@form-icon-textures form))
+                   (icon-texture-size form)))
+        sprite (get-form-icon-sprite form)
+        sprite-size (* (layer-size layer)
+                       size)]
+    (set! (.-width sprite) sprite-size)
+    (set! (.-height sprite) sprite-size)
+    (set! (.-x sprite) (screen-x (- x (* 0.5 size))))
+    (set! (.-y sprite) (screen-y (- y (* 0.5 size))))
+    (.addChild (get @form-icon-image-containers layer) sprite)))
 
 (defn draw-svg [name {:keys [x y]} size layer]
   (let [name (if (keyword? name)
@@ -332,7 +415,8 @@
   (doseq [layer c/ui-layers]
     (.clear (get-graphics layer)))
   (free-used-texts!)
-  (free-used-svg-images!))
+  (free-used-svg-images!)
+  (free-used-form-icon-images!))
 
 (defn load-font []
   (let [font (FaceFontObserver. c/font-name)]
@@ -349,9 +433,51 @@
              (u/log "Font loaded."))
            load-font)))
 
+(defn resize-form-renderer [size]
+  (reset! form-icon-size size))
+
+(defn create-form-icon-image! [form finish-callback]
+  (js/setTimeout (fn []
+                   (set! (.-width @form-icon-container)
+                         @form-icon-size)
+                   (set! (.-height @form-icon-container)
+                         @form-icon-size)
+                   (let [renderer (.-renderer @pixi-app)
+                         texture (pixi/Texture.
+                                  (.generateTexture renderer
+                                                    @form-icon-container))]
+                     (swap! form-icon-textures
+                            assoc
+                            form
+                            texture)
+                     (swap! form-icon-texture-sizes
+                            assoc
+                            form
+                            @form-icon-size))
+                   (free-form-icon-renderer!)
+                   (finish-callback))
+                 0))
+
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
+  (reset! form-icon-container
+          (pixi/Container.))
+  (set! (.-zIndex @form-icon-container)
+        ##-Inf)
+  (reset! form-icon-graphics
+          (pixi/Graphics.))
+  (.addChild @form-icon-container
+             @form-icon-graphics)
+  (.addChild (.-stage @pixi-app)
+             @form-icon-container)
+  (let [form-icon-text-container (pixi/Container.)]
+    (.addChild @form-icon-container
+               form-icon-text-container)
+    (swap! text-containers
+           assoc
+           :form-icon
+           form-icon-text-container))
   (let [stage (.-stage @pixi-app)]
     (set! (.-sortableChildren stage) true)
     (doseq [[layer z] (mapv vector c/ui-layers (range))]
@@ -360,6 +486,11 @@
         (.addChild stage graphics)
         (swap! pixi-graphics
                #(assoc % layer graphics)))
+      (let [image-container (pixi/Container.)]
+        (set! (.-zIndex image-container) (+ z 0.25))
+        (.addChild stage image-container)
+        (swap! form-icon-image-containers
+               #(assoc % layer image-container)))
       (let [image-container (pixi/Container.)]
         (set! (.-zIndex image-container) (+ z 0.5))
         (.addChild stage image-container)
@@ -372,7 +503,8 @@
                #(assoc % layer text-container))))
     (js/document.body.appendChild (.-view @pixi-app))
     (.add (.-ticker @pixi-app) update-fn)
-    (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app))) "interaction")]
+    (let [interaction (get (js->clj (.-plugins (.-renderer @pixi-app)))
+                           "interaction")]
       (.on interaction "pointerdown" click-down-fn)
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
@@ -408,7 +540,8 @@
                          c/lower-corner-zone-radius)
                       (inc (Math/sqrt 2)))
             base-circle-pos (-> app-pos
-                                (update :y (partial + (- (:y app-size) radius)))
+                                (update :y (partial + (- (:y app-size)
+                                                         radius)))
                                 (update :x (partial + radius)))
             angle-offset (scale-point (angle-point (* 0.25 PI))
                                       (* radius
