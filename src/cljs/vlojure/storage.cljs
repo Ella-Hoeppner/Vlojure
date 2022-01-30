@@ -38,13 +38,11 @@
 (defn set-global-attr! [key value]
   (swap! app-state
          #(assoc % key value))
-  (save-state!)
   value)
 
 (defn update-global-attr! [key value]
   (swap! app-state
          #(update % key value))
-  (save-state!)
   (global-attr key))
 
 (defn active-project []
@@ -59,7 +57,6 @@
          #(assoc-in %
                     [:projects (active-project) key]
                     value))
-  (save-state!)
   value)
 
 (defn update-project-attr! [key value]
@@ -67,7 +64,6 @@
          #(update-in %
                      [:projects (active-project) key]
                      value))
-  (save-state!)
   (project-attr key))
 
 (defn add-code-history-entry! [code]
@@ -104,8 +100,7 @@
 
 (defn track-discard [form]
   (update-project-attr! :discard-history
-                        #(conj % form))
-  (save-state!))
+                        #(conj % form)))
 
 (defn delete-project-formbar-form-at [path]
   (let [[side stage substage _ form-index] path]
@@ -119,8 +114,7 @@
                          stage
                          substage
                          :forms]
-                        #(u/vector-remove % form-index)))))
-  (save-state!))
+                        #(u/vector-remove % form-index))))))
 
 (defn add-project-formbar-form-at [form formbar-path insertion-index]
   (swap! app-state
@@ -129,8 +123,7 @@
                       (concat [:projects (active-project) :formbars]
                               formbar-path
                               [:forms])
-                      #(u/vector-insert % insertion-index form))))
-  (save-state!))
+                      #(u/vector-insert % insertion-index form)))))
 
 (defn delete-project-formbar-at [path]
   (update-project-attr! :formbars
@@ -420,9 +413,7 @@
          :right []})}]}))
 
 (defn ensure-saved-state-updated! []
-  (when (not
-         (some #{:saved-formbars}
-               (keys @app-state)))
+  (when (not (:saved-formbars app-state))
     (set-global-attr! :saved-formbars
                       (:saved-formbars (default-app-state)))))
 
@@ -431,4 +422,8 @@
   (if (> (count (saved-state)) 1)
     (do (load-state!)
         (ensure-saved-state-updated!))
-    (reset! app-state (default-app-state))))
+    (reset! app-state (default-app-state)))
+  (js/setInterval save-state!
+                  (* c/autosave-interval-seconds 1000))
+  (js/window.addEventListener "beforeunload"
+                              #(save-state!)))

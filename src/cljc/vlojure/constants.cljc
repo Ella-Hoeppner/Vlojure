@@ -267,3 +267,5 @@
 (def max-undo-history 100)
 
 (def max-form-icon-size 0.9)
+
+(def autosave-interval-seconds 30)
