@@ -454,6 +454,9 @@
                             assoc
                             form
                             @form-icon-size))
+                   (swap! form-icon-sprites
+                          dissoc
+                          form)
                    (free-form-icon-renderer!)
                    (finish-callback))
                  0))
