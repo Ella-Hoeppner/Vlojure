@@ -81,15 +81,15 @@
   (reset! ideal-scroll-pos pos))
 
 (defn settings-circle [index]
-  (let [center-circle (update (circle-within (app-rect))
-                              :radius (partial * (base-zoom)))
-        center-radius (:radius center-circle)]
-    (add-points center-circle
-                     (scale-point (global-attr :scroll-direction)
-                                       (* (- index @scroll-pos)
-                                          2
-                                          center-radius
-                                          c/outer-form-spacing)))))
+  (let [center-circle (circle-within (app-rect))
+        center-radius (* (base-zoom) (:radius center-circle))]
+    (assoc (add-points center-circle
+                       (scale-point (global-attr :scroll-direction)
+                                    (* (- index @scroll-pos)
+                                       2
+                                       center-radius
+                                       c/outer-form-spacing)))
+           :radius center-radius)))
 
 (defn settings-circle-at [pos]
   (some #(when (in-circle? (settings-circle %)
@@ -129,13 +129,14 @@
                       (inc c/settings-project-buttons-x-spacing))))))))
 
 (defn settings-bar-scroll-circle []
-  (let [center-circle (settings-circle c/settings-sliders-page)]
-    (update (add-points center-circle
-                        (scale-point (global-attr :scroll-direction)
-                                     (* (:radius center-circle)
-                                        c/settings-bar-scroll-circle-pos)))
-            :radius
-            (partial * c/settings-bar-scroll-circle-radius))))
+  (let [center-circle (settings-circle c/settings-sliders-page)
+        radius (* c/settings-bar-scroll-circle-radius
+                  (:radius center-circle))]
+    (assoc (add-points center-circle
+                       (scale-point (global-attr :scroll-direction)
+                                    (* (:radius center-circle)
+                                       c/settings-bar-scroll-circle-pos)))
+           :radius radius)))
 
 (defn settings-slider-at [pos]
   (some (fn [index]
@@ -1168,10 +1169,9 @@
             color (if (= mouse-zone :scroll-circle)
                     (:highlight (color-scheme))
                     (:foreground (color-scheme)))]
-        (draw-circle
-         scroll-circle
-         color
-         :background)
+        (draw-circle scroll-circle
+                     color
+                     :background)
         (draw-circle
          (update scroll-circle
                  :radius

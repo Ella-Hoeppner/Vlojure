@@ -356,13 +356,13 @@
                (if (>= bar-index (count layer))
                  (let [bar (last layer)]
                    (add-points (select-keys bar [:x :y])
-                                    {:x (:width bar)
-                                     :y (:height bar)}
-                                    {(if vertical? :y :x)
-                                     start-offset}))
+                               (update {:x (:width bar)
+                                        :y (:height bar)}
+                                       (if vertical? :y :x)
+                                       + start-offset)))
                  (add-points (select-keys (nth layer bar-index) [:x :y])
-                                  {(if vertical? :y :x)
-                                   (- start-offset)}))))
+                             {(if vertical? :y :x)
+                              (- start-offset)}))))
            :radius c/formbar-placement-circle-radius)))
 
 (defn new-formbar-circles []

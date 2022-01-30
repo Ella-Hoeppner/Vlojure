@@ -9,24 +9,25 @@
 
 (def unit-square [origin unit])
 
-(defn add-points [& points]
-  (merge (first points)
-         {:x (apply + (mapv :x points))
-          :y (apply + (mapv :y points))}))
+(defn add-points [{x1 :x y1 :y} {x2 :x y2 :y}]
+  {:x (+ x1 x2)
+   :y (+ y1 y2)})
 
-(defn multiply-points [& points]
-  (merge (first points)
-         {:x (apply * (mapv :x points))
-          :y (apply * (mapv :y points))}))
+(defn multiply-points [{x1 :x y1 :y} {x2 :x y2 :y}]
+  {:x (* x1 x2)
+   :y (* y1 y2)})
 
-(defn scale-point [a s]
-  (let [scale-fn (partial * s)]
-    (-> a
-        (update :x scale-fn)
-        (update :y scale-fn))))
+(defn subtract-points [{x1 :x y1 :y} {x2 :x y2 :y}]
+  {:x (- x1 x2)
+   :y (- y1 y2)})
 
-(defn subtract-points [a b]
-  (add-points a (scale-point b -1)))
+(defn scale-point [{:keys [x y]} f]
+  {:x (* x f)
+   :y (* y f)})
+
+(defn tween-points [{x1 :x y1 :y} {x2 :x y2 :y} p]
+  {:x (+ x1 (* p (- x2 x1)))
+   :y (+ y1 (* p (- y2 y1)))})
 
 (defn in-rect? [[pos size] point]
   (let [off (subtract-points point pos)]
@@ -74,14 +75,6 @@
       p
       (scale-point p
                    (/ 1 mag)))))
-
-(defn tween-points [p1 p2 t]
-  (add-points (scale-point p2 t)
-              (scale-point p1 (- 1 t))))
-
-(defn average-point [points]
-  (scale-point (add-points points)
-               (/ 1 (count points))))
 
 (defn angle-point [angle]
   {:x (Math/cos angle)

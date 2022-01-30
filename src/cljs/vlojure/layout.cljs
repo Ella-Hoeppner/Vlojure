@@ -155,15 +155,15 @@
             (let [base-offset (scale-point (angle-point (+ angle (* PI 0.5)))
                                            (* r c/set-line-offset))]
               (doseq [offset [base-offset (scale-point base-offset -1)]]
-                (draw-line (add-points offset layout)
-                           (add-points layout
-                                       offset
-                                       (scale-point
-                                        (angle-point angle)
-                                        (* (inc c/set-line-length) r)))
-                           (* r c/set-line-width)
-                           (:foreground (color-scheme))
-                           layer))))))
+                (let [origin (add-points offset layout)]
+                  (draw-line origin
+                             (add-points origin
+                                         (scale-point
+                                          (angle-point angle)
+                                          (* (inc c/set-line-length) r)))
+                             (* r c/set-line-width)
+                             (:foreground (color-scheme))
+                             layer)))))))
       (when (#{:list :map :set :lit-fn} (:type layout))
         (draw-circle (update layout
                              :radius (partial *
