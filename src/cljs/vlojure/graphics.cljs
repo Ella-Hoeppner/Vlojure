@@ -34,15 +34,16 @@
 (defonce form-icon-sprites (atom {}))
 (defonce svg-sprite-active-counts (atom {}))
 (defonce form-icon-sprite-active-counts (atom {}))
-(defonce form-canvas (atom nil))
-(defonce form-canvas-graphics (atom nil))
-(defonce form-canvas-app (atom nil))
+(defonce form-icon-container (atom nil))
+(defonce form-icon-graphics (atom nil))
+(defonce form-icon-size (atom 0))
 (defonce form-icon-textures (atom {}))
-(defonce form-canvas-busy? (atom false))
+(defonce form-icon-texture-sizes (atom {}))
+(defonce form-renderer-busy? (atom false))
 
 (defn get-graphics [& [layer]]
   (if (= layer :form-icon)
-    @form-canvas-graphics
+    @form-icon-graphics
     (get @pixi-graphics
          (or layer (first c/ui-layers)))))
 
@@ -70,7 +71,7 @@
 (defn app-height [] (.-innerHeight js/window))
 (defn app-size [] (min (app-width) (app-height)))
 (defn layer-size [layer]
-  (if (= layer :form-icon) (.-width @form-canvas) (app-size)))
+  (if (= layer :form-icon) @form-icon-size (app-size)))
 (defn app-aspect-ratio [] (/ (app-width) (app-height)))
 (defn app-rect []
   (rect-around unit-square
@@ -78,7 +79,7 @@
 
 (defn screen-x [x & [layer]]
   (if (= layer :form-icon)
-    (* x (.-width @form-canvas))
+    (* x @form-icon-size)
     (let [w (app-width)
           h (app-height)
           s (min w h)]
@@ -86,7 +87,7 @@
 
 (defn screen-y [y & [layer]]
   (if (= layer :form-icon)
-    (* y (.-height @form-canvas))
+    (* y @form-icon-size)
     (let [w (app-width)
           h (app-height)
           s (min w h)]
@@ -170,13 +171,13 @@
           (set! (.-visible t) false))))))
 
 (defn clear-form-icon-canvas! []
-  (.clear @form-canvas-graphics)
+  (.clear @form-icon-graphics)
   (let [texts (:form-icon @layer-texts)]
     (doseq [t texts]
       (set! (.-visible t) false))))
 
-(defn after-form-canvas-render [callback]
-  (let [ticker (.-ticker @form-canvas-app)
+(defn after-render [callback]
+  (let [ticker (.-ticker @pixi-app)
         delay (atom 1)
         ticker-fn (fn ticker-fn []
                     (if (zero? @delay)
@@ -185,14 +186,14 @@
                       (swap! delay dec)))]
     (.add ticker ticker-fn)))
 
-(defn take-form-canvas! []
-  (reset! form-canvas-busy? true))
+(defn take-form-icon-renderer! []
+  (reset! form-renderer-busy? true))
 
-(defn free-form-canvas! []
-  (reset! form-canvas-busy? false))
+(defn free-form-icon-renderer! []
+  (reset! form-renderer-busy? false))
 
-(defn is-form-canvas-busy? []
-  @form-canvas-busy?)
+(defn is-form-icon-renderer-busy? []
+  @form-renderer-busy?)
 
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
@@ -354,10 +355,17 @@
       (let [child (.getChildAt container 0)]
         (.removeChild container child)))))
 
+(defn icon-texture-size [form]
+  (@form-icon-texture-sizes form))
+
 (defn draw-form-icon [form {:keys [x y radius]} layer]
-  (let [size (* 2 radius c/form-icon-canvas-overflow-factor)
+  (let [size (* 2 radius
+                c/form-icon-canvas-overflow-factor
+                (/ (.-width (@form-icon-textures form))
+                   (icon-texture-size form)))
         sprite (get-form-icon-sprite form)
-        sprite-size (* (layer-size layer) size)]
+        sprite-size (* (layer-size layer)
+                       size)]
     (set! (.-width sprite) sprite-size)
     (set! (.-height sprite) sprite-size)
     (set! (.-x sprite) (screen-x (- x (* 0.5 size))))
@@ -425,43 +433,47 @@
              (u/log "Font loaded."))
            load-font)))
 
-(defn resize-form-canvas [size]
-  (set! (.-width @form-canvas) size)
-  (set! (.-height @form-canvas) size))
+(defn resize-form-renderer [size]
+  (reset! form-icon-size size))
 
-(defn create-form-canvas-image! [form finish-callback]
-  (.toBlob @form-canvas
-           (fn [blob]
-             (let [img (blob->img blob)]
-               (.addEventListener
-                img
-                "load"
-                (fn []
-                  (swap! form-icon-textures
-                         assoc
-                         form
-                         (let [texture (pixi/Texture.
-                                        (pixi/BaseTexture.
-                                         img))]
-                           texture))
-                  (free-form-canvas!)
-                  (finish-callback)))))))
+(defn create-form-icon-image! [form finish-callback]
+  (js/setTimeout (fn []
+                   (set! (.-width @form-icon-container)
+                         @form-icon-size)
+                   (set! (.-height @form-icon-container)
+                         @form-icon-size)
+                   (let [renderer (.-renderer @pixi-app)
+                         texture (pixi/Texture.
+                                  (.generateTexture renderer
+                                                    @form-icon-container))]
+                     (swap! form-icon-textures
+                            assoc
+                            form
+                            texture)
+                     (swap! form-icon-texture-sizes
+                            assoc
+                            form
+                            @form-icon-size))
+                   (free-form-icon-renderer!)
+                   (finish-callback))
+                 0))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
-  (reset! form-canvas
-          (js/document.createElement "canvas"))
-  (reset! form-canvas-app
-          (pixi/Application. (clj->js {:view @form-canvas
-                                       :backgroundAlpha 0
-                                       :preserveDrawingBuffer true})))
-  (reset! form-canvas-graphics
+  (reset! form-icon-container
+          (pixi/Container.))
+  (set! (.-zIndex @form-icon-container)
+        ##-Inf)
+  (reset! form-icon-graphics
           (pixi/Graphics.))
-  (let [form-icon-text-container (pixi/Container.)
-        form-canvas-stage (.-stage @form-canvas-app)]
-    (.addChild form-canvas-stage @form-canvas-graphics)
-    (.addChild form-canvas-stage form-icon-text-container)
+  (.addChild @form-icon-container
+             @form-icon-graphics)
+  (.addChild (.-stage @pixi-app)
+             @form-icon-container)
+  (let [form-icon-text-container (pixi/Container.)]
+    (.addChild @form-icon-container
+               form-icon-text-container)
     (swap! text-containers
            assoc
            :form-icon
@@ -554,7 +566,3 @@
                          c/discard-zone-icon-thickness))
                    (:foreground (color-scheme))
                    :menu)))))
-
-(defn icon-texture-size [form]
-  (let [texture (@form-icon-textures form)]
-    (when texture (.-width texture))))

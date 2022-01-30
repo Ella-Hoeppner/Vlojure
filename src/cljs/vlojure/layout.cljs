@@ -10,12 +10,12 @@
                                       draw-text
                                       app-size
                                       draw-rect
-                                      resize-form-canvas
+                                      resize-form-renderer
                                       clear-form-icon-canvas!
-                                      create-form-canvas-image!
-                                      after-form-canvas-render
-                                      take-form-canvas!
-                                      is-form-canvas-busy?
+                                      create-form-icon-image!
+                                      after-render
+                                      take-form-icon-renderer!
+                                      is-form-icon-renderer-busy?
                                       icon-texture-size
                                       draw-form-icon]]
             [vlojure.storage :refer [color-scheme]]
@@ -375,9 +375,9 @@
   (let [adjusted-size (* size (app-size))
         overflow-size (Math/ceil (* adjusted-size
                                     c/form-icon-canvas-overflow-factor))]
-    (take-form-canvas!)
+    (take-form-icon-renderer!)
     (clear-form-icon-canvas!)
-    (resize-form-canvas overflow-size)
+    (resize-form-renderer overflow-size)
     #_(let [border 0.05]
       (draw-rect [{:x 0 :y 0} {:x 1 :y border}]
                  0xff0000
@@ -398,16 +398,16 @@
                                    (/ adjusted-size
                                       overflow-size))})
      :form-icon)
-    (after-form-canvas-render
+    (after-render
      (fn []
-       (create-form-canvas-image!
+       (create-form-icon-image!
         form
         #(swap! queued-form-icon-forms
                 dissoc
                 form))))))
 
 (defn update-form-icons []
-  (when (not (is-form-canvas-busy?))
+  (when (not (is-form-icon-renderer-busy?))
     (let [form (get-requested-icon-form)]
       (when form
         (create-form-icon! form (@queued-form-icon-forms form))))))
