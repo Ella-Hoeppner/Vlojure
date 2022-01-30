@@ -566,3 +566,10 @@
                          c/discard-zone-icon-thickness))
                    (:foreground (color-scheme))
                    :menu)))))
+
+(defn clear-form-icons! []
+ (doseq [form-icon-atom [form-icon-textures
+                         form-icon-texture-sizes
+                         form-icon-sprites]]
+   (reset! form-icon-atom
+           {})))

@@ -10,7 +10,8 @@
                                       html-color
                                       app-width
                                       app-height
-                                      app-size]]
+                                      app-size
+                                      clear-form-icons!]]
             [vlojure.storage :refer [color-scheme
                                      update-global-attr!
                                      global-attr
@@ -275,7 +276,8 @@
             nil))
 
         :color-scheme
-        (refresh-html-colors)
+        (do (refresh-html-colors)
+            (clear-form-icons!))
 
         :text-icon
         (enter-page :text)
