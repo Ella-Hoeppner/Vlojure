@@ -266,4 +266,4 @@
 
 (def max-undo-history 100)
 
-(def max-form-icon-size 0.5)
+(def max-form-icon-size 0.9)
