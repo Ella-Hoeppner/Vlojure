@@ -33,6 +33,7 @@
 (defonce svg-sprites (atom {}))
 (defonce form-icon-sprites (atom {}))
 (defonce svg-sprite-active-counts (atom {}))
+(defonce requested-svg-texture-resolutions (atom {}))
 (defonce form-icon-sprite-active-counts (atom {}))
 (defonce form-icon-container (atom nil))
 (defonce form-icon-graphics (atom nil))
@@ -270,27 +271,35 @@
     img))
 
 (defn create-svg-texture! [svg-name resolution]
-  (swap! svg-sprites
-         #(dissoc % svg-name))
-  (swap! svg-sprite-active-counts
-         #(dissoc % svg-name))
-  (update-svg-color-scheme (color-scheme))
-  (let [canvas (js/document.createElement "canvas")
-        context (.getContext canvas "2d")
-        svg (js/document.getElementById svg-name)]
-    (.setAttribute svg "width" (str resolution "px"))
-    (.setAttribute svg "height" (str resolution "px"))
-    (.then (.from canvg context (.-outerHTML svg))
-           (fn [canvg-result]
-             (.then (.render canvg-result)
-                    (fn [& _]
-                      (.toBlob canvas
-                               (fn [blob]
-                                 (let [texture (pixi/Texture.
-                                                (pixi/BaseTexture.
-                                                 (blob->img blob)))]
-                                   (swap! svg-textures
-                                          #(assoc % svg-name texture)))))))))))
+  (let [existing-requested-resolution
+        (@requested-svg-texture-resolutions svg-name)]
+    (when (< existing-requested-resolution resolution)
+      (swap! requested-svg-texture-resolutions
+             assoc
+             svg-name
+             resolution)
+      (swap! svg-sprites
+             #(dissoc % svg-name))
+      (swap! svg-sprite-active-counts
+             #(dissoc % svg-name))
+      (update-svg-color-scheme (color-scheme))
+      (let [canvas (js/document.createElement "canvas")
+            context (.getContext canvas "2d")
+            svg (js/document.getElementById svg-name)]
+        (.setAttribute svg "width" (str resolution "px"))
+        (.setAttribute svg "height" (str resolution "px"))
+        (.then (.from canvg context (.-outerHTML svg))
+               (fn [canvg-result]
+                 (.then
+                  (.render canvg-result)
+                  (fn [& _]
+                    (.toBlob canvas
+                             (fn [blob]
+                               (let [texture (pixi/Texture.
+                                              (pixi/BaseTexture.
+                                               (blob->img blob)))]
+                                 (swap! svg-textures
+                                        #(assoc % svg-name texture)))))))))))))
 
 (defn clear-svg-textures! []
   (reset! svg-textures {}))
