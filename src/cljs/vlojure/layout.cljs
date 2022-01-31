@@ -116,7 +116,9 @@
                        [{:x (- x radius) :y (- y radius)}
                         {:x (* 2 radius) :y (* 2 radius)}])
        (not (rect-in-circle? (app-rect)
-                             circle))))
+                             (update circle
+                                     :radius
+                                     * (- 1 c/bubble-thickness))))))
 
 (defn render-layout [layout & [layer]]
   (when (should-render-layout? layout)

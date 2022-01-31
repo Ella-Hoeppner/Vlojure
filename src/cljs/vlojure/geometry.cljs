@@ -154,9 +154,9 @@
          (<= (:y r2) (:y l1))))))
 
 (defn rect-in-circle? [[rect-pos rect-size]
-                       {:keys [x y radius]}]
+                       {:keys [radius] :as circle}]
   (let [square-radius (* radius radius)]
-    (not (some #(> (point-square-magnitude %)
+    (not (some #(> (point-square-magnitude (subtract-points % circle))
                    square-radius)
                [rect-pos
                 (add-points rect-pos rect-size)
