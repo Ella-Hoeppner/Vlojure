@@ -177,24 +177,15 @@
     (doseq [t texts]
       (set! (.-visible t) false))))
 
-(defn after-render [callback]
-  (let [ticker (.-ticker @pixi-app)
-        delay (atom 1)
-        ticker-fn (fn ticker-fn []
-                    (if (zero? @delay)
-                      (do (.remove ticker ticker-fn)
-                          (callback))
-                      (swap! delay dec)))]
-    (.add ticker ticker-fn)))
+(defn icon-texture-size [form]
+  (@form-icon-texture-sizes form))
 
-(defn take-form-icon-renderer! []
-  (reset! form-renderer-busy? true))
-
-(defn free-form-icon-renderer! []
-  (reset! form-renderer-busy? false))
-
-(defn is-form-icon-renderer-busy? []
-  @form-renderer-busy?)
+(defn form-icon-available? [form size]
+  (let [resolution (* size (app-size) c/form-icon-canvas-overflow-factor)
+        existing-resolution (icon-texture-size form)]
+    (and existing-resolution
+         (>= existing-resolution
+             resolution))))
 
 (defn get-unused-text! [layer]
   (let [text-vector (or (get @layer-texts layer) [])
@@ -364,9 +355,6 @@
       (let [child (.getChildAt container 0)]
         (.removeChild container child)))))
 
-(defn icon-texture-size [form]
-  (@form-icon-texture-sizes form))
-
 (defn draw-form-icon [form {:keys [x y radius]} layer]
   (let [size (* 2 radius
                 c/form-icon-canvas-overflow-factor
@@ -445,30 +433,26 @@
 (defn resize-form-renderer [size]
   (reset! form-icon-size size))
 
-(defn create-form-icon-image! [form finish-callback]
-  (js/setTimeout (fn []
-                   (set! (.-width @form-icon-container)
-                         @form-icon-size)
-                   (set! (.-height @form-icon-container)
-                         @form-icon-size)
-                   (let [renderer (.-renderer @pixi-app)
-                         texture (pixi/Texture.
-                                  (.generateTexture renderer
-                                                    @form-icon-container))]
-                     (swap! form-icon-textures
-                            assoc
-                            form
-                            texture)
-                     (swap! form-icon-texture-sizes
-                            assoc
-                            form
-                            @form-icon-size))
-                   (swap! form-icon-sprites
-                          dissoc
-                          form)
-                   (free-form-icon-renderer!)
-                   (finish-callback))
-                 0))
+(defn save-form-icon-image! [form]
+  (set! (.-width @form-icon-container)
+        @form-icon-size)
+  (set! (.-height @form-icon-container)
+        @form-icon-size)
+  (let [renderer (.-renderer @pixi-app)
+        texture (pixi/Texture.
+                 (.generateTexture renderer
+                                   @form-icon-container))]
+    (swap! form-icon-textures
+           assoc
+           form
+           texture)
+    (swap! form-icon-texture-sizes
+           assoc
+           form
+           @form-icon-size))
+  (swap! form-icon-sprites
+         dissoc
+         form))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
   (reset! pixi-app

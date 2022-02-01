@@ -1,7 +1,6 @@
 (ns vlojure.layout
   (:require [vlojure.util :as u]
             [vlojure.constants :as c]
-            [clojure.set :refer [union]]
             [vlojure.graphics :refer [app-rect
                                       draw-circle
                                       draw-line
@@ -12,11 +11,8 @@
                                       draw-rect
                                       resize-form-renderer
                                       clear-form-icon-canvas!
-                                      create-form-icon-image!
-                                      after-render
-                                      take-form-icon-renderer!
-                                      is-form-icon-renderer-busy?
-                                      icon-texture-size
+                                      save-form-icon-image!
+                                      form-icon-available?
                                       draw-form-icon]]
             [vlojure.storage :refer [color-scheme]]
             [vlojure.geometry :refer [rects-overlap?
@@ -39,28 +35,6 @@
 ;;; layouts. A "layout" is a structure that defines the size and location of
 ;;; the elements within a ClojureScript expression. Layouts are displayed in
 ;;; the body of the "code" page, and also within formbars.
-
-(defonce queued-form-icon-forms (atom {}))
-
-(defn request-form-icon! [form size]
-  (when (< size c/max-form-icon-size)
-    (when (< (icon-texture-size form)
-             (* size
-                (app-size)
-                c/form-icon-canvas-overflow-factor))
-      (swap! queued-form-icon-forms
-             update form (partial max size)))
-    true))
-
-(defn get-requested-icon-form []
-  (let [forms (keys @queued-form-icon-forms)
-        all-children (apply union
-                            (map (comp set :children)
-                                 forms))]
-    (or (some #(when (not (all-children %))
-                 %)
-              forms)
-        (first forms))))
 
 (defn form-layout [form starting-layout]
   (let [current-layout starting-layout
@@ -357,67 +331,54 @@
                    (:text (color-scheme))
                    layer)))))
 
-(defn render-total-layout [{:keys [radius] :as layout} &
-                           [layer parent-icon-requested?]]
-  (let [form (layout->form layout)
-        icon-request-successful? (when (not parent-icon-requested?)
-                                   (request-form-icon! form (* 2 radius)))
-        icon-size (when icon-request-successful?
-                    (icon-texture-size form))]
-    (if (and icon-size
-             (>= icon-size
-                 (* (app-size)
-                    2 radius
-                    c/form-icon-canvas-overflow-factor))
-             (not= layer :form-icon))
-      (draw-form-icon form layout layer)
-      (do (render-layout layout layer)
-          (doseq [sublayout (:sublayouts layout)]
-            (render-total-layout sublayout
-                                 layer
-                                 (or parent-icon-requested?
-                                     icon-request-successful?)))))))
+(defn render-total-layout-without-icon [layout & [layer]]
+  (render-layout layout layer)
+  (doseq [sublayout (:sublayouts layout)]
+    (render-total-layout-without-icon sublayout
+                                      layer)))
 
 (defn create-form-icon! [form size]
-  (let [adjusted-size (* size (app-size))
-        overflow-size (Math/ceil (* adjusted-size
-                                    c/form-icon-canvas-overflow-factor))]
-    (take-form-icon-renderer!)
-    (clear-form-icon-canvas!)
-    (resize-form-renderer overflow-size)
-    #_(let [border 0.05]
-      (draw-rect [{:x 0 :y 0} {:x 1 :y border}]
-                 0xff0000
-                 :form-icon)
-      (draw-rect [{:x 0 :y 0} {:x border :y 1}]
-                 0xff0000
-                 :form-icon)
-      (draw-rect [{:x 0 :y (- 1 border)} {:x 1 :y border}]
-                 0xff0000
-                 :form-icon)
-      (draw-rect [{:x (- 1 border) :y 0} {:x border :y 1}]
-                 0xff0000
-                 :form-icon))
-    (render-total-layout
-     (form-layout form {:x 0.5
-                        :y 0.5
-                        :radius (* 0.5
-                                   (/ adjusted-size
-                                      overflow-size))})
-     :form-icon)
-    (after-render
-     (fn []
-       (create-form-icon-image!
-        form
-        #(swap! queued-form-icon-forms
-                dissoc
-                form))))))
+  (when (not (form-icon-available? form size))
+    (let [adjusted-size (* size (app-size))
+          overflow-size (Math/ceil (* adjusted-size
+                                      c/form-icon-canvas-overflow-factor))]
+      (clear-form-icon-canvas!)
+      (resize-form-renderer overflow-size)
+      #_(let [border 0.025]
+        (draw-rect [{:x 0 :y 0} {:x 1 :y border}]
+                   0xff0000
+                   :form-icon)
+        (draw-rect [{:x 0 :y 0} {:x border :y 1}]
+                   0xff0000
+                   :form-icon)
+        (draw-rect [{:x 0 :y (- 1 border)} {:x 1 :y border}]
+                   0xff0000
+                   :form-icon)
+        (draw-rect [{:x (- 1 border) :y 0} {:x border :y 1}]
+                   0xff0000
+                   :form-icon))
+      (render-total-layout-without-icon
+       (form-layout form {:x 0.5
+                          :y 0.5
+                          :radius (* 0.5
+                                     (/ adjusted-size
+                                        overflow-size))})
+       :form-icon)
+      (save-form-icon-image! form))))
 
-(defn update-form-icons []
-  (when (not (is-form-icon-renderer-busy?))
-    (let [form (get-requested-icon-form)]
-      (when form
-        (create-form-icon! form (@queued-form-icon-forms form))))))
+(defn render-total-layout [{:keys [radius] :as layout} & [layer]]
+  (let [form (layout->form layout)]
+    (if (and (not= layer :form-icon)
+             (form-icon-available? form (* 2 radius)))
+      (draw-form-icon form layout layer)
+      (if (< radius 0.5)
+        (do (create-form-icon! form
+                               1)
+            (draw-form-icon form layout layer))
+        (do (render-layout layout layer)
+            (doseq [sublayout (:sublayouts layout)]
+              (render-total-layout sublayout
+                                   layer)))))))
 
 (defn shift-layout [layout offset]
   (-> layout

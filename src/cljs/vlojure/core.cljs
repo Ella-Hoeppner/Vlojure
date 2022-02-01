@@ -18,8 +18,7 @@
   (text-page/init)
   (graphics/init (fn []
                    (graphics/update-graphics)
-                   (app/update-app)
-                   (layout/update-form-icons))
+                   (app/update-app))
                  app/on-click-down
                  app/on-click-up
                  app/update-mouse-pos)
