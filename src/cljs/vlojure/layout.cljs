@@ -44,15 +44,13 @@
 
 (defn request-form-icon! [form size]
   (when (< size c/max-form-icon-size)
-    (or (let [existing-size (icon-texture-size form)]
-          (when (>= existing-size
-                    (* size
-                       (app-size)
-                       c/form-icon-canvas-overflow-factor))
-            existing-size))
-        (do (swap! queued-form-icon-forms
-                   update form (partial max size))
-            nil))))
+    (when (< (icon-texture-size form)
+             (* size
+                (app-size)
+                c/form-icon-canvas-overflow-factor))
+      (swap! queued-form-icon-forms
+             update form (partial max size)))
+    true))
 
 (defn get-requested-icon-form []
   (let [forms (keys @queued-form-icon-forms)
@@ -359,9 +357,13 @@
                    (:text (color-scheme))
                    layer)))))
 
-(defn render-total-layout [{:keys [radius] :as layout} & [layer]]
+(defn render-total-layout [{:keys [radius] :as layout} &
+                           [layer parent-icon-requested?]]
   (let [form (layout->form layout)
-        icon-size (request-form-icon! form (* 2 radius))]
+        icon-request-successful? (when (not parent-icon-requested?)
+                                   (request-form-icon! form (* 2 radius)))
+        icon-size (when icon-request-successful?
+                    (icon-texture-size form))]
     (if (and icon-size
              (>= icon-size
                  (* (app-size)
@@ -371,7 +373,10 @@
       (draw-form-icon form layout layer)
       (do (render-layout layout layer)
           (doseq [sublayout (:sublayouts layout)]
-            (render-total-layout sublayout layer))))))
+            (render-total-layout sublayout
+                                 layer
+                                 (or parent-icon-requested?
+                                     icon-request-successful?)))))))
 
 (defn create-form-icon! [form size]
   (let [adjusted-size (* size (app-size))
