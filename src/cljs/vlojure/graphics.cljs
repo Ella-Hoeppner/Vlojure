@@ -297,7 +297,10 @@
                                         #(assoc % svg-name texture)))))))))))))
 
 (defn clear-svg-textures! []
-  (reset! svg-textures {}))
+  (reset! svg-sprites {})
+  (reset! svg-textures {})
+  (reset! svg-sprite-active-counts {})
+  (reset! requested-svg-texture-resolutions {}))
 
 (defn get-svg-sprite [svg-name]
   (when (not (get @svg-sprites svg-name))
