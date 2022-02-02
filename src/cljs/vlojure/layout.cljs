@@ -185,11 +185,12 @@
         (let [radius (:radius layout)]
           (doseq [angle (mapv (partial * TAU)
                               (u/prop-range c/deref-circles true))]
-            (draw-circle (update (add-points layout
-                                             (scale-point (angle-point angle)
-                                                          radius))
-                                 :radius
-                                 (partial * c/deref-circle-size-factor))
+            (draw-circle (assoc (add-points layout
+                                            (scale-point (angle-point angle)
+                                                         radius))
+                                :radius
+                                (* c/deref-circle-size-factor
+                                   (:radius layout)))
                          (:foreground (color-scheme))
                          layer))))
       (when (= (:type layout) :syntax-quote)
@@ -268,12 +269,13 @@
                   (partition 2 1 (conj points (first points)))]
             (let [div-spacing (/ 0.5 c/unquote-splice-circles)]
               (doseq [t (u/prop-range c/unquote-splice-circles true)]
-                (draw-circle (update (add-points layout
-                                                 (tween-points start-point
-                                                               end-point
-                                                               t))
-                                     :radius
-                                     (partial * c/deref-circle-size-factor))
+                (draw-circle (assoc (add-points layout
+                                                (tween-points start-point
+                                                              end-point
+                                                              t))
+                                    :radius
+                                    (* c/deref-circle-size-factor
+                                       (:radius layout)))
                              (:foreground (color-scheme))
                              layer))))))
       (when (= (:type layout) :meta)
