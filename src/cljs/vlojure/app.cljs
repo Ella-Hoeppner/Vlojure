@@ -11,7 +11,8 @@
                                       app-width
                                       app-height
                                       app-size
-                                      clear-form-icons!]]
+                                      clear-form-icons!
+                                      set-cursor-pointing?]]
             [vlojure.storage :refer [color-scheme
                                      update-global-attr!
                                      global-attr
@@ -176,6 +177,18 @@
 (defn render-app-state []
   (let [current-app-rect (app-rect)
         mouse-zone (get-mouse-zone)]
+    (set-cursor-pointing?
+     (or  (page-action @active-page
+                       :cursor-pointing?
+                       @mouse
+                       mouse-zone)
+          (not (#{:empty
+                  :formbar
+                  :settings-circle
+                  :program}
+                mouse-zone))
+          (and (= mouse-zone :formbar)
+               (formbar-form-path-at @mouse))))
     (draw-rect current-app-rect
                (:background (color-scheme))
                :background)

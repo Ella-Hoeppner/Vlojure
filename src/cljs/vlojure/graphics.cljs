@@ -42,6 +42,10 @@
 (defonce form-icon-texture-sizes (atom {}))
 (defonce form-renderer-busy? (atom false))
 
+(defn set-cursor-pointing? [pointing?]
+  (set! (.-cursor js/document.body.style)
+        (if pointing? "pointer" "")))
+
 (defn get-graphics [& [layer]]
   (if (= layer :form-icon)
     @form-icon-graphics

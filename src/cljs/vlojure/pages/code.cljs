@@ -950,4 +950,13 @@
 
             nil))
         (set-camera-move-diff (- (count layout-path)
-                                 (count @selected-layout-path)))))}))
+                                 (count @selected-layout-path)))))
+    :cursor-pointing?
+    (fn [mouse mouse-zone]
+      (and (= mouse-zone :program)
+           (let [path (layout-path-at (adjusted-form-layouts)
+                                      mouse)]
+             (when path
+               (= :literal
+                  (:type (get-child (project-attr :form)
+                                    path)))))))}))

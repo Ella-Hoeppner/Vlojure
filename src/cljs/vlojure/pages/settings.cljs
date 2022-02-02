@@ -462,7 +462,7 @@
     (fn []
       (refresh-dropdown-names)
       (reset! scroll-pos @ideal-scroll-pos))
-    
+
     :exit
     (fn []
       (hide-rename)
@@ -1567,4 +1567,8 @@
           :rename-project
           (activate-project-rename-input)
 
-          nil)))}))
+          nil)))
+
+    :cursor-pointing?
+    (fn [mouse mouse-zone]
+      (= mouse-zone :formbar))}))
