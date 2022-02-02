@@ -13,7 +13,8 @@
                                       in-discard-corner?
                                       html-color
                                       app-size
-                                      clear-svg-textures!]]
+                                      clear-svg-textures!
+                                      clear-form-icons!]]
             [vlojure.storage :refer [color-scheme
                                      add-project-formbar-form-at
                                      load-project
@@ -58,7 +59,8 @@
             [vlojure.app :refer [enter-page
                                  register-page!
                                  render-top-left-button-background
-                                 render-top-left-back-button]]
+                                 render-top-left-back-button
+                                 refresh-html-colors]]
             [vlojure.quil :refer [quil-mode?
                                   activate-quil-mode!
                                   deactivate-quil-mode!]]))
@@ -1545,8 +1547,10 @@
 
           :color-scheme
           (do (set-global-attr! :color-scheme (color-scheme-index-at mouse))
-              (clear-svg-textures!))
-
+              (clear-svg-textures!)
+              (refresh-html-colors)
+              (clear-form-icons!))
+          
           :new-project
           (do (new-project)
               (refresh-dropdown-names))

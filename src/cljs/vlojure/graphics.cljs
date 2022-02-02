@@ -422,11 +422,17 @@
   (free-used-svg-images!)
   (free-used-form-icon-images!))
 
+(defn clear-form-icons! []
+  (doseq [form-icon-atom [form-icon-textures
+                          form-icon-texture-sizes
+                          form-icon-sprites]]
+    (reset! form-icon-atom
+            {})))
+
 (defn load-font []
   (let [font (FaceFontObserver. c/font-name)]
     (.then (.load font nil 500)
            (fn []
-             (reset! font-loaded? true)
              (.from pixi/BitmapFont c/font-name
                     (clj->js
                      {:fontFamily c/font-name
@@ -434,8 +440,12 @@
                       :fontSize 300})
                     (clj->js
                      {:chars pixi/BitmapFont.ASCII}))
+             (reset! font-loaded? true)
+             (clear-svg-textures!)
+             (clear-form-icons!)
              (u/log "Font loaded."))
-           load-font)))
+           (fn [_]
+             (load-font)))))
 
 (defn resize-form-renderer [size]
   (reset! form-icon-size size))
@@ -462,6 +472,7 @@
          form))
 
 (defn init [update-fn click-down-fn click-up-fn update-mouse-fn]
+  (load-font)
   (reset! pixi-app
           (pixi/Application. (clj->js {:autoResize true})))
   (reset! form-icon-container
@@ -511,7 +522,6 @@
       (.on interaction "pointerdown" click-down-fn)
       (.on interaction "pointerup" click-up-fn)
       (.on interaction "pointermove" update-mouse-fn))
-    (load-font)
     (resize))
   (init-quil))
 
@@ -569,10 +579,3 @@
                          c/discard-zone-icon-thickness))
                    (:foreground (color-scheme))
                    :menu)))))
-
-(defn clear-form-icons! []
- (doseq [form-icon-atom [form-icon-textures
-                         form-icon-texture-sizes
-                         form-icon-sprites]]
-   (reset! form-icon-atom
-           {})))

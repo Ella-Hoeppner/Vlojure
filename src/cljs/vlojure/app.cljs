@@ -288,10 +288,6 @@
             :redo (redo!)
             nil))
 
-        :color-scheme
-        (do (refresh-html-colors)
-            (clear-form-icons!))
-
         :text-icon
         (enter-page :text)
 
